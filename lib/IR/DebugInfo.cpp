@@ -1290,6 +1290,11 @@ void DIType::printInternal(raw_ostream &OS) const {
   if (!DbgNode)
     return;
 
+  assert(getContext());
+  StringRef EnclosingTypeName = getContext().getName();
+  if(!EnclosingTypeName.empty())
+    OS << " [" << EnclosingTypeName << "]";
+
   StringRef Res = getName();
   if (!Res.empty())
     OS << " [" << Res << "]";

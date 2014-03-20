@@ -1,0 +1,715 @@
+==========***===========
+  call void @_ZNSt8ios_base4InitC1Ev(%"class.std::ios_base::Init"* @_ZStL8__ioinit)	call
+Call Instruction found!
+declare void @_ZNSt8ios_base4InitC1Ev(%"class.std::ios_base::Init"*) #0
+
+_ZNSt8ios_base4InitC1Ev
+==========***===========
+  %1 = call i32 @__cxa_atexit(void (i8*)* bitcast (void (%"class.std::ios_base::Init"*)* @_ZNSt8ios_base4InitD1Ev to void (i8*)*), i8* getelementptr inbounds (%"class.std::ios_base::Init"* @_ZStL8__ioinit, i32 0, i32 0), i8* @__dso_handle) #1	call
+Call Instruction found!
+; Function Attrs: nounwind
+declare i32 @__cxa_atexit(void (i8*)*, i8*, i8*) #1
+
+__cxa_atexit
+==========***===========
+  ret void	ret
+==========***===========
+  %1 = alloca %class.CCC*, align 8	alloca
+==========***===========
+  %2 = alloca i32, align 4	alloca
+==========***===========
+  store %class.CCC* %this, %class.CCC** %1, align 8	store
+  store %class.CCC* %this, %class.CCC** %1, align 8
+%class.CCC* %this
+
+  %1 = alloca %class.CCC*, align 8
+%class.CCC**%class.CCC*
+==========***===========
+  store i32 %_ii, i32* %2, align 4	store
+  store i32 %_ii, i32* %2, align 4
+i32 %_ii
+
+  %2 = alloca i32, align 4
+i32*i32
+==========***===========
+  %3 = load %class.CCC** %1	load
+==========***===========
+  %4 = getelementptr inbounds %class.CCC* %3, i32 0, i32 0	getelementptr
+==========***===========
+  %5 = load i32* %2, align 4	load
+==========***===========
+  store i32 %5, i32* %4, align 4	store
+  store i32 %5, i32* %4, align 4
+  %5 = load i32* %2, align 4
+
+  %4 = getelementptr inbounds %class.CCC* %3, i32 0, i32 0
+i32*i32
+==========***===========
+  ret void	ret
+==========***===========
+  %1 = alloca %class.CCC*, align 8	alloca
+==========***===========
+  %2 = alloca i32, align 4	alloca
+==========***===========
+  %3 = alloca double, align 8	alloca
+==========***===========
+  store %class.CCC* %this, %class.CCC** %1, align 8	store
+  store %class.CCC* %this, %class.CCC** %1, align 8
+%class.CCC* %this
+
+  %1 = alloca %class.CCC*, align 8
+%class.CCC**%class.CCC*
+==========***===========
+  store i32 %_ii, i32* %2, align 4	store
+  store i32 %_ii, i32* %2, align 4
+i32 %_ii
+
+  %2 = alloca i32, align 4
+i32*i32
+==========***===========
+  store double %_dd, double* %3, align 8	store
+  store double %_dd, double* %3, align 8
+double %_dd
+
+  %3 = alloca double, align 8
+double*double
+==========***===========
+  %4 = load %class.CCC** %1	load
+==========***===========
+  %5 = getelementptr inbounds %class.CCC* %4, i32 0, i32 0	getelementptr
+==========***===========
+  %6 = load i32* %2, align 4	load
+==========***===========
+  store i32 %6, i32* %5, align 4	store
+  store i32 %6, i32* %5, align 4
+  %6 = load i32* %2, align 4
+
+  %5 = getelementptr inbounds %class.CCC* %4, i32 0, i32 0
+i32*i32
+==========***===========
+  %7 = getelementptr inbounds %class.CCC* %4, i32 0, i32 1	getelementptr
+==========***===========
+  %8 = load double* %3, align 8	load
+==========***===========
+  store double %8, double* %7, align 8	store
+  store double %8, double* %7, align 8
+  %8 = load double* %3, align 8
+
+  %7 = getelementptr inbounds %class.CCC* %4, i32 0, i32 1
+double*double
+==========***===========
+  ret void	ret
+==========***===========
+  %1 = alloca i32, align 4	alloca
+==========***===========
+  %cc1 = alloca %class.CCC*, align 8	alloca
+==========***===========
+  %2 = alloca i8*	alloca
+==========***===========
+  %3 = alloca i32	alloca
+==========***===========
+  %cc2 = alloca %class.CCC*, align 8	alloca
+==========***===========
+  %cc3 = alloca %class.CCC*, align 8	alloca
+==========***===========
+  %c4 = alloca %class.CCC**, align 8	alloca
+==========***===========
+  store i32 0, i32* %1	store
+  store i32 0, i32* %1
+i32 0
+
+  %1 = alloca i32, align 4
+i32*i32
+==========***===========
+  %4 = call noalias i8* @_Znwm(i64 16) #6	call
+Call Instruction found!
+; Function Attrs: nobuiltin
+declare noalias i8* @_Znwm(i64) #4
+
+_Znwm
+==========***===========
+  %5 = bitcast i8* %4 to %class.CCC*	bitcast
+Cast Instruction found!
+==========***===========
+  invoke void @_ZN3CCCC1Eid(%class.CCC* %5, i32 4, double 5.500000e+00)
+          to label %6 unwind label %103	invoke
+==========***===========
+  store %class.CCC* %5, %class.CCC** %cc1, align 8	store
+  store %class.CCC* %5, %class.CCC** %cc1, align 8
+  %5 = bitcast i8* %4 to %class.CCC*
+
+  %cc1 = alloca %class.CCC*, align 8
+%class.CCC**%class.CCC*
+==========***===========
+  %7 = call noalias i8* @_Znam(i64 80) #6	call
+Call Instruction found!
+; Function Attrs: nobuiltin
+declare noalias i8* @_Znam(i64) #4
+
+_Znam
+==========***===========
+  %8 = bitcast i8* %7 to %class.CCC*	bitcast
+Cast Instruction found!
+==========***===========
+  %9 = getelementptr inbounds %class.CCC* %8, i64 5	getelementptr
+==========***===========
+  br label %10	br
+==========***===========
+  %11 = phi %class.CCC* [ %8, %6 ], [ %13, %12 ]	phi
+==========***===========
+  invoke void @_ZN3CCCC2Ev(%class.CCC* %11)
+          to label %12 unwind label %107	invoke
+==========***===========
+  %13 = getelementptr inbounds %class.CCC* %11, i64 1	getelementptr
+==========***===========
+  %14 = icmp eq %class.CCC* %13, %9	icmp
+==========***===========
+  br i1 %14, label %15, label %10	br
+==========***===========
+  store %class.CCC* %8, %class.CCC** %cc2, align 8	store
+  store %class.CCC* %8, %class.CCC** %cc2, align 8
+  %8 = bitcast i8* %7 to %class.CCC*
+
+  %cc2 = alloca %class.CCC*, align 8
+%class.CCC**%class.CCC*
+==========***===========
+  %16 = call noalias i8* @_Znwm(i64 16) #6	call
+Call Instruction found!
+; Function Attrs: nobuiltin
+declare noalias i8* @_Znwm(i64) #4
+
+_Znwm
+==========***===========
+  %17 = bitcast i8* %16 to %class.CCC*	bitcast
+Cast Instruction found!
+==========***===========
+  invoke void @_ZN3CCCC2Ev(%class.CCC* %17)
+          to label %18 unwind label %111	invoke
+==========***===========
+  store %class.CCC* %17, %class.CCC** %cc3, align 8	store
+  store %class.CCC* %17, %class.CCC** %cc3, align 8
+  %17 = bitcast i8* %16 to %class.CCC*
+
+  %cc3 = alloca %class.CCC*, align 8
+%class.CCC**%class.CCC*
+==========***===========
+  %19 = call noalias i8* @_Znam(i64 40) #6	call
+Call Instruction found!
+; Function Attrs: nobuiltin
+declare noalias i8* @_Znam(i64) #4
+
+_Znam
+==========***===========
+  %20 = bitcast i8* %19 to %class.CCC**	bitcast
+Cast Instruction found!
+==========***===========
+  store %class.CCC** %20, %class.CCC*** %c4, align 8	store
+  store %class.CCC** %20, %class.CCC*** %c4, align 8
+  %20 = bitcast i8* %19 to %class.CCC**
+
+  %c4 = alloca %class.CCC**, align 8
+%class.CCC***%class.CCC**
+==========***===========
+  %21 = load %class.CCC** %cc1, align 8	load
+==========***===========
+  %22 = getelementptr inbounds %class.CCC* %21, i32 0, i32 0	getelementptr
+==========***===========
+  store i32 5, i32* %22, align 4	store
+  store i32 5, i32* %22, align 4
+i32 5
+
+  %22 = getelementptr inbounds %class.CCC* %21, i32 0, i32 0
+i32*i32
+==========***===========
+  %23 = load %class.CCC** %cc2, align 8	load
+==========***===========
+  %24 = getelementptr inbounds %class.CCC* %23, i64 3	getelementptr
+==========***===========
+  %25 = getelementptr inbounds %class.CCC* %24, i32 0, i32 0	getelementptr
+==========***===========
+  store i32 6, i32* %25, align 4	store
+  store i32 6, i32* %25, align 4
+i32 6
+
+  %25 = getelementptr inbounds %class.CCC* %24, i32 0, i32 0
+i32*i32
+==========***===========
+  %26 = load %class.CCC** %cc3, align 8	load
+==========***===========
+  %27 = getelementptr inbounds %class.CCC* %26, i32 0, i32 0	getelementptr
+==========***===========
+  store i32 7, i32* %27, align 4	store
+  store i32 7, i32* %27, align 4
+i32 7
+
+  %27 = getelementptr inbounds %class.CCC* %26, i32 0, i32 0
+i32*i32
+==========***===========
+  %28 = call noalias i8* @_Znwm(i64 16) #6	call
+Call Instruction found!
+; Function Attrs: nobuiltin
+declare noalias i8* @_Znwm(i64) #4
+
+_Znwm
+==========***===========
+  %29 = bitcast i8* %28 to %class.CCC*	bitcast
+Cast Instruction found!
+==========***===========
+  invoke void @_ZN3CCCC1Ei(%class.CCC* %29, i32 8)
+          to label %30 unwind label %115	invoke
+==========***===========
+  %31 = load %class.CCC*** %c4, align 8	load
+==========***===========
+  %32 = getelementptr inbounds %class.CCC** %31, i64 0	getelementptr
+==========***===========
+  store %class.CCC* %29, %class.CCC** %32, align 8	store
+  store %class.CCC* %29, %class.CCC** %32, align 8
+  %29 = bitcast i8* %28 to %class.CCC*
+
+  %32 = getelementptr inbounds %class.CCC** %31, i64 0
+%class.CCC**%class.CCC*
+==========***===========
+  %33 = call noalias i8* @_Znwm(i64 16) #6	call
+Call Instruction found!
+; Function Attrs: nobuiltin
+declare noalias i8* @_Znwm(i64) #4
+
+_Znwm
+==========***===========
+  %34 = bitcast i8* %33 to %class.CCC*	bitcast
+Cast Instruction found!
+==========***===========
+  invoke void @_ZN3CCCC1Ei(%class.CCC* %34, i32 9)
+          to label %35 unwind label %119	invoke
+==========***===========
+  %36 = load %class.CCC*** %c4, align 8	load
+==========***===========
+  %37 = getelementptr inbounds %class.CCC** %36, i64 1	getelementptr
+==========***===========
+  store %class.CCC* %34, %class.CCC** %37, align 8	store
+  store %class.CCC* %34, %class.CCC** %37, align 8
+  %34 = bitcast i8* %33 to %class.CCC*
+
+  %37 = getelementptr inbounds %class.CCC** %36, i64 1
+%class.CCC**%class.CCC*
+==========***===========
+  %38 = load %class.CCC** %cc1, align 8	load
+==========***===========
+  %39 = getelementptr inbounds %class.CCC* %38, i32 0, i32 0	getelementptr
+==========***===========
+  %40 = load i32* %39, align 4	load
+==========***===========
+  %41 = call %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"* @_ZSt4cout, i32 %40)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"*, i32) #0
+
+_ZNSolsEi
+==========***===========
+  %42 = call %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"* %41, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)* @_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"*, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)*) #0
+
+_ZNSolsEPFRSoS_E
+==========***===========
+  %43 = load %class.CCC** %cc2, align 8	load
+==========***===========
+  %44 = getelementptr inbounds %class.CCC* %43, i64 3	getelementptr
+==========***===========
+  %45 = getelementptr inbounds %class.CCC* %44, i32 0, i32 0	getelementptr
+==========***===========
+  %46 = load i32* %45, align 4	load
+==========***===========
+  %47 = call %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"* @_ZSt4cout, i32 %46)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"*, i32) #0
+
+_ZNSolsEi
+==========***===========
+  %48 = call %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"* %47, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)* @_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"*, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)*) #0
+
+_ZNSolsEPFRSoS_E
+==========***===========
+  %49 = load %class.CCC** %cc3, align 8	load
+==========***===========
+  %50 = getelementptr inbounds %class.CCC* %49, i32 0, i32 0	getelementptr
+==========***===========
+  %51 = load i32* %50, align 4	load
+==========***===========
+  %52 = call %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"* @_ZSt4cout, i32 %51)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"*, i32) #0
+
+_ZNSolsEi
+==========***===========
+  %53 = call %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"* %52, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)* @_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"*, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)*) #0
+
+_ZNSolsEPFRSoS_E
+==========***===========
+  %54 = load %class.CCC*** %c4, align 8	load
+==========***===========
+  %55 = getelementptr inbounds %class.CCC** %54, i64 0	getelementptr
+==========***===========
+  %56 = load %class.CCC** %55, align 8	load
+==========***===========
+  %57 = getelementptr inbounds %class.CCC* %56, i32 0, i32 0	getelementptr
+==========***===========
+  %58 = load i32* %57, align 4	load
+==========***===========
+  %59 = call %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"* @_ZSt4cout, i32 %58)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"*, i32) #0
+
+_ZNSolsEi
+==========***===========
+  %60 = call %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"* %59, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)* @_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"*, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)*) #0
+
+_ZNSolsEPFRSoS_E
+==========***===========
+  %61 = load %class.CCC*** %c4, align 8	load
+==========***===========
+  %62 = getelementptr inbounds %class.CCC** %61, i64 1	getelementptr
+==========***===========
+  %63 = load %class.CCC** %62, align 8	load
+==========***===========
+  %64 = getelementptr inbounds %class.CCC* %63, i32 0, i32 0	getelementptr
+==========***===========
+  %65 = load i32* %64, align 4	load
+==========***===========
+  %66 = call %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"* @_ZSt4cout, i32 %65)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEi(%"class.std::basic_ostream"*, i32) #0
+
+_ZNSolsEi
+==========***===========
+  %67 = call %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"* %66, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)* @_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_)	call
+Call Instruction found!
+declare %"class.std::basic_ostream"* @_ZNSolsEPFRSoS_E(%"class.std::basic_ostream"*, %"class.std::basic_ostream"* (%"class.std::basic_ostream"*)*) #0
+
+_ZNSolsEPFRSoS_E
+==========***===========
+  %68 = load %class.CCC** %cc1, align 8	load
+==========***===========
+  %69 = icmp eq %class.CCC* %68, null	icmp
+==========***===========
+  br i1 %69, label %72, label %70	br
+==========***===========
+  %71 = bitcast %class.CCC* %68 to i8*	bitcast
+Cast Instruction found!%class.CCC**
+==========***===========
+  call void @_ZdlPv(i8* %71) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) #5
+
+_ZdlPv
+Delete Instruction found!
+
+%class.CCC**
+
+==========***===========
+  br label %72	br
+==========***===========
+  %73 = load %class.CCC** %cc2, align 8	load
+==========***===========
+  %74 = icmp eq %class.CCC* %73, null	icmp
+==========***===========
+  br i1 %74, label %77, label %75	br
+==========***===========
+  %76 = bitcast %class.CCC* %73 to i8*	bitcast
+Cast Instruction found!%class.CCC**
+==========***===========
+  call void @_ZdaPv(i8* %76) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) #5
+
+_ZdaPv
+==========***===========
+  br label %77	br
+==========***===========
+  %78 = load %class.CCC** %cc3, align 8	load
+==========***===========
+  %79 = icmp eq %class.CCC* %78, null	icmp
+==========***===========
+  br i1 %79, label %82, label %80	br
+==========***===========
+  %81 = bitcast %class.CCC* %78 to i8*	bitcast
+Cast Instruction found!%class.CCC**
+==========***===========
+  call void @_ZdlPv(i8* %81) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) #5
+
+_ZdlPv
+Delete Instruction found!
+
+%class.CCC**
+
+==========***===========
+  br label %82	br
+==========***===========
+  %83 = load %class.CCC*** %c4, align 8	load
+==========***===========
+  %84 = getelementptr inbounds %class.CCC** %83, i64 0	getelementptr
+==========***===========
+  %85 = load %class.CCC** %84, align 8	load
+==========***===========
+  %86 = icmp eq %class.CCC* %85, null	icmp
+==========***===========
+  br i1 %86, label %89, label %87	br
+==========***===========
+  %88 = bitcast %class.CCC* %85 to i8*	bitcast
+Cast Instruction found!%class.CCC**
+==========***===========
+  call void @_ZdaPv(i8* %88) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) #5
+
+_ZdaPv
+==========***===========
+  br label %89	br
+==========***===========
+  %90 = load %class.CCC*** %c4, align 8	load
+==========***===========
+  %91 = getelementptr inbounds %class.CCC** %90, i64 1	getelementptr
+==========***===========
+  %92 = load %class.CCC** %91, align 8	load
+==========***===========
+  %93 = icmp eq %class.CCC* %92, null	icmp
+==========***===========
+  br i1 %93, label %96, label %94	br
+==========***===========
+  %95 = bitcast %class.CCC* %92 to i8*	bitcast
+Cast Instruction found!%class.CCC**
+==========***===========
+  call void @_ZdaPv(i8* %95) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) #5
+
+_ZdaPv
+==========***===========
+  br label %96	br
+==========***===========
+  %97 = load %class.CCC*** %c4, align 8	load
+==========***===========
+  %98 = icmp eq %class.CCC** %97, null	icmp
+==========***===========
+  br i1 %98, label %101, label %99	br
+==========***===========
+  %100 = bitcast %class.CCC** %97 to i8*	bitcast
+Cast Instruction found!%class.CCC***
+==========***===========
+  call void @_ZdaPv(i8* %100) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) #5
+
+_ZdaPv
+==========***===========
+  br label %101	br
+==========***===========
+  %102 = load i32* %1	load
+==========***===========
+  ret i32 %102	ret
+==========***===========
+  %104 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+          cleanup	landingpad
+==========***===========
+  %105 = extractvalue { i8*, i32 } %104, 0	extractvalue
+==========***===========
+  store i8* %105, i8** %2	store
+  store i8* %105, i8** %2
+  %105 = extractvalue { i8*, i32 } %104, 0
+
+  %2 = alloca i8*
+i8**i8*
+==========***===========
+  %106 = extractvalue { i8*, i32 } %104, 1	extractvalue
+==========***===========
+  store i32 %106, i32* %3	store
+  store i32 %106, i32* %3
+  %106 = extractvalue { i8*, i32 } %104, 1
+
+  %3 = alloca i32
+i32*i32
+==========***===========
+  call void @_ZdlPv(i8* %4) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) #5
+
+_ZdlPv
+Delete Instruction found!
+
+==========***===========
+  br label %123	br
+==========***===========
+  %108 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+          cleanup	landingpad
+==========***===========
+  %109 = extractvalue { i8*, i32 } %108, 0	extractvalue
+==========***===========
+  store i8* %109, i8** %2	store
+  store i8* %109, i8** %2
+  %109 = extractvalue { i8*, i32 } %108, 0
+
+  %2 = alloca i8*
+i8**i8*
+==========***===========
+  %110 = extractvalue { i8*, i32 } %108, 1	extractvalue
+==========***===========
+  store i32 %110, i32* %3	store
+  store i32 %110, i32* %3
+  %110 = extractvalue { i8*, i32 } %108, 1
+
+  %3 = alloca i32
+i32*i32
+==========***===========
+  call void @_ZdaPv(i8* %7) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdaPv(i8*) #5
+
+_ZdaPv
+==========***===========
+  br label %123	br
+==========***===========
+  %112 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+          cleanup	landingpad
+==========***===========
+  %113 = extractvalue { i8*, i32 } %112, 0	extractvalue
+==========***===========
+  store i8* %113, i8** %2	store
+  store i8* %113, i8** %2
+  %113 = extractvalue { i8*, i32 } %112, 0
+
+  %2 = alloca i8*
+i8**i8*
+==========***===========
+  %114 = extractvalue { i8*, i32 } %112, 1	extractvalue
+==========***===========
+  store i32 %114, i32* %3	store
+  store i32 %114, i32* %3
+  %114 = extractvalue { i8*, i32 } %112, 1
+
+  %3 = alloca i32
+i32*i32
+==========***===========
+  call void @_ZdlPv(i8* %16) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) #5
+
+_ZdlPv
+Delete Instruction found!
+
+==========***===========
+  br label %123	br
+==========***===========
+  %116 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+          cleanup	landingpad
+==========***===========
+  %117 = extractvalue { i8*, i32 } %116, 0	extractvalue
+==========***===========
+  store i8* %117, i8** %2	store
+  store i8* %117, i8** %2
+  %117 = extractvalue { i8*, i32 } %116, 0
+
+  %2 = alloca i8*
+i8**i8*
+==========***===========
+  %118 = extractvalue { i8*, i32 } %116, 1	extractvalue
+==========***===========
+  store i32 %118, i32* %3	store
+  store i32 %118, i32* %3
+  %118 = extractvalue { i8*, i32 } %116, 1
+
+  %3 = alloca i32
+i32*i32
+==========***===========
+  call void @_ZdlPv(i8* %28) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) #5
+
+_ZdlPv
+Delete Instruction found!
+
+==========***===========
+  br label %123	br
+==========***===========
+  %120 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+          cleanup	landingpad
+==========***===========
+  %121 = extractvalue { i8*, i32 } %120, 0	extractvalue
+==========***===========
+  store i8* %121, i8** %2	store
+  store i8* %121, i8** %2
+  %121 = extractvalue { i8*, i32 } %120, 0
+
+  %2 = alloca i8*
+i8**i8*
+==========***===========
+  %122 = extractvalue { i8*, i32 } %120, 1	extractvalue
+==========***===========
+  store i32 %122, i32* %3	store
+  store i32 %122, i32* %3
+  %122 = extractvalue { i8*, i32 } %120, 1
+
+  %3 = alloca i32
+i32*i32
+==========***===========
+  call void @_ZdlPv(i8* %33) #7	call
+Call Instruction found!
+; Function Attrs: nobuiltin nounwind
+declare void @_ZdlPv(i8*) #5
+
+_ZdlPv
+Delete Instruction found!
+
+==========***===========
+  br label %123	br
+==========***===========
+  %124 = load i8** %2	load
+==========***===========
+  %125 = load i32* %3	load
+==========***===========
+  %126 = insertvalue { i8*, i32 } undef, i8* %124, 0	insertvalue
+==========***===========
+  %127 = insertvalue { i8*, i32 } %126, i32 %125, 1	insertvalue
+==========***===========
+  resume { i8*, i32 } %127	resume
+==========***===========
+  %1 = alloca %class.CCC*, align 8	alloca
+==========***===========
+  store %class.CCC* %this, %class.CCC** %1, align 8	store
+  store %class.CCC* %this, %class.CCC** %1, align 8
+%class.CCC* %this
+
+  %1 = alloca %class.CCC*, align 8
+%class.CCC**%class.CCC*
+==========***===========
+  %2 = load %class.CCC** %1	load
+==========***===========
+  ret void	ret
+==========***===========
+  call void @__cxx_global_var_init()	call
+Call Instruction found!
+define internal void @__cxx_global_var_init() section ".text.startup" {
+  call void @_ZNSt8ios_base4InitC1Ev(%"class.std::ios_base::Init"* @_ZStL8__ioinit)
+  %1 = call i32 @__cxa_atexit(void (i8*)* bitcast (void (%"class.std::ios_base::Init"*)* @_ZNSt8ios_base4InitD1Ev to void (i8*)*), i8* getelementptr inbounds (%"class.std::ios_base::Init"* @_ZStL8__ioinit, i32 0, i32 0), i8* @__dso_handle) #1
+  ret void
+}
+
+__cxx_global_var_init
+==========***===========
+  ret void	ret

@@ -1,0 +1,159 @@
+Type: Basic: 0
+Derived: 1
+Composite: 1
+[ DW_TAG_subroutine_type ] [line 0, size 0, align 0, offset 0] [from  DW_TAG_subroutine_type]
+Type: Basic: 1
+Derived: 0
+Composite: 0
+[ DW_TAG_base_type ] [int] [line 0, size 32, align 32, offset 0, enc DW_ATE_signed]
+Type: Basic: 0
+Derived: 1
+Composite: 1
+[ DW_TAG_structure_type ] [line 98, size 0, align 0, offset 0] [decl] [from  DW_TAG_structure_type]
+Type: Basic: 0
+Derived: 1
+Composite: 1
+[ DW_TAG_structure_type ] [line 106, size 128, align 64, offset 0] [def] [from  DW_TAG_structure_type]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_member ] [_ZTS6ldiv_t] [quot] [line 108, size 64, align 64, offset 0] [from  DW_TAG_member]
+Type: Basic: 1
+Derived: 0
+Composite: 0
+[ DW_TAG_base_type ] [long int] [line 0, size 64, align 64, offset 0, enc DW_ATE_signed]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_member ] [_ZTS6ldiv_t] [rem] [line 109, size 64, align 64, offset 64] [from  DW_TAG_member]
+Type: Basic: 0
+Derived: 1
+Composite: 1
+[ DW_TAG_structure_type ] [line 118, size 128, align 64, offset 0] [def] [from  DW_TAG_structure_type]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_member ] [_ZTS7lldiv_t] [quot] [line 120, size 64, align 64, offset 0] [from  DW_TAG_member]
+Type: Basic: 1
+Derived: 0
+Composite: 0
+[ DW_TAG_base_type ] [long long int] [line 0, size 64, align 64, offset 0, enc DW_ATE_signed]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_member ] [_ZTS7lldiv_t] [rem] [line 121, size 64, align 64, offset 64] [from  DW_TAG_member]
+Type: Basic: 0
+Derived: 1
+Composite: 1
+[ DW_TAG_structure_type ] [node] [line 3, size 128, align 64, offset 0] [def] [from  DW_TAG_structure_type]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_member ] [_ZTS4node] [data] [line 4, size 32, align 32, offset 0] [from  DW_TAG_member]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_member ] [_ZTS4node] [next] [line 5, size 64, align 64, offset 64] [from  DW_TAG_member]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_pointer_type ] [line 0, size 64, align 64, offset 0] [from  DW_TAG_pointer_type]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_typedef ] [div_t] [line 102, size 0, align 0, offset 0] [from  DW_TAG_typedef]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_typedef ] [ldiv_t] [line 110, size 0, align 0, offset 0] [from  DW_TAG_typedef]
+Type: Basic: 0
+Derived: 1
+Composite: 0
+[ DW_TAG_typedef ] [lldiv_t] [line 122, size 0, align 0, offset 0] [from  DW_TAG_typedef]
+function main
+
+:
+
+--------------------------**********--------------------------
+  %head = alloca %struct.node*, align 8
+
+Printing variable decl for instruction allocahead,9
+ TName: 
+[ DW_TAG_pointer_type ] [line 0, size 64, align 64, offset 0] [from  DW_TAG_pointer_type];  is variable head of type  declared at :9
+
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  call void @llvm.dbg.declare(metadata !{%struct.node** %head}, metadata !42), !dbg !43
+
+Printing variable decl for instruction call
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  %1 = call noalias i8* @_Znwm(i64 16) #3, !dbg !43
+
+Printing variable decl for instruction call
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  %2 = bitcast i8* %1 to %struct.node*, !dbg !43
+
+Printing variable decl for instruction bitcast
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  store %struct.node* %2, %struct.node** %head, align 8, !dbg !43
+
+Printing variable decl for instruction store
+Printing variable decl for operands 
+head,9
+ TName: 
+[ DW_TAG_pointer_type ] [line 0, size 64, align 64, offset 0] [from  DW_TAG_pointer_type];  is variable head of type  declared at :9
+
+--------------------------**********--------------------------
+  %3 = load %struct.node** %head, align 8, !dbg !44
+
+Printing variable decl for instruction load
+Printing variable decl for operands 
+head,9
+ TName: 
+[ DW_TAG_pointer_type ] [line 0, size 64, align 64, offset 0] [from  DW_TAG_pointer_type];  is variable head of type  declared at :9
+
+--------------------------**********--------------------------
+  %4 = getelementptr inbounds %struct.node* %3, i32 0, i32 0, !dbg !44
+
+Printing variable decl for instruction getelementptr
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  store i32 5, i32* %4, align 4, !dbg !44
+
+Printing variable decl for instruction store
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  %5 = load %struct.node** %head, align 8, !dbg !45
+
+Printing variable decl for instruction load
+Printing variable decl for operands 
+head,9
+ TName: 
+[ DW_TAG_pointer_type ] [line 0, size 64, align 64, offset 0] [from  DW_TAG_pointer_type];  is variable head of type  declared at :9
+
+--------------------------**********--------------------------
+  %6 = getelementptr inbounds %struct.node* %5, i32 0, i32 1, !dbg !45
+
+Printing variable decl for instruction getelementptr
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  store %struct.node* null, %struct.node** %6, align 8, !dbg !45
+
+Printing variable decl for instruction store
+Printing variable decl for operands 
+
+--------------------------**********--------------------------
+  ret i32 0, !dbg !46
+
+Printing variable decl for instruction ret
+Printing variable decl for operands 
