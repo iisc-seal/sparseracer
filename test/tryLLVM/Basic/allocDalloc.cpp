@@ -5,5 +5,5 @@ void mopDealloc(int address, int typeSize, char* type, char* debugLoc){
 }
 
 void mopAlloc(int address, int memsize, char* type, char* debugLoc){
-  printf("%p of type %s allocated %d bytes at %s\n", address, type, memsize, debugLoc);
+  printf("allocated %d bytes of type %s at address %p (%s)\n", memsize, type, address, debugLoc);
 }

@@ -1,7 +1,8 @@
 export PATH=/home/anirudh/software/llvm/build/bin:$PATH
 clang++ mop.cpp -c -o mop.o
-clang++ -O0 -Xclang -load -Xclang /home/anirudh/software/llvm/build/lib/LLVMLoadStoreInstrument.so -g struct3.cpp -c -o struct3.o
-clang++ mop.o struct3.o -o struct3
+clang++ allocDalloc.cpp -c -o allocDalloc.o
+clang++ -O0 -Xclang -load -Xclang /home/anirudh/software/llvm/build/lib/LLVMLoadStoreInstrument.so -Xclang -load -Xclang /home/anirudh/software/llvm/build/lib/LLVMAllocFreeInstrument.so -g struct3.cpp -c -o struct3.o
+clang++ mop.o allocDalloc.o struct3.o -o struct3
 
 #-emit-llvm -S struct3.cpp -o struct3.bc
 # opt -load /home/anirudh/software/llvm/build/lib/LLVMLoadStoreInstrument.so -offline -load /home/anirudh/software/llvm/build/lib/LLVMAllocFreeInstrument.so -logAllocDealloc < struct3.bc > struct3.instrument.bc

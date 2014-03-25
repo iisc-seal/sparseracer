@@ -20,6 +20,9 @@
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/CallingConv.h"
 #include "llvm/Pass.h"
+#include "llvm/PassManager.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Function.h"
@@ -255,6 +258,14 @@ namespace {
 }
   
 char AllocFreeInstrument::ID = 0;
+
+static void registerMyPass(const PassManagerBuilder &,
+                           PassManagerBase &PM) {
+  PM.add(new AllocFreeInstrument());
+}
+static RegisterStandardPasses
+RegisterMyPass(PassManagerBuilder::EP_EnabledOnOptLevel0,
+	       registerMyPass);
 
 static RegisterPass<AllocFreeInstrument>
 X("logAllocDealloc", "Instrument memory allocations and deallocations");
