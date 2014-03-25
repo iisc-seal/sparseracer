@@ -21,38 +21,89 @@
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/CallingConv.h"
 #include "llvm/Pass.h"
+#include "llvm/PassManager.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/IR/LLVMContext.h"
 //#include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/Analysis/ValueTracking.h"
 
 #include <stdint.h>
 using namespace llvm;
 
+
 namespace {
   // TsanOfflineInstrument - The second implementation with getAnalysisUsage implemented.
-  struct TsanOfflineInstrument : public ModulePass { // {{{1
+  struct LoadStoreInstrument : public ModulePass { // {{{1
     static char ID; // Pass identification, replacement for typeid
     Constant *MopFn;
-    TsanOfflineInstrument() : ModulePass(ID) {}
+    Type *IntptrTy;
+    LLVMContext *Context;
+    const DataLayout *DL;
+
+
+    LoadStoreInstrument() : ModulePass(ID) {}
+
+    std::string getTypeAsString(Type* T){
+      std::string type_str;
+      llvm::raw_string_ostream rso(type_str);
+      T->print(rso);
+      return rso.str();
+    }
+
+    std::string getFieldName(Value *Addr){
+      if (GEPOperator *GEP = dyn_cast<GEPOperator>(Addr)) 
+	return getTypeAsString(GEP->getPointerOperand()->getType());
+      
+      return "";
+    }
+
+    std::string getSourceInfoAsString(Instruction *I, std::string name){
+      if (MDNode *N = I->getMetadata("dbg")) {  // Here I is an LLVM instruction                            
+	DILocation Loc(N);                      // DILocation is in DebugInfo.h                             
+	std::string Line = std::to_string(Loc.getLineNumber());
+	std::string File = Loc.getFilename().str();
+	std::string Dir = Loc.getDirectory().str();
+	return (Dir + "/" + File + ":" + Line + "(" + name + ")");
+      }
+      return name;
+    }
+
 
     virtual bool runOnModule(Module &M) {
-      LLVMContext &Context = M.getContext();
-      PointerType *UIntPtr = Type::getInt32PtrTy(Context);
-      Type *Void = Type::getVoidTy(Context);
-      MopFn = M.getOrInsertFunction("_Z3mopiii", Void,
-                                    UIntPtr, Type::getInt32Ty(Context),Type::getInt32Ty(Context),
-                                    (Type*)0);
+      
+      DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
+      if (!DLP)
+	return false;
+      DL = &DLP->getDataLayout();
+
+      Context = &(M.getContext());
+      int LongSize = DL->getPointerSizeInBits();
+      IntptrTy = Type::getIntNTy(*Context, LongSize);
+
+      Type *Void = Type::getVoidTy(*Context);
+      // MopFn = M.getOrInsertFunction("_Z3mopiii", Void,
+      //                               UIntPtr, Type::getInt32Ty(*Context),Type::getInt32Ty(*Context),
+      //                               (Type*)0);
+      const Type *SBP = Type::getInt8PtrTy(*Context);
+      MopFn = M.getOrInsertFunction("_Z13mopInstrumentiiPcS_", Void,
+				       IntptrTy, Type::getInt64Ty(*Context),
+				       SBP, SBP,
+				       (Type*)0);
+
       Function *tmp = cast<Function>(MopFn);
       tmp->setCallingConv(CallingConv::C);
       for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
         if (F->isDeclaration()) continue;
           for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-            TsanOfflineInstrument::runOnBasicBlock(BB);
+            LoadStoreInstrument::runOnBasicBlock(BB);
           }
       }
       return true;
@@ -60,53 +111,105 @@ namespace {
 
     void Instrument(BasicBlock::iterator &BI, bool isStore) {
       std::vector<Value*> Args(3);
+
       llvm::Instruction &IN = *BI;
       LLVMContext &Context = BI->getContext();
       errs() << "Dumping Instruction: ";
       IN.dump();
 
-      
+      IRBuilder<> IRB(BI);
 
-      if (isStore) {
-        Args[0] = (static_cast<StoreInst&>(IN).getPointerOperand());
-	errs() << "Dumping Pointer Operand Type: ";
-	Args[0]->getType()->dump();
-	errs()<<"\n";
-      } else {
-        Args[0] = (static_cast<LoadInst&>(IN).getPointerOperand());
-	errs() << "Dumping Pointer Operand Type: ";
-	Args[0]->getType()->dump();
-	errs()<<"\n";
-      }
+      // Get Address being accessed
+      Value *Addr;
+      if(isStore)
+	Addr = (static_cast<StoreInst&>(IN).getPointerOperand());
+      else
+	Addr = (static_cast<LoadInst&>(IN).getPointerOperand());
       
-      
-
-      Args[2] = ConstantInt::get(Type::getInt32Ty(BI->getContext()), isStore); 
-      if (Args[0]->getType() == Type::getInt32PtrTy(Context)) {
-      } else {
-        Args[0] = BitCastInst::CreatePointerCast(Args[0], Type::getInt32PtrTy(BI->getContext()), "", BI);
-      }
-      
-      int size = 32;
-      DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
-      if (!DLP)
+      // We don't care about addresses on the stack
+      if(dyn_cast<AllocaInst>(Addr))
 	return;
-      const DataLayout *DL = &DLP->getDataLayout();
 
-      if (Args[0]->getType()->isSized()) {
-        size = DL->getTypeStoreSizeInBits(Args[0]->getType());
-      }
-      Args[1] = ConstantInt::get(Type::getInt32Ty(BI->getContext()), size/8); 
+      Type *OrigPtrTy = Addr->getType();
+      Type *OrigTy = cast<PointerType>(OrigPtrTy)->getElementType();
 
-      errs() << "Dumping Args[0]: ";
-      Args[0]->dump();
-      errs() << "Dumping Args[1]: ";
-      Args[1]->dump();
-      errs() << "Dumping Args[2]: ";
-      Args[2]->dump();
-      Value *V = CallInst::Create(MopFn, Args, "", BI);
-      errs() << "Dumping CallInst: ";
-      V->dump();
+      // Get size of type being freed
+      assert(OrigTy->isSized());
+      uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
+      errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
+      
+      Value *Size =  ConstantInt::get(Type::getInt64Ty(Context), TypeSize/8);
+      assert((TypeSize % 8) == 0);
+
+      //Cast the address being written to into an int   
+      Value *AddrLong = IRB.CreatePointerCast(Addr, IntptrTy);
+      
+      //Create a string representing the field being written to
+      std::string fieldName = getFieldName(Addr);
+      
+      //Create a string representing the underlying object being written to
+      Value *UnderlyingObject = GetUnderlyingObject(Addr, DL, 0);
+      Type *UnderlyingObjectType = UnderlyingObject->getType();
+
+      std::string underlying = getTypeAsString(UnderlyingObjectType);
+      std::string original = getTypeAsString(OrigPtrTy);
+
+      //Create a string representing the type being written to  
+      Value *TypeString = IRB.CreateGlobalString(original+"("+underlying+","+ fieldName +")");
+
+      //Get a pointer to the string
+      Value *TypeStringPtr = IRB.CreateBitCast(TypeString, IRB.getInt8PtrTy());
+
+      //Get a string representing source line number information
+      std::string tag = "load";
+      if(isStore)
+	tag = "store";
+      Value *DebugLocationString = IRB.CreateGlobalString(getSourceInfoAsString(BI, tag));
+
+      //Get a pointer to the string
+      Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
+
+      IRB.CreateCall4(MopFn, AddrLong, Size, TypeStringPtr, DebugStringPtr);
+
+      // if (isStore) {
+      //   Args[0] = (static_cast<StoreInst&>(IN).getPointerOperand());
+      // 	errs() << "Dumping Store Pointer Operand Type: ";
+      // 	const Value *BV = GetUnderlyingObject(Args[0], DL, 0);
+      // 	BV->getType()->dump();
+      // 	errs()<<"\n";
+      // } else {
+      //   Args[0] = (static_cast<LoadInst&>(IN).getPointerOperand());
+      // 	errs() << "Dumping Pointer Operand Type: ";
+      // 	Args[0]->stripPointerCasts()->getType()->dump();
+      // 	errs()<<"\n";
+      // }
+      
+      // Args[2] = ConstantInt::get(Type::getInt32Ty(BI->getContext()), isStore); 
+      // if (Args[0]->getType() == Type::getInt32PtrTy(Context)) {
+      // } else {
+      //   Args[0] = BitCastInst::CreatePointerCast(Args[0], Type::getInt32PtrTy(BI->getContext()), "", BI);
+      // }
+      
+      // int size = 32;
+      // DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
+      // if (!DLP)
+      // 	return;
+      // const DataLayout *DL = &DLP->getDataLayout();
+
+      // if (Args[0]->getType()->isSized()) {
+      //   size = DL->getTypeStoreSizeInBits(Args[0]->getType());
+      // }
+      // Args[1] = ConstantInt::get(Type::getInt32Ty(BI->getContext()), size/8); 
+
+      // errs() << "Dumping Args[0]: ";
+      // Args[0]->dump();
+      // errs() << "Dumping Args[1]: ";
+      // Args[1]->dump();
+      // errs() << "Dumping Args[2]: ";
+      // Args[2]->dump();
+      // Value *V = CallInst::Create(MopFn, Args, "", BI);
+      // errs() << "Dumping CallInst: ";
+      // V->dump();
     }
 
     virtual bool runOnBasicBlock(Function::iterator &BB) {
@@ -116,12 +219,12 @@ namespace {
         if (isa<LoadInst>(BI)) {
           errs() << "<";
           // Instrument LOAD here
-          TsanOfflineInstrument::Instrument(BI, false);
+          LoadStoreInstrument::Instrument(BI, false);
         } else {
           if (isa<StoreInst>(BI)) {
             errs() << ">";
             // Instrument STORE here
-            TsanOfflineInstrument::Instrument(BI, true);
+            LoadStoreInstrument::Instrument(BI, true);
           } else {
             errs() << " ";
           }
@@ -138,278 +241,21 @@ namespace {
   };
   // }}}
 }
-  // typedef std::vector <Constant*> Passport;
-//   struct TsanOnlineInstrument : public ModulePass { // {{{1
-//     static char ID; // Pass identification, replacement for typeid
-//     int BBCount, ModuleFunctionCount, ModuleMopCount, TLEBIndex;
-//     Value *BBPassportGlob;
-//     int BBNumMops;
-//     Constant *MopFn, *BBStartFn, *BBEndFn, *BBFlushFn, *RtnCallFn, *RtnExitFn;
-//     const PointerType *UIntPtr, *MopTyPtr, *Int8Ptr;
-//     const Type *Int32;
-//     const Type *Void;
-//     const StructType *MopTy;
-//     const ArrayType *BBPassportType, *BBExtPassportType;
-//     const Type *TLEBTy, *TLEBPtrType;
-//     static const int kTLEBSize = 100;
-//     static const int kBBAddr = 1000;
-//     static const int kFNV1aPrime = 6733;
-//     int ModuleID;
 
-//     TsanOnlineInstrument() : ModulePass(ID) { }
-
-//     uintptr_t getAddr(int bb_index, int mop_index) {
-//       return ((ModuleID *kBBAddr) + bb_index) * kBBAddr + mop_index;
-//     }
-
-//     uintptr_t getModuleID(Module &M) {
-//       uintptr_t result = 0;
-//       char tmp;
-//       std::string name = M.getModuleIdentifier();
-//       for (size_t i = 0; i < name.size(); i++) {
-//         tmp = name[i];
-//         result = (result ^ tmp) % 512;
-//         result = (result * kFNV1aPrime) % 512;
-//       }
-//       return result;
-//     }
-
-//     virtual bool runOnModule(Module &M) {
-//       BBCount = 0;
-//       ModuleFunctionCount = 0;
-//       ModuleMopCount = 0;
-//       ModuleID = getModuleID(M);
-//       LLVMContext &Context = M.getContext();
-//       UIntPtr = Type::getInt32PtrTy(Context);
-//       Int32 = Type::getInt32Ty(Context);
-//       Int8Ptr = PointerType::get(Type::getInt8Ty(Context), 0);
-//       Void = Type::getVoidTy(Context);
-//       MopTy = StructType::get(Context, Int32, Int32, Int32, NULL);
-//       MopTyPtr = PointerType::get(MopTy, 0);
-//       BBExtPassportType = ArrayType::get(MopTy, kTLEBSize);
-//       TLEBTy = ArrayType::get(UIntPtr, kTLEBSize);
-//       TLEBPtrType = PointerType::get(UIntPtr, 0);
-//       MopFn = M.getOrInsertFunction("mop", Void,
-//                                     UIntPtr, Int32, Int32,
-//                                     (Type*)0);
-//       BBStartFn = M.getOrInsertFunction("bb_start", TLEBPtrType, (Type*)0);
-//       BBEndFn = M.getOrInsertFunction("bb_end",
-//                                       Void,
-//                                       MopTyPtr, Int32, (Type*)0);
-//       BBFlushFn = M.getOrInsertFunction("bb_flush",
-//                                         TLEBPtrType,
-//                                         MopTyPtr, Int32, Int32, (Type*)0);
-//       RtnCallFn = M.getOrInsertFunction("rtn_call",
-//                                         Void,
-//                                         Int8Ptr, (Type*)0);
-//       RtnExitFn = M.getOrInsertFunction("rtn_exit",
-//                                         Void, (Type*)0);
-//       int nBB = 1, FnBB = 1;
-//       for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-//         ModuleFunctionCount++;
-//         FnBB = nBB;
-//         errs() << "F" << ModuleFunctionCount << ": " << F->getNameStr() << "\n";
-//         if (F->isDeclaration()) continue;
-// //        DumpDebugInfo(getAddr(FnBB, 0), *(F->begin()->begin()));
-//         Function *FunPtr = F;
-//         for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-//           nBB++;
-//           runOnBasicBlock(M, BB, FunPtr);
-//           FunPtr = NULL;
-//         }
-//         Instruction* First = F->begin()->begin();
-//         std::vector<Value*> inst(1);
-//         inst[0] = BitCastInst::CreatePointerCast(F, Int8Ptr, "fcast", First);
-//         CallInst::Create(RtnCallFn, inst.begin(), inst.end(), "", First);
-//       }
-//       return true;
-//     }
-
-//     void DumpDebugInfo(uintptr_t addr, Instruction &IN) {
-//       DILocation Loc(IN.getMetadata("dbg"));
-//       errs() << "->";
-//       errs().write_hex(addr);
-//       errs() << "|" <<  IN.getParent()->getParent()->getNameStr() << "|" <<
-//                 Loc.getFilename() << "|" << Loc.getLineNumber() << "|" <<
-//                 Loc.getDirectory() << "\n";
-//     }
-
-//     bool MakePassport(Module &M, Function::iterator &BB) {
-//       Passport passport;
-//       bool isStore, isMop;
-//       int size;
-//       BBNumMops = 0;
-//       for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-//            BI != BE; ++BI) {
-//         isMop = false;
-//         if (isa<LoadInst>(BI)) {
-//           isStore = false;
-//           isMop = true;
-//         }
-//         if (isa<StoreInst>(BI)) {
-//           isStore = true;
-//           isMop = true;
-//         }
-//         if (isMop) {
-//           size = 32;
-//           BBNumMops++;
-//           ModuleMopCount++;
-//           Value *MopPtr;
-//           llvm::Instruction &IN = *BI;
-//           DumpDebugInfo(getAddr(BBCount, BBNumMops), IN);
-//           if (isStore) {
-//             MopPtr = (static_cast<StoreInst&>(IN).getPointerOperand());
-//           } else {
-//             MopPtr = (static_cast<LoadInst&>(IN).getPointerOperand());
-//           }
-//           if (MopPtr->getType() != UIntPtr) {
-//             Value *Tmp = BitCastInst::CreatePointerCast(MopPtr, UIntPtr, "", BI);
-//             MopPtr = Tmp;
-//           }
-//           if (MopPtr->getType()->isSized()) {
-//             size = getAnalysis<TargetData>().getTypeStoreSizeInBits(
-//                                                  MopPtr->getType());
-//           }
-
-//           std::vector<Constant*> mop;
-//           mop.push_back(ConstantInt::get(Int32, getAddr(BBCount, BBNumMops)));
-//           mop.push_back(ConstantInt::get(Int32, size/8));
-//           mop.push_back(ConstantInt::get(Int32, isStore));
-//           passport.push_back(ConstantStruct::get(MopTy, mop));
-//         }
-//       }
-//       if (BBNumMops) {
-//         BBPassportType = ArrayType::get(MopTy, BBNumMops);
-//         BBPassportGlob = new GlobalVariable(
-//             M,
-//             BBPassportType,
-//             false,
-//             GlobalValue::InternalLinkage,
-//             ConstantArray::get(BBPassportType, passport),
-//             "bb_passport",
-//             false, 0
-//             );
-//         return true;
-//       }
-//       return false;
-//     }
-
-//     void InstrumentMop(BasicBlock::iterator &BI, bool isStore,
-//                        Value *TLEB) {
-//       std::vector<Value*> Args(3);
-//       llvm::Instruction &IN = *BI;
-//       if (isStore) {
-//         Args[0] = (static_cast<StoreInst&>(IN).getPointerOperand());
-//       } else {
-//         Args[0] = (static_cast<LoadInst&>(IN).getPointerOperand());
-//       }
-//       Args[2] = ConstantInt::get(Int32, isStore);
-//       Args[0]->getType()->dump();
-//       if (Args[0]->getType() == UIntPtr) {
-//       } else {
-//         Args[0] = BitCastInst::CreatePointerCast(Args[0], UIntPtr, "", BI);
-//       }
-//       int size = 32;
-//       if (Args[0]->getType()->isSized()) {
-//         size = getAnalysis<TargetData>().getTypeStoreSizeInBits(Args[0]->getType());
-//       }
-//       Args[1] = ConstantInt::get(Type::getInt32Ty(BI->getContext()), size/8);
-//       //CallInst::Create(MopFn, Args.begin(), Args.end(), "", BI);
-
-//       std::vector <Value*> idx;
-//       idx.push_back(ConstantInt::get(Int32, TLEBIndex));
-//       Value *TLEBPtr =
-//           GetElementPtrInst::Create(TLEB,
-//                                     idx.begin(),
-//                                     idx.end(),
-//                                     "",
-//                                     BI);
-//       new StoreInst(Args[0], TLEBPtr, BI);
-//       TLEBIndex++;
-//     }
-
-//     bool runOnBasicBlock(Module &M, Function::iterator &BB,
-//                          Function *FunPtrOrNull) {
-//       BBCount++;
-//       TLEBIndex = 0;
-//       Value *TLEB = NULL;
-//       if (MakePassport(M, BB)) {
-//       //if (BBNumMops == 0) return true;  // no instrumentation needed
-//         BasicBlock::iterator First = BB->begin();
-//         errs() << "BI: " << First->getOpcodeName() << "\n";
-//         std::vector <Value*> Args(3);
-//         std::vector <Value*> idx;
-//         idx.push_back(ConstantInt::get(Int32, 0));
-//         idx.push_back(ConstantInt::get(Int32, 0));
-//         Args[0] =
-//           GetElementPtrInst::Create(BBPassportGlob,
-//                                       idx.begin(),
-//                                       idx.end(),
-//                                       "",
-//                                       First);
-
-//         Args[1] = ConstantInt::get(Int32, BBNumMops);
-//         if (FunPtrOrNull) {
-//           Args[2] = BitCastInst::CreatePointerCast(FunPtrOrNull, Int32, "fcast", First);
-//         } else {
-//           Args[2] = ConstantInt::get(Int32, getAddr(BBCount, 0));
-//         }
-//         TLEB = CallInst::Create(BBFlushFn, Args.begin(), Args.end(), "",
-//                            First);
-//       }
-
-//       errs() << "========BB("<< BBCount<<")===========\n";
-
-//       for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-//            BI != BE; ++BI) {
-//         if (isa<LoadInst>(BI)) {
-//           errs() << "<";
-//           // Instrument LOAD.
-//           InstrumentMop(BI, false, TLEB);
-//         } else {
-//           if (isa<StoreInst>(BI)) {
-//             errs() << ">";
-//             // Instrument STORE.
-//             InstrumentMop(BI, true, TLEB);
-//           } else {
-//             if (isa<CallInst>(BI)) {
-//               std::vector<Value*> inst(1);
-//               llvm::Instruction &IN = *BI;
-//               if (static_cast<CallInst&>(IN).getCalledFunction() == BBFlushFn) {
-//                 // TODO(glider): we shouldn't encounter BBFlushFn at all.
-//                 continue;
-//               }
-
-//             } else {
-//               if (isa<ReturnInst>(BI)) {
-//                 errs() << "-";
-//                 std::vector<Value*> inst(0);
-//                 CallInst::Create(RtnExitFn, inst.begin(), inst.end(), "", BI);
-//               } else {
-//                 errs() << " ";
-//               }
-//             }
-//           }
-//         }
-//         errs() << "BI: " << BI->getOpcodeName() << "\n";
-//       }
-//       errs() << "========BB===========\n";
-
-//       return true;
-//     }
-//   private:
-//     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
-//       AU.addRequired<TargetData>();
-//     }
-//   };
-//   // }}}
-// }
-
-char TsanOfflineInstrument::ID = 0;
+char LoadStoreInstrument::ID = 0;
 // char TsanOnlineInstrument::ID = 0;
 
-static RegisterPass<TsanOfflineInstrument>
-X("offline", "TSAN Offline");
+static void registerMyPass(const PassManagerBuilder &,
+                           PassManagerBase &PM) {
+  PM.add(new LoadStoreInstrument());
+}
+
+RegisterStandardPasses
+RegisterMyPass(PassManagerBuilder::EP_EnabledOnOptLevel0,
+               registerMyPass);
+
+static RegisterPass<LoadStoreInstrument>
+X("loadstoreinstr", "Load Store Instrumentation");
 
 // static RegisterPass<TsanOnlineInstrument>
 // Y("online", "TSAN Online");

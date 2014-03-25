@@ -21,6 +21,8 @@
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/CallingConv.h"
 #include "llvm/Pass.h"
+#include "llvm/PassManager.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 //#include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/IR/Type.h"
@@ -46,6 +48,8 @@ namespace {
     FreeInstrument() : ModulePass(ID) {}
 
     virtual bool runOnModule(Module &M) {
+
+      errs() << "Running free instrument! \n";  
 
     DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
     if (!DLP)
@@ -85,7 +89,9 @@ namespace {
   }
 
   void Instrument(BasicBlock::iterator &BI) {
-    std::vector<Value*> Args(3);
+
+    errs() << "Instrumenting basic block!" << "\n";
+
     llvm::Instruction &IN = *BI;
     errs() << "Dumping Instruction: ";
     IN.dump();
@@ -173,11 +179,25 @@ namespace {
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.addRequired<DataLayoutPass>();
     }
-  };
-  
+  };  
 }
   
 char FreeInstrument::ID = 0;
+
+
+
+static void registerMyPass(const PassManagerBuilder &,
+                           PassManagerBase &PM) {
+  PM.add(new FreeInstrument());
+}
+
+RegisterStandardPasses
+RegisterMyPass(PassManagerBuilder::EP_EnabledOnOptLevel0,
+	       registerMyPass);
+
+// RegisterPass<FunctionInfo> X("function-info", "Function Information");
+
+
 
 static RegisterPass<FreeInstrument>
 X("freeinstr", "Instrument Frees");

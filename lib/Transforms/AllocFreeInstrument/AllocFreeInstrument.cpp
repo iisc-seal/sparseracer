@@ -25,6 +25,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
@@ -32,9 +33,6 @@
 #include <stdint.h>
 using namespace llvm;
 
-Type *IntptrTy;
-LLVMContext *Context;
-const DataLayout *DL;
 
 namespace {
 
@@ -48,6 +46,11 @@ namespace {
     std::string mallocName;
     std::string newName;
     std::string arrayNewName;
+    Type *IntptrTy;
+    LLVMContext *Context;
+    const DataLayout *DL;
+
+
     AllocFreeInstrument() : ModulePass(ID) {
       initializeFunctionNames();
     }
@@ -74,14 +77,14 @@ namespace {
 
     Type *Void = Type::getVoidTy(*Context);
     const Type *SBP = Type::getInt8PtrTy(*Context);
-    
+
     MAllocFn = M.getOrInsertFunction("_Z8mopAllociiPcS_", Void,
                                   IntptrTy, Type::getInt64Ty(*Context), 
-				  SBP, SBP,
+    				  SBP, SBP,
                                   (Type*)0);
     MDallocFn = M.getOrInsertFunction("_Z10mopDeallociiPcS_", Void,
-                                  IntptrTy, Type::getInt32Ty(*Context), 
-				  SBP, SBP,
+                                  IntptrTy, Type::getInt64Ty(*Context), 
+    				  SBP, SBP,
                                   (Type*)0);
     (cast<Function>(MAllocFn))->setCallingConv(CallingConv::C);
     (cast<Function>(MDallocFn))->setCallingConv(CallingConv::C);
@@ -146,10 +149,10 @@ namespace {
     uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
     errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
 
-    Value *Size =  ConstantInt::get(Type::getInt32Ty(*Context), TypeSize/8);
+    Value *Size =  ConstantInt::get(Type::getInt64Ty(*Context), TypeSize/8);
     assert((TypeSize % 8) == 0);
     
-    //Cast the address being written to into an int *
+    //Cast the address being written to into an int
     Value *AddrLong = IRB.CreatePointerCast(Addr, IntptrTy);
 
     //Create a string representing the type being written to
@@ -172,10 +175,16 @@ namespace {
 
   void InstrumentAlloc(BasicBlock::iterator &BI, std::string fName) {
 
+    // This is fragile in the sense that it assumes that a cast
+    // instruction always follows an alloc instruction where the
+    // address returned by the alloc is cast to the type of the
+    // register. The pass will break if the assumption does not hold.
+
     Type *OrigTy;
     Instruction* Original = BI;
     ++BI; 
     BitCastInst *Inst;
+    assert(dyn_cast<BitCastInst>(BI));
     if ((Inst = dyn_cast<BitCastInst>(BI))) {
       OrigTy = Inst->getType();
       errs() << "\n";
