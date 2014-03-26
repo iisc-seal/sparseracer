@@ -80,12 +80,13 @@ namespace {
 
     Type *Void = Type::getVoidTy(*Context);
     const Type *SBP = Type::getInt8PtrTy(*Context);
-
-    MAllocFn = M.getOrInsertFunction("_Z8mopAllociiPcS_", Void,
+    std::string allocInstrFnName("_Z8mopAllociiPcS_");
+    std::string dallocInstrFnName("_Z10mopDeallociiPcS_");
+    MAllocFn = M.getOrInsertFunction("mopAlloc", Void,
                                   IntptrTy, Type::getInt64Ty(*Context), 
     				  SBP, SBP,
                                   (Type*)0);
-    MDallocFn = M.getOrInsertFunction("_Z10mopDeallociiPcS_", Void,
+    MDallocFn = M.getOrInsertFunction("mopDealloc", Void,
                                   IntptrTy, Type::getInt64Ty(*Context), 
     				  SBP, SBP,
                                   (Type*)0);

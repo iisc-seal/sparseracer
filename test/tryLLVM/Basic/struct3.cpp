@@ -15,5 +15,5 @@ int main(){
   p->nested.f2 = new int;
   printf("%p\n", p->nested.f2);
   *(p->nested.f2) = 3;
-  
+  //return 0;
 }

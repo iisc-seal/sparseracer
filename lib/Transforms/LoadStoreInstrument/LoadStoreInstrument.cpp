@@ -35,12 +35,14 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/ValueTracking.h"
 
+#include<set>
+
 #include <stdint.h>
 using namespace llvm;
 
 
 namespace {
-  // TsanOfflineInstrument - The second implementation with getAnalysisUsage implemented.
+
   struct LoadStoreInstrument : public ModulePass { // {{{1
     static char ID; // Pass identification, replacement for typeid
     Constant *MopFn;
@@ -48,6 +50,16 @@ namespace {
     LLVMContext *Context;
     const DataLayout *DL;
 
+    std::set<std::string> InstrumentedTypes = {
+      "product",
+      "nsFrameSelection",
+      "nsGenericHTMLElement",
+      "nsHTMLEditor",
+      "nsHTMLDocument",
+      "nsWindow",
+      "PresShell"
+    };
+    
 
     LoadStoreInstrument() : ModulePass(ID) {}
 
@@ -93,7 +105,8 @@ namespace {
       //                               UIntPtr, Type::getInt32Ty(*Context),Type::getInt32Ty(*Context),
       //                               (Type*)0);
       const Type *SBP = Type::getInt8PtrTy(*Context);
-      MopFn = M.getOrInsertFunction("_Z13mopInstrumentiiPcS_", Void,
+      std::string mopName("_Z13mopInstrumentiiPcS_");
+      MopFn = M.getOrInsertFunction("mopInstrument", Void,
 				       IntptrTy, Type::getInt64Ty(*Context),
 				       SBP, SBP,
 				       (Type*)0);
@@ -117,8 +130,6 @@ namespace {
       errs() << "Dumping Instruction: ";
       IN.dump();
 
-      IRBuilder<> IRB(BI);
-
       // Get Address being accessed
       Value *Addr;
       if(isStore)
@@ -140,9 +151,6 @@ namespace {
       
       Value *Size =  ConstantInt::get(Type::getInt64Ty(Context), TypeSize/8);
       assert((TypeSize % 8) == 0);
-
-      //Cast the address being written to into an int   
-      Value *AddrLong = IRB.CreatePointerCast(Addr, IntptrTy);
       
       //Create a string representing the field being written to
       std::string fieldName = getFieldName(Addr);
@@ -153,6 +161,29 @@ namespace {
 
       std::string underlying = getTypeAsString(UnderlyingObjectType);
       std::string original = getTypeAsString(OrigPtrTy);
+
+      bool flag = false;
+      
+      std::set<std::string>::iterator it;
+      for (it = InstrumentedTypes.begin(); it != InstrumentedTypes.end(); ++it){
+	std::string current = *it; 
+	std::size_t found = underlying.find(current);
+	if (found==std::string::npos){
+	  continue;
+	}
+	else{
+	  flag = true;
+	  break;
+	}
+      }
+
+      if(false == flag)
+	return;
+
+      //Start writing out bitcode instructions to perform the instrumentation
+      IRBuilder<> IRB(BI);
+      //Cast the address being written to into an int   
+      Value *AddrLong = IRB.CreatePointerCast(Addr, IntptrTy);
 
       //Create a string representing the type being written to  
       Value *TypeString = IRB.CreateGlobalString(original+"("+underlying+","+ fieldName +")");
