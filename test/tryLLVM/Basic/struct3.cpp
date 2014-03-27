@@ -1,4 +1,5 @@
 #include<cstdio>
+
 struct product{
   int serialNum;
   int price;

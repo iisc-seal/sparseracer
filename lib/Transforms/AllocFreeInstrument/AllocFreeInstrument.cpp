@@ -49,6 +49,8 @@ namespace {
     std::string mallocName;
     std::string newName;
     std::string arrayNewName;
+    std::string mozallocName;
+    std::string mozfreeName;
     Type *IntptrTy;
     LLVMContext *Context;
     const DataLayout *DL;
@@ -63,6 +65,8 @@ namespace {
       delName = std::string("_ZdlPv");
       arrayDelName = std::string("_ZdaPv");
       mallocName = std::string("malloc");
+      mozallocName = std::string("moz_xmalloc");
+      mozfreeName = std::string("moz_free");
       newName = std::string("_Znwm");
       arrayNewName = std::string("_Znam");
     }
@@ -128,8 +132,8 @@ namespace {
     
     // Output instruction currently being processed
     llvm::Instruction &IN = *BI;
-    errs() << "Dumping Instruction: ";
-    IN.dump();
+    //errs() << "Dumping Instruction: ";
+    //IN.dump();
 
     // Get Address and being freed
     Value* Addr = IN.getOperand(0)->stripPointerCasts();
@@ -173,11 +177,11 @@ namespace {
 
     //Track if this is an allocate (or deallocate)
     // Value *Allocate = ConstantInt::get(Type::getInt32Ty(*Context), isAlloc);
-
+    errs() << "Got here! \n";
     IRB.CreateCall4(MDallocFn, AddrLong, Size, TypeStringPtr, DebugStringPtr);
   }
 
-  void InstrumentAlloc(BasicBlock::iterator &BI, std::string fName) {
+    void InstrumentAlloc(BasicBlock::iterator &BI, std::string fName) {
 
     // This is fragile in the sense that it assumes that a cast
     // instruction always follows an alloc instruction where the
@@ -186,6 +190,13 @@ namespace {
 
     Type *OrigTy;
     Instruction* Original = BI;
+    
+    // for (Value::use_iterator i = Original->use_begin(), e = Original->use_end(); i != e; ++i)
+    //   if (Instruction *Inst = dyn_cast<Instruction>(*i)) {
+    // 	errs() << "F is used in instruction:\n";
+    // 	errs() << *Inst << "\n";
+    //   }
+
     ++BI; 
     BitCastInst *Inst;
     assert(dyn_cast<BitCastInst>(BI));
@@ -215,38 +226,46 @@ namespace {
 
     //Get a pointer to the string                                                                         
     Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
-
+    errs() <<"Alloc! \n";
     IRB.CreateCall4(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr);
-
-    BI--;
-    
+    errs() <<"Inserted Alloc instr call! \n";
+        
   }
 
   virtual bool runOnBasicBlock(Function::iterator &BB) {
-    errs() << "========BB===========\n";
+    //errs() << "========BB===========\n";
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
          BI != BE; ++BI) { 
+      bool flag = false;
+      if(flag)
+	BI->dump();
+    
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  
 	  if(freeName.compare(name) == 0 || delName.compare(name) == 0
-	     || arrayDelName.compare(name) == 0){
+	     || arrayDelName.compare(name) == 0 || mozfreeName.compare(name) == 0){
+	    BI->dump();
 	    AllocFreeInstrument::InstrumentDealloc(BI, name);
 	  }
 	  if(mallocName.compare(name) == 0 || newName.compare(name) == 0
-	     || arrayNewName.compare(name) == 0){
+	     || arrayNewName.compare(name) == 0 || mozallocName.compare(name) == 0){
+	    BI->dump();
 	    AllocFreeInstrument::InstrumentAlloc(BI, name);
+	    errs() << "Alloc insert success!" ;
+	    flag = true;
+	    BI->dump();
 	  }
 	}
       } 
       else {
-          errs() << " ";
+	//errs() << " ";
       }
       
-      errs() << "BI: " << BI->getOpcodeName() << "\n";
+      //errs() << "BI: " << BI->getOpcodeName() << "\n";
     }
-    errs() << "========BB===========\n";
+    //errs() << "========BB===========\n";
     return true;
   }
   

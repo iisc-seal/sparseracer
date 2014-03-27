@@ -51,13 +51,14 @@ namespace {
     const DataLayout *DL;
 
     std::set<std::string> InstrumentedTypes = {
-      "product",
+      //      "product",
       "nsFrameSelection",
       "nsGenericHTMLElement",
       "nsHTMLEditor",
       "nsHTMLDocument",
       "nsWindow",
       "PresShell"
+      "nsGlobalWindowObserver"
     };
     
 
@@ -127,8 +128,8 @@ namespace {
 
       llvm::Instruction &IN = *BI;
       LLVMContext &Context = BI->getContext();
-      errs() << "Dumping Instruction: ";
-      IN.dump();
+      // errs() << "Dumping Instruction: ";
+      // IN.dump();
 
       // Get Address being accessed
       Value *Addr;
@@ -147,7 +148,7 @@ namespace {
       // Get size of type being freed
       assert(OrigTy->isSized());
       uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
-      errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
+      //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
       
       Value *Size =  ConstantInt::get(Type::getInt64Ty(Context), TypeSize/8);
       assert((TypeSize % 8) == 0);
@@ -244,25 +245,25 @@ namespace {
     }
 
     virtual bool runOnBasicBlock(Function::iterator &BB) {
-      errs() << "========BB===========\n";
+      //errs() << "========BB===========\n";
       for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
            BI != BE; ++BI) { 
         if (isa<LoadInst>(BI)) {
-          errs() << "<";
+          //errs() << "<";
           // Instrument LOAD here
           LoadStoreInstrument::Instrument(BI, false);
         } else {
           if (isa<StoreInst>(BI)) {
-            errs() << ">";
+            //errs() << ">";
             // Instrument STORE here
             LoadStoreInstrument::Instrument(BI, true);
           } else {
-            errs() << " ";
+            //errs() << " ";
           }
         }
-        errs() << "BI: " << BI->getOpcodeName() << "\n";
+        //errs() << "BI: " << BI->getOpcodeName() << "\n";
       }
-      errs() << "========BB===========\n";
+      //errs() << "========BB===========\n";
       return true;
     }
   private:
