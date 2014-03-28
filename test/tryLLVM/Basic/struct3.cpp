@@ -11,6 +11,7 @@ struct product{
 
 int main(){
   struct product *p = new product;
+  printf("%x\n", p);
   p->serialNum = 10;
   p->nested.f1 = 10;
   p->nested.f2 = new int;

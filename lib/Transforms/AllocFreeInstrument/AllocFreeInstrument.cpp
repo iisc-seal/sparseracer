@@ -34,6 +34,7 @@
 #include "llvm/ADT/Statistic.h"
 
 #include <stdint.h>
+#include <set>
 using namespace llvm;
 
 
@@ -43,33 +44,29 @@ namespace {
     static char ID; // Pass identification, replacement for typeid
     Constant *MDallocFn;
     Constant *MAllocFn;
-    std::string freeName;
-    std::string delName;
-    std::string arrayDelName;
-    std::string mallocName;
-    std::string newName;
-    std::string arrayNewName;
-    std::string mozallocName;
-    std::string mozfreeName;
+
+    // Consider stroing in a sorted vector once the code is stable
+    std::set<std::string> allocFunctions = {
+      "_Znwm",  // operator new(unsigned long)
+      "_Znam",  // operator new[](unsigned long)
+      "malloc", // void *malloc(size_t size); 
+      "moz_malloc", // void* moz_malloc(size_t size)
+      "moz_xmalloc" // The |moz_x| versions will never return a NULL pointer
+    };
+
+    std::set<std::string> freeFunctions = {
+      "_ZdlPv", // operator delete(void*)
+      "_ZdaPv", // operator delete[](void*)
+      "free",
+      "moz_free"
+    };
+
     Type *IntptrTy;
     LLVMContext *Context;
     const DataLayout *DL;
 
 
-    AllocFreeInstrument() : ModulePass(ID) {
-      initializeFunctionNames();
-    }
-
-    void initializeFunctionNames(){
-      freeName = std::string("free");
-      delName = std::string("_ZdlPv");
-      arrayDelName = std::string("_ZdaPv");
-      mallocName = std::string("malloc");
-      mozallocName = std::string("moz_xmalloc");
-      mozfreeName = std::string("moz_free");
-      newName = std::string("_Znwm");
-      arrayNewName = std::string("_Znam");
-    }
+    AllocFreeInstrument() : ModulePass(ID) {}
 
     virtual bool runOnModule(Module &M) {
 
@@ -137,25 +134,25 @@ namespace {
 
     // Get Address and being freed
     Value* Addr = IN.getOperand(0)->stripPointerCasts();
-    errs() << "Dumping Freed Type: ";
-    Addr->stripPointerCasts()->getType()->dump();
-    errs()<<"\n";
+    //errs() << "Dumping Freed Type: ";
+    //Addr->stripPointerCasts()->getType()->dump();
+    //errs()<<"\n";
 
     // Get Type Information
     IRBuilder<> IRB(BI);
     Type *OrigPtrTy = Addr->getType();
-    errs() << "Dumping original pointer type: " << "\n";
-    OrigPtrTy->dump();
-    errs() << "\n";
+    //errs() << "Dumping original pointer type: " << "\n";
+    //OrigPtrTy->dump();
+    //errs() << "\n";
     Type *OrigTy = cast<PointerType>(OrigPtrTy)->getElementType();
-    errs() << "Dumping original type: " << "\n";
-    OrigTy->dump();
-    errs() << "\n";
+    //errs() << "Dumping original type: " << "\n";
+    //OrigTy->dump();
+    //errs() << "\n";
 
     // Get size of type being freed
     assert(OrigTy->isSized());
     uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
-    errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
+    //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
 
     Value *Size =  ConstantInt::get(Type::getInt64Ty(*Context), TypeSize/8);
     assert((TypeSize % 8) == 0);
@@ -177,11 +174,11 @@ namespace {
 
     //Track if this is an allocate (or deallocate)
     // Value *Allocate = ConstantInt::get(Type::getInt32Ty(*Context), isAlloc);
-    errs() << "Got here! \n";
+    //errs() << "Got here! \n";
     IRB.CreateCall4(MDallocFn, AddrLong, Size, TypeStringPtr, DebugStringPtr);
   }
 
-    void InstrumentAlloc(BasicBlock::iterator &BI, std::string fName) {
+    void InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName) {
 
     // This is fragile in the sense that it assumes that a cast
     // instruction always follows an alloc instruction where the
@@ -189,7 +186,6 @@ namespace {
     // register. The pass will break if the assumption does not hold.
 
     Type *OrigTy;
-    Instruction* Original = BI;
     
     // for (Value::use_iterator i = Original->use_begin(), e = Original->use_end(); i != e; ++i)
     //   if (Instruction *Inst = dyn_cast<Instruction>(*i)) {
@@ -197,68 +193,82 @@ namespace {
     // 	errs() << *Inst << "\n";
     //   }
 
-    ++BI; 
-    BitCastInst *Inst;
-    assert(dyn_cast<BitCastInst>(BI));
-    if ((Inst = dyn_cast<BitCastInst>(BI))) {
-      OrigTy = Inst->getType();
-      errs() << "\n";
-      OrigTy->dump();
-    }
-    errs() << "Dumping use: ";
-    Inst->dump();
-    IRBuilder<> IRB(Inst);
+
+    OrigTy = Succ->getType();
+    //errs() << OrigTy << "\n";
+    //OrigTy->dump();
+    
+    
+    IRBuilder<> IRB(Succ);
     
     // Get the address allocated
     Value *AddrLong = IRB.CreatePointerCast(Original, IntptrTy);
-    
+    //errs() << "Address " << *AddrLong << "\n";
     // Get the number of bytes allocated
-    Value *MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
-    
+    Value *MemSize;
+    if(isa<llvm::ConstantInt>(Original->getOperand(0)))
+      MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
+    else
+      MemSize = Original->getOperand(0);
+
+    //errs() << "Size " << *MemSize<< "\n";
     //Create a string representing the type being written to
-     Value *TypeString = IRB.CreateGlobalString(getTypeAsString(OrigTy));
-
-    //Get a pointer to the string                                                                         
+    Value *TypeString = IRB.CreateGlobalString(getTypeAsString(OrigTy));
+    //errs() << "Type String" << *TypeString<< "\n";
+    //Get a pointer to the string   
     Value *TypeStringPtr = IRB.CreateBitCast(TypeString, IRB.getInt8PtrTy());
-
-    //Get a string representing source line number information                                            
-    Value *DebugLocationString = IRB.CreateGlobalString(getSourceInfoAsString(BI, fName));
-
-    //Get a pointer to the string                                                                         
+    //errs() << "TYS PTr" << *TypeStringPtr<< "\n";
+    //Get a string representing source line number information
+    Value *DebugLocationString = IRB.CreateGlobalString(getSourceInfoAsString(Original, fName));
+    //errs() << "DebugLocPtr" << *DebugLocationString<< "\n";
+    //Get a pointer to the string
     Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
-    errs() <<"Alloc! \n";
-    IRB.CreateCall4(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr);
-    errs() <<"Inserted Alloc instr call! \n";
+    //errs() << "DebugStrPtr" << *DebugStringPtr<< "\n";
+    //errs() <<"Alloc! \n";
+    CallInst* CI = IRB.CreateCall4(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr);
+    //errs() << "Problem! \n";
+    //errs() << *CI << "\n";
         
   }
 
   virtual bool runOnBasicBlock(Function::iterator &BB) {
     //errs() << "========BB===========\n";
+    bool flag = false;
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
          BI != BE; ++BI) { 
-      bool flag = false;
-      if(flag)
-	BI->dump();
-    
+      
+      if(flag){
+	//BI->dump();
+      	//errs() << "Got here! \n";
+	flag = false;
+      }
+      
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
-	  
-	  if(freeName.compare(name) == 0 || delName.compare(name) == 0
-	     || arrayDelName.compare(name) == 0 || mozfreeName.compare(name) == 0){
-	    BI->dump();
+	  const bool found = (freeFunctions.find(name) != freeFunctions.end());
+	  if(found){
 	    AllocFreeInstrument::InstrumentDealloc(BI, name);
 	  }
-	  if(mallocName.compare(name) == 0 || newName.compare(name) == 0
-	     || arrayNewName.compare(name) == 0 || mozallocName.compare(name) == 0){
-	    BI->dump();
-	    AllocFreeInstrument::InstrumentAlloc(BI, name);
-	    errs() << "Alloc insert success!" ;
-	    flag = true;
-	    BI->dump();
+	  
+	}
+      }
+      // assume an alloc is always followed by a bitcast
+      else if (BitCastInst *BCI = dyn_cast<BitCastInst>(BI)) {
+	if (CallInst * CI = dyn_cast<CallInst>(BCI->getOperand(0))) {
+	  if (Function * CalledFunc = CI->getCalledFunction()) {
+	    std::string name = CalledFunc->getName();
+	    const bool found = (allocFunctions.find(name) != allocFunctions.end());
+	    if(found){
+	      BI->dump();
+	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, name);
+	      //errs() << "Alloc insert success!" ;
+	      flag = true;
+	      //BI->dump();
+	    }
 	  }
 	}
-      } 
+      }
       else {
 	//errs() << " ";
       }

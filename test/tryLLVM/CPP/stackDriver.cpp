@@ -1,31 +1,33 @@
 #include "stack.h"
-using namespace std ;
-void main()
+#include <iostream>
+#include <cstdio>
+int main()
 {
-  typedef Stack<float> FloatStack ;
-  typedef Stack<int> IntStack ;
+  typedef Stack<float> FloatStack;
+  typedef Stack<int> IntStack;
 
+  IntStack integerStack(6);
   FloatStack fs(5) ;
   float f = 1.1 ;
-  
+  int i = 1;
   while (fs.push(f))
     {
-      cout << f << ' ' ;
+      std::cout << f << ' ' ;
       f += 1.1 ;
     }
 
   while (fs.pop(f))
 
 
-  IntStack is ;
-  int i = 1.1 ;
+  
+  
 
-  while (is.push(i))
+  while (integerStack.push(i))
     {
 
       i += 1 ;
     }
 
-  while (is.pop(i))
-
+  while (integerStack.pop(i)){}
+  
 }

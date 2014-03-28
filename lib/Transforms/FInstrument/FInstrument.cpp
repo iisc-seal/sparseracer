@@ -25,6 +25,9 @@
 #include "llvm/PassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include <cxxabi.h>
+
 using namespace llvm;
 
 STATISTIC(FCounter, "Counts number of functions profiled");
@@ -36,16 +39,29 @@ namespace {
 
     LLVMContext *Context;
     Constant *PrintFunc;
+    Constant *PrintF;
 
     FInstrument() : ModulePass(ID) {}
     bool runOnModule(Module &M) override {
       
 
       Context = (&M.getContext());
-      const Type *SBP = Type::getInt8PtrTy(*Context);
+      // The code that follows causes clang to crash, for whatever reason
+      // const Type *SBP = PointerType::getUnqual(Type::getInt8Ty(*Context));
 
-      PrintFunc = M.getOrInsertFunction("printf",Type::getInt32Ty(*Context), SBP, true, (Type*)0);
+      // PrintFunc = M.getOrInsertFunction("printf", Type::getInt32Ty(*Context), SBP, true, (Type*)0);
+      // Function *Printf = dyn_cast<Function>(PrintFunc);
+      // Printf->setCallingConv(CallingConv::C);
+      // errs() << "Runs the thing! \n";
+      // errs() << Printf->getName() << "\n";
       
+      std::vector<Type*> Params;
+      Params.push_back(PointerType::getUnqual(Type::getInt8Ty(*Context)));
+      // Get the printf() function (takes an i8* followed by variadic parameters)
+      PrintF = M.getOrInsertFunction("printf",
+      					       FunctionType::get(Type::getVoidTy(*Context), Params, true));
+      //errs() << PrintF->getName() << "\n";
+
       for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
         if (F->isDeclaration()) continue;
 
@@ -60,7 +76,7 @@ namespace {
 	}
 	FInstrument::instrumentExits(F, exitBlocks);
       }
-      return true;
+      return false;
     }
     
     void instrumentEntry(Function *F){
@@ -69,20 +85,20 @@ namespace {
       Instruction *First = Entry.begin();
       IRBuilder<> IRB(First);
 
-      std::string message = "Entring " + F->getName().str() + " \n";
+      std::string message = "Entering " + demangleFunctionName(F->getName().str()) + " \n";
       Value *MessageString = IRB.CreateGlobalString(message);
       Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
-      IRB.CreateCall(PrintFunc, MessagePtr); 
+      IRB.CreateCall(PrintF, MessagePtr); 
     }
 
     void instrumentExits(Function *F, std::vector<BasicBlock*> exitBlocks){
       for (unsigned i=0; i != exitBlocks.size(); ++i){
 	//ReturnInst *Ret = cast<ReturnInst>(exitBlocks[i]->getTerminator());
 	IRBuilder<> IRB(exitBlocks[i]->getTerminator());
-	std::string message = "Exiting " + F->getName().str() + " \n";
+	std::string message = "Exiting " + demangleFunctionName(F->getName().str()) + " \n";
 	Value *MessageString = IRB.CreateGlobalString(message);
 	Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
-	IRB.CreateCall(PrintFunc, MessagePtr);
+	IRB.CreateCall(PrintF, MessagePtr);
       }
     }
 
@@ -90,6 +106,39 @@ namespace {
     void getAnalysisUsage(AnalysisUsage &AU) const override {
       //AU.setPreservesAll();
     }
+    
+    std::string demangleFunctionName(std::string func) {
+      std::string ret =  func;
+      // Check for name mangling. C++ functions will always start with _Z
+      // Demangled form is processed to remove type information.
+      if(func[0] == '_' && func[1] == 'Z') {
+	int stat;
+	char *test = abi::__cxa_demangle(func.c_str(), NULL, NULL, &stat);
+	std::string demangled = test;
+	free(test);
+
+	// Select up to the first ( to only insert function name
+	size_t endpos = demangled.find("(");
+      
+	// Templated functions will have type information first, so skip to the
+	// first space.
+	size_t startpos = demangled.find(" ");
+	if(startpos < endpos) {
+	  // skip until after the space
+	  ++startpos;
+	  // also modify endpos to the first '<' to remove template info
+	  endpos = demangled.find("<") - startpos;
+	} else {
+	  // regular C++ function, no template info to remove
+	  startpos = 0;
+	}
+
+	ret = demangled.substr(startpos,endpos);
+      }
+
+      return ret;
+    }
+
   };
 }
 
