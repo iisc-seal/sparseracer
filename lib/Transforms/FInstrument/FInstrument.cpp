@@ -28,6 +28,8 @@
 
 #include <cxxabi.h>
 
+#include <set>
+
 using namespace llvm;
 
 STATISTIC(FCounter, "Counts number of functions profiled");
@@ -40,6 +42,17 @@ namespace {
     LLVMContext *Context;
     Constant *PrintFunc;
     Constant *PrintF;
+    
+    std::set<std::string> whiteList = {
+      "nsHTMLEditor::ContentAppended",
+      "nsHTMLEditor::ContentInserted",
+      "nsHTMLEditor::ResetRootElementAndEventTarget",
+      "nsFrameSelection::SetAncestorLimiter",
+      "nsGenericHTMLElement::Focus",
+      "nsINode::AppendChild",
+      "nsINode::RemoveChild",
+      "nsEditor::InitializeSelection"
+    };
 
     FInstrument() : ModulePass(ID) {}
     bool runOnModule(Module &M) override {
@@ -64,7 +77,7 @@ namespace {
 
       for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
         if (F->isDeclaration()) continue;
-
+	if (F->getName().str() == "free" || F->getName().str() == "printf") continue;
 	std::vector<BasicBlock*> exitBlocks;
        
 	FInstrument::instrumentEntry(F);
@@ -81,11 +94,28 @@ namespace {
     
     void instrumentEntry(Function *F){
       FCounter++;
+      //errs() << *F << "\n";
       BasicBlock &Entry = F->getEntryBlock();
       Instruction *First = Entry.begin();
       IRBuilder<> IRB(First);
+      std::string name("Crap \n");
+      //errs() << F->getName() << "\n";
+      //errs() << F->getName().str() << "\n";
+      name = F->getName().str();
+      std::string unmangled(demangleFunctionName(name));
+      bool flag = shouldInstrument(unmangled, whiteList);
+      // for (std::set<std::string>::iterator it=whiteList.begin(); it!=whiteList.end(); ++it){
+      // 	if (it->find(unmangled) != std::string::npos && unmangled.length() > 10) {
+      // 	  errs () << "unmangled " << unmangled;
+      // 	  flag = true;
+      // 	  break;
+      // 	}
+      // }
+      if(false == flag)
+      	return;
 
-      std::string message = "Entering " + demangleFunctionName(F->getName().str()) + " \n";
+      std::string message("Entering "+unmangled+" \n");
+      // errs() << "Suspect \n";
       Value *MessageString = IRB.CreateGlobalString(message);
       Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
       IRB.CreateCall(PrintF, MessagePtr); 
@@ -95,7 +125,29 @@ namespace {
       for (unsigned i=0; i != exitBlocks.size(); ++i){
 	//ReturnInst *Ret = cast<ReturnInst>(exitBlocks[i]->getTerminator());
 	IRBuilder<> IRB(exitBlocks[i]->getTerminator());
-	std::string message = "Exiting " + demangleFunctionName(F->getName().str()) + " \n";
+	std::string name("Crap \n");
+	// errs() << F->getName() << "\n";
+	// errs() << F->getName().str() << "\n";
+	//name = demangleFunctionName(F->getName().str());
+	// if(whiteList.find(name) == whiteList.end()){
+	//   continue;
+	// }
+	
+	name = F->getName().str();
+	std::string unmangled(demangleFunctionName(name));
+
+ 	bool flag = shouldInstrument(unmangled, whiteList);
+	
+	// for (std::set<std::string>::iterator it=whiteList.begin(); it!=whiteList.end(); ++it){
+	//   if (it->find(unmangled) != std::string::npos && unmangled.length() > 10) {
+	//     flag = true;
+	//     break;
+	//   }
+	// }
+	if(false == flag)
+	  return;
+	
+	std::string message("Exiting "+unmangled+" \n");
 	Value *MessageString = IRB.CreateGlobalString(message);
 	Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
 	IRB.CreateCall(PrintF, MessagePtr);
@@ -106,14 +158,27 @@ namespace {
     void getAnalysisUsage(AnalysisUsage &AU) const override {
       //AU.setPreservesAll();
     }
+
+    bool shouldInstrument(std::string name, std::set<std::string> whiteList){
+      if(whiteList.find(name) != whiteList.end())
+	return true;
+      return false;
+    }
     
     std::string demangleFunctionName(std::string func) {
-      std::string ret =  func;
+      std::string ret(func);
+
       // Check for name mangling. C++ functions will always start with _Z
       // Demangled form is processed to remove type information.
-      if(func[0] == '_' && func[1] == 'Z') {
+
+      if(func.length() >= 2 && func[0] == '_' && func[1] == 'Z') {
 	int stat;
+
 	char *test = abi::__cxa_demangle(func.c_str(), NULL, NULL, &stat);
+	if(NULL == test)
+	  return "Demangling Failed on " + func;
+
+
 	std::string demangled = test;
 	free(test);
 
@@ -132,7 +197,7 @@ namespace {
 	  // regular C++ function, no template info to remove
 	  startpos = 0;
 	}
-
+	
 	ret = demangled.substr(startpos,endpos);
       }
 

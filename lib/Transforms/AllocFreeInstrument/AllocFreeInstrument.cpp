@@ -34,6 +34,7 @@
 #include "llvm/ADT/Statistic.h"
 
 #include <stdint.h>
+#include <cxxabi.h>
 #include <set>
 using namespace llvm;
 
@@ -61,6 +62,17 @@ namespace {
       "moz_free"
     };
 
+    std::set<std::string> whiteList = {
+      "nsHTMLEditor::ContentAppended",
+      "nsHTMLEditor::ContentInserted",
+      "nsHTMLEditor::ResetRootElementAndEventTarget",
+      "nsFrameSelection::SetAncestorLimiter",
+      "nsGenericHTMLElement::Focus",
+      "nsINode::AppendChild",
+      "nsINode::RemoveChild",
+      "nsEditor::InitializeSelection"
+    };
+
     Type *IntptrTy;
     LLVMContext *Context;
     const DataLayout *DL;
@@ -70,42 +82,51 @@ namespace {
 
     virtual bool runOnModule(Module &M) {
 
-    DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
-    if (!DLP)
-      return false;
-    DL = &DLP->getDataLayout();
+      DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
+      if (!DLP)
+	return false;
+      DL = &DLP->getDataLayout();
+      
+      Context = &(M.getContext());
+      int LongSize = DL->getPointerSizeInBits();
+      IntptrTy = Type::getIntNTy(*Context, LongSize);
 
-    Context = &(M.getContext());
-    int LongSize = DL->getPointerSizeInBits();
-    IntptrTy = Type::getIntNTy(*Context, LongSize);
-
-    Type *Void = Type::getVoidTy(*Context);
-    const Type *SBP = Type::getInt8PtrTy(*Context);
-    std::string allocInstrFnName("_Z8mopAllociiPcS_");
-    std::string dallocInstrFnName("_Z10mopDeallociiPcS_");
-    MAllocFn = M.getOrInsertFunction("mopAlloc", Void,
+      Type *Void = Type::getVoidTy(*Context);
+      const Type *SBP = Type::getInt8PtrTy(*Context);
+      std::string allocInstrFnName("_Z8mopAllociiPcS_");
+      std::string dallocInstrFnName("_Z10mopDeallociiPcS_");
+      MAllocFn = M.getOrInsertFunction("mopAlloc", Void,
                                   IntptrTy, Type::getInt64Ty(*Context), 
     				  SBP, SBP,
                                   (Type*)0);
-    MDallocFn = M.getOrInsertFunction("mopDealloc", Void,
+      MDallocFn = M.getOrInsertFunction("mopDealloc", Void,
                                   IntptrTy, Type::getInt64Ty(*Context), 
     				  SBP, SBP,
                                   (Type*)0);
-    (cast<Function>(MAllocFn))->setCallingConv(CallingConv::C);
-    (cast<Function>(MDallocFn))->setCallingConv(CallingConv::C);
+      (cast<Function>(MAllocFn))->setCallingConv(CallingConv::C);
+      (cast<Function>(MDallocFn))->setCallingConv(CallingConv::C);
 
-    for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-      if (F->isDeclaration()) continue;
+      for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
+	if (F->isDeclaration()) continue;
+	if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
+	  continue;
         for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
           AllocFreeInstrument::runOnBasicBlock(BB);
         }
+      }
+      return true;
     }
-    return true;
-  }
-
+    
   Value* CastToCStr(Value *V, IRBuilder<> &B) {
       return B.CreateBitCast(V, B.getInt8PtrTy(), "cstr");
   }  
+
+  bool shouldInstrument(std::string name, std::set<std::string> whiteList){
+    if(whiteList.find(name) != whiteList.end())
+      return true;
+    return false;
+  }
+
 
   std::string getTypeAsString(Type* T){
     std::string type_str;
@@ -260,7 +281,7 @@ namespace {
 	    std::string name = CalledFunc->getName();
 	    const bool found = (allocFunctions.find(name) != allocFunctions.end());
 	    if(found){
-	      BI->dump();
+	      //BI->dump();
 	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, name);
 	      //errs() << "Alloc insert success!" ;
 	      flag = true;
@@ -279,6 +300,40 @@ namespace {
     return true;
   }
   
+    std::string demangleFunctionName(std::string func) {
+      std::string ret(func);
+      // Check for name mangling. C++ functions will always start with _Z                                       // Demangled form is processed to remove type information.
+      if(func.length() >= 2 && func[0] == '_' && func[1] == 'Z') {
+        int stat;
+        char *test = abi::__cxa_demangle(func.c_str(), NULL, NULL, &stat);
+        if(NULL == test)
+          return "Demangling Failed on " + func;
+
+	std::string demangled = test;
+        free(test);
+        // Select up to the first ( to only insert function name
+        size_t endpos = demangled.find("(");
+
+        // Templated functions will have type information first, so skip to the
+        // first space.
+        size_t startpos = demangled.find(" ");
+        if(startpos < endpos) {
+          // skip until after the space                                                                  
+          ++startpos;
+          // also modify endpos to the first '<' to remove template info
+          endpos = demangled.find("<") - startpos;
+        } else {
+          // regular C++ function, no template info to remove
+          startpos = 0;
+        }
+
+        ret = demangled.substr(startpos,endpos);
+      }
+
+      return ret;
+    }
+  
+
   private:
     virtual void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.addRequired<DataLayoutPass>();

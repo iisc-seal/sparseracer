@@ -16,6 +16,8 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
+#include "llvm/PassManager.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
@@ -37,6 +39,17 @@ namespace {
 }
 
 char Hello::ID = 0;
+
+static void registerMyPass(const PassManagerBuilder &,
+                           PassManagerBase &PM) {
+  PM.add(new Hello());
+}
+
+RegisterStandardPasses
+RegisterMyPass(PassManagerBuilder::EP_EnabledOnOptLevel0,
+               registerMyPass);
+
+
 static RegisterPass<Hello> X("hello", "Hello World Pass");
 
 namespace {
