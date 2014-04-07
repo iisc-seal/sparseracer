@@ -213,6 +213,7 @@ static void registerMyPass(const PassManagerBuilder &,
                            PassManagerBase &PM) {
   PM.add(new FInstrument());
 }
+
 static RegisterStandardPasses
 RegisterMyPass(PassManagerBuilder::EP_EnabledOnOptLevel0,
 	       registerMyPass);
