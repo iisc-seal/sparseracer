@@ -1,0 +1,190 @@
+|-FunctionDecl 0x69f7130 <line:11:5, line:44:5> backtrack 'void (vector<int> &, vector<int> &, pair<long long, long long> &, int, long long, int)'
+| |-ParmVarDecl 0x69f6910 <line:11:20, col:33> arr 'vector<int> &'
+| |-ParmVarDecl 0x69f6b30 <col:37, col:50> value 'vector<int> &'
+| |-ParmVarDecl 0x69f6e20 <col:56, col:83> solution 'pair<long long, long long> &'
+| |-ParmVarDecl 0x69f6e90 <col:92, col:96> i 'int'
+| |-ParmVarDecl 0x69f6f00 <col:98, col:112> sum 'long long'
+| | `-ImplicitCastExpr 0x69f6f78 <col:112> 'long long' <IntegralCast>
+| |   `-IntegerLiteral 0x69f6f58 <col:112> 'int' 0
+| |-ParmVarDecl 0x69f6fa0 <col:114, col:122> ors 'int'
+| | `-IntegerLiteral 0x69f6ff8 <col:122> 'int' 0
+| `-CompoundStmt 0x6a0abb0 <line:12:5, line:44:5>
+|   |-DeclStmt 0x69f7280 <line:13:6, col:26>
+|   | `-VarDecl 0x69f7210 <col:6, col:21> anychange '_Bool'
+|   |   `-CXXBoolLiteralExpr 0x69f7268 <col:21> '_Bool' false
+|   |-DeclStmt 0x69f7328 <line:14:6, col:13>
+|   | `-VarDecl 0x69f72b0 <col:6, col:12> j 'int'
+|   |   `-IntegerLiteral 0x69f7308 <col:12> 'int' 0
+|   |-IfStmt 0x69f7680 <line:15:6, line:16:22>
+|   | |-<<<NULL>>>
+|   | |-BinaryOperator 0x69f73a0 <line:15:9, col:11> '_Bool' '>'
+|   | | |-ImplicitCastExpr 0x69f7388 <col:9> 'int' <LValueToRValue>
+|   | | | `-DeclRefExpr 0x69f7340 <col:9> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|   | | `-IntegerLiteral 0x69f7368 <col:11> 'int' 1
+|   | |-BinaryOperator 0x69f7658 <line:16:7, col:22> 'int' lvalue '='
+|   | | |-DeclRefExpr 0x69f73c8 <col:7> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   | | `-ImplicitCastExpr 0x69f7640 <col:9, col:22> 'int' <IntegralCast>
+|   | |   `-BinaryOperator 0x69f7618 <col:9, col:22> 'long long' '+'
+|   | |     |-ImplicitCastExpr 0x69f75e8 <col:9, col:20> 'long long':'long long' <LValueToRValue>
+|   | |     | `-CXXOperatorCallExpr 0x69f7580 <col:9, col:20> 'long long':'long long' lvalue
+|   | |     |   |-ImplicitCastExpr 0x69f7568 <col:16, col:20> 'reference (*)(size_type)' <FunctionToPointerDecay>
+|   | |     |   | `-DeclRefExpr 0x69f74e0 <col:16, col:20> 'reference (size_type)' lvalue CXXMethod 0x69ef9e0 'operator[]' 'reference (size_type)'
+|   | |     |   |-DeclRefExpr 0x69f73f0 <col:9> 'vector<long long>':'class std::vector<long long, class std::allocator<long long> >' lvalue Var 0x69f6200 'backpos' 'vector<long long>':'class std::vector<long long, class std::allocator<long long> >'
+|   | |     |   `-ImplicitCastExpr 0x69f74c8 <col:17, col:19> 'size_type':'unsigned long' <IntegralCast>
+|   | |     |     `-BinaryOperator 0x69f7478 <col:17, col:19> 'int' '-'
+|   | |     |       |-ImplicitCastExpr 0x69f7460 <col:17> 'int' <LValueToRValue>
+|   | |     |       | `-DeclRefExpr 0x69f7418 <col:17> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|   | |     |       `-IntegerLiteral 0x69f7440 <col:19> 'int' 1
+|   | |     `-ImplicitCastExpr 0x69f7600 <col:22> 'long long' <IntegralCast>
+|   | |       `-IntegerLiteral 0x69f75c8 <col:22> 'int' 1
+|   | `-<<<NULL>>>
+|   |-ForStmt 0x6a0a4d0 <line:18:6, line:28:6>
+|   | |-<<<NULL>>>
+|   | |-<<<NULL>>>
+|   | |-BinaryOperator 0x6a08bc0 <line:18:11, col:22> '_Bool' '<'
+|   | | |-ImplicitCastExpr 0x6a08ba8 <col:11> 'unsigned long' <IntegralCast>
+|   | | | `-ImplicitCastExpr 0x6a08b90 <col:11> 'int' <LValueToRValue>
+|   | | |   `-DeclRefExpr 0x69f76b0 <col:11> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   | | `-CXXMemberCallExpr 0x6a08b28 <col:13, col:22> 'size_type':'unsigned long'
+|   | |   `-MemberExpr 0x6a08af8 <col:13, col:17> '<bound member function type>' .size 0x6a023b0
+|   | |     `-ImplicitCastExpr 0x6a08b78 <col:13> 'const class std::vector<int, class std::allocator<int> >' lvalue <NoOp>
+|   | |       `-DeclRefExpr 0x69f76d8 <col:13> 'vector<int>':'class std::vector<int, class std::allocator<int> >' lvalue ParmVar 0x69f6910 'arr' 'vector<int> &'
+|   | |-UnaryOperator 0x6a08c10 <col:24, col:25> 'int' postfix '++'
+|   | | `-DeclRefExpr 0x6a08be8 <col:24> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   | `-CompoundStmt 0x6a0a4b0 <line:19:6, line:28:6>
+|   |   `-IfStmt 0x6a0a480 <line:21:7, line:27:7>
+|   |     |-<<<NULL>>>
+|   |     |-UnaryOperator 0x6a08e78 <line:21:10, col:22> '_Bool' prefix '!'
+|   |     | `-ImplicitCastExpr 0x6a08e60 <col:11, col:22> '_Bool' <IntegralToBoolean>
+|   |     |   `-ParenExpr 0x6a08e40 <col:11, col:22> 'int'
+|   |     |     `-BinaryOperator 0x6a08e18 <col:12, col:21> 'int' '&'
+|   |     |       |-ImplicitCastExpr 0x6a08de8 <col:12> 'int' <LValueToRValue>
+|   |     |       | `-DeclRefExpr 0x6a08c30 <col:12> 'int' lvalue ParmVar 0x69f6fa0 'ors' 'int'
+|   |     |       `-ImplicitCastExpr 0x6a08e00 <col:16, col:21> 'int':'int' <LValueToRValue>
+|   |     |         `-CXXOperatorCallExpr 0x6a08da0 <col:16, col:21> 'int':'int' lvalue
+|   |     |           |-ImplicitCastExpr 0x6a08d88 <col:19, col:21> 'reference (*)(size_type)' <FunctionToPointerDecay>
+|   |     |           | `-DeclRefExpr 0x6a08d08 <col:19, col:21> 'reference (size_type)' lvalue CXXMethod 0x6a02af0 'operator[]' 'reference (size_type)'
+|   |     |           |-DeclRefExpr 0x6a08c58 <col:16> 'vector<int>':'class std::vector<int, class std::allocator<int> >' lvalue ParmVar 0x69f6910 'arr' 'vector<int> &'
+|   |     |           `-ImplicitCastExpr 0x6a08cf0 <col:20> 'size_type':'unsigned long' <IntegralCast>
+|   |     |             `-ImplicitCastExpr 0x6a08cd8 <col:20> 'int' <LValueToRValue>
+|   |     |               `-DeclRefExpr 0x6a08c80 <col:20> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   |     |-CompoundStmt 0x6a0a448 <line:22:7, line:27:7>
+|   |     | |-BinaryOperator 0x6a08ed8 <line:23:8, col:18> '_Bool' lvalue '='
+|   |     | | |-DeclRefExpr 0x6a08e98 <col:8> '_Bool' lvalue Var 0x69f7210 'anychange' '_Bool'
+|   |     | | `-CXXBoolLiteralExpr 0x6a08ec0 <col:18> '_Bool' true
+|   |     | |-BinaryOperator 0x6a09140 <line:24:8, col:26> 'long long':'long long' lvalue '='
+|   |     | | |-CXXOperatorCallExpr 0x6a08fc0 <col:8, col:19> 'long long':'long long' lvalue
+|   |     | | | |-ImplicitCastExpr 0x6a08fa8 <col:17, col:19> 'reference (*)(size_type)' <FunctionToPointerDecay>
+|   |     | | | | `-DeclRefExpr 0x6a08f80 <col:17, col:19> 'reference (size_type)' lvalue CXXMethod 0x69ef9e0 'operator[]' 'reference (size_type)'
+|   |     | | | |-DeclRefExpr 0x6a08f00 <col:8> 'vector<long long>':'class std::vector<long long, class std::allocator<long long> >' lvalue Var 0x69e4480 'backarray' 'vector<long long>':'class std::vector<long long, class std::allocator<long long> >'
+|   |     | | | `-ImplicitCastExpr 0x6a08f68 <col:18> 'size_type':'unsigned long' <IntegralCast>
+|   |     | | |   `-ImplicitCastExpr 0x6a08f50 <col:18> 'int' <LValueToRValue>
+|   |     | | |     `-DeclRefExpr 0x6a08f28 <col:18> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|   |     | | `-ImplicitCastExpr 0x6a09128 <col:21, col:26> 'long long':'long long' <IntegralCast>
+|   |     | |   `-ImplicitCastExpr 0x6a09110 <col:21, col:26> 'int':'int' <LValueToRValue>
+|   |     | |     `-CXXOperatorCallExpr 0x6a090c8 <col:21, col:26> 'int':'int' lvalue
+|   |     | |       |-ImplicitCastExpr 0x6a090b0 <col:24, col:26> 'reference (*)(size_type)' <FunctionToPointerDecay>
+|   |     | |       | `-DeclRefExpr 0x6a09088 <col:24, col:26> 'reference (size_type)' lvalue CXXMethod 0x6a02af0 'operator[]' 'reference (size_type)'
+|   |     | |       |-DeclRefExpr 0x6a09008 <col:21> 'vector<int>':'class std::vector<int, class std::allocator<int> >' lvalue ParmVar 0x69f6910 'arr' 'vector<int> &'
+|   |     | |       `-ImplicitCastExpr 0x6a09070 <col:25> 'size_type':'unsigned long' <IntegralCast>
+|   |     | |         `-ImplicitCastExpr 0x6a09058 <col:25> 'int' <LValueToRValue>
+|   |     | |           `-DeclRefExpr 0x6a09030 <col:25> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   |     | |-BinaryOperator 0x6a092c8 <line:25:8, col:19> 'long long':'long long' lvalue '='
+|   |     | | |-CXXOperatorCallExpr 0x6a09228 <col:8, col:17> 'long long':'long long' lvalue
+|   |     | | | |-ImplicitCastExpr 0x6a09210 <col:15, col:17> 'reference (*)(size_type)' <FunctionToPointerDecay>
+|   |     | | | | `-DeclRefExpr 0x6a091e8 <col:15, col:17> 'reference (size_type)' lvalue CXXMethod 0x69ef9e0 'operator[]' 'reference (size_type)'
+|   |     | | | |-DeclRefExpr 0x6a09168 <col:8> 'vector<long long>':'class std::vector<long long, class std::allocator<long long> >' lvalue Var 0x69f6200 'backpos' 'vector<long long>':'class std::vector<long long, class std::allocator<long long> >'
+|   |     | | | `-ImplicitCastExpr 0x6a091d0 <col:16> 'size_type':'unsigned long' <IntegralCast>
+|   |     | | |   `-ImplicitCastExpr 0x6a091b8 <col:16> 'int' <LValueToRValue>
+|   |     | | |     `-DeclRefExpr 0x6a09190 <col:16> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|   |     | | `-ImplicitCastExpr 0x6a092b0 <col:19> 'long long':'long long' <IntegralCast>
+|   |     | |   `-ImplicitCastExpr 0x6a09298 <col:19> 'int' <LValueToRValue>
+|   |     | |     `-DeclRefExpr 0x6a09270 <col:19> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   |     | `-CallExpr 0x6a0a3f0 <line:26:8, col:64> 'void'
+|   |     |   |-ImplicitCastExpr 0x6a0a3d8 <col:8> 'void (*)(vector<int> &, vector<int> &, pair<long long, long long> &, int, long long, int)' <FunctionToPointerDecay>
+|   |     |   | `-DeclRefExpr 0x6a0a358 <col:8> 'void (vector<int> &, vector<int> &, pair<long long, long long> &, int, long long, int)' lvalue Function 0x69f7130 'backtrack' 'void (vector<int> &, vector<int> &, pair<long long, long long> &, int, long long, int)'
+|   |     |   |-DeclRefExpr 0x6a09348 <col:18> 'vector<int>':'class std::vector<int, class std::allocator<int> >' lvalue ParmVar 0x69f6910 'arr' 'vector<int> &'
+|   |     |   |-DeclRefExpr 0x6a09370 <col:22> 'vector<int>':'class std::vector<int, class std::allocator<int> >' lvalue ParmVar 0x69f6b30 'value' 'vector<int> &'
+|   |     |   |-DeclRefExpr 0x6a09398 <col:28> 'pair<long long, long long>':'struct std::pair<long long, long long>' lvalue ParmVar 0x69f6e20 'solution' 'pair<long long, long long> &'
+|   |     |   |-BinaryOperator 0x6a09420 <col:37, col:39> 'int' '+'
+|   |     |   | |-ImplicitCastExpr 0x6a09408 <col:37> 'int' <LValueToRValue>
+|   |     |   | | `-DeclRefExpr 0x6a093c0 <col:37> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|   |     |   | `-IntegerLiteral 0x6a093e8 <col:39> 'int' 1
+|   |     |   |-BinaryOperator 0x6a095c0 <col:41, col:52> 'long long' '+'
+|   |     |   | |-ImplicitCastExpr 0x6a09578 <col:41> 'long long' <LValueToRValue>
+|   |     |   | | `-DeclRefExpr 0x6a09448 <col:41> 'long long' lvalue ParmVar 0x69f6f00 'sum' 'long long'
+|   |     |   | `-ImplicitCastExpr 0x6a095a8 <col:45, col:52> 'long long' <IntegralCast>
+|   |     |   |   `-ImplicitCastExpr 0x6a09590 <col:45, col:52> 'int':'int' <LValueToRValue>
+|   |     |   |     `-CXXOperatorCallExpr 0x6a09530 <col:45, col:52> 'int':'int' lvalue
+|   |     |   |       |-ImplicitCastExpr 0x6a09518 <col:50, col:52> 'reference (*)(size_type)' <FunctionToPointerDecay>
+|   |     |   |       | `-DeclRefExpr 0x6a094f0 <col:50, col:52> 'reference (size_type)' lvalue CXXMethod 0x6a02af0 'operator[]' 'reference (size_type)'
+|   |     |   |       |-DeclRefExpr 0x6a09470 <col:45> 'vector<int>':'class std::vector<int, class std::allocator<int> >' lvalue ParmVar 0x69f6b30 'value' 'vector<int> &'
+|   |     |   |       `-ImplicitCastExpr 0x6a094d8 <col:51> 'size_type':'unsigned long' <IntegralCast>
+|   |     |   |         `-ImplicitCastExpr 0x6a094c0 <col:51> 'int' <LValueToRValue>
+|   |     |   |           `-DeclRefExpr 0x6a09498 <col:51> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   |     |   `-BinaryOperator 0x6a09748 <col:54, col:63> 'int' '|'
+|   |     |     |-ImplicitCastExpr 0x6a09718 <col:54> 'int' <LValueToRValue>
+|   |     |     | `-DeclRefExpr 0x6a095e8 <col:54> 'int' lvalue ParmVar 0x69f6fa0 'ors' 'int'
+|   |     |     `-ImplicitCastExpr 0x6a09730 <col:58, col:63> 'int':'int' <LValueToRValue>
+|   |     |       `-CXXOperatorCallExpr 0x6a096d0 <col:58, col:63> 'int':'int' lvalue
+|   |     |         |-ImplicitCastExpr 0x6a096b8 <col:61, col:63> 'reference (*)(size_type)' <FunctionToPointerDecay>
+|   |     |         | `-DeclRefExpr 0x6a09690 <col:61, col:63> 'reference (size_type)' lvalue CXXMethod 0x6a02af0 'operator[]' 'reference (size_type)'
+|   |     |         |-DeclRefExpr 0x6a09610 <col:58> 'vector<int>':'class std::vector<int, class std::allocator<int> >' lvalue ParmVar 0x69f6910 'arr' 'vector<int> &'
+|   |     |         `-ImplicitCastExpr 0x6a09678 <col:62> 'size_type':'unsigned long' <IntegralCast>
+|   |     |           `-ImplicitCastExpr 0x6a09660 <col:62> 'int' <LValueToRValue>
+|   |     |             `-DeclRefExpr 0x6a09638 <col:62> 'int' lvalue Var 0x69f72b0 'j' 'int'
+|   |     `-<<<NULL>>>
+|   `-IfStmt 0x6a0ab80 <line:29:6, line:42:6>
+|     |-<<<NULL>>>
+|     |-UnaryOperator 0x6a0a550 <line:29:9, col:10> '_Bool' prefix '!'
+|     | `-ImplicitCastExpr 0x6a0a538 <col:10> '_Bool' <LValueToRValue>
+|     |   `-DeclRefExpr 0x6a0a510 <col:10> '_Bool' lvalue Var 0x69f7210 'anychange' '_Bool'
+|     |-CompoundStmt 0x6a0ab58 <line:30:6, line:42:6>
+|     | |-IfStmt 0x6a0a808 <line:32:7, line:36:7>
+|     | | |-<<<NULL>>>
+|     | | |-BinaryOperator 0x6a0a620 <line:32:10, col:23> '_Bool' '>'
+|     | | | |-ImplicitCastExpr 0x6a0a5f0 <col:10> 'long long' <LValueToRValue>
+|     | | | | `-DeclRefExpr 0x6a0a570 <col:10> 'long long' lvalue ParmVar 0x69f6f00 'sum' 'long long'
+|     | | | `-ImplicitCastExpr 0x6a0a608 <col:14, col:23> 'long long':'long long' <LValueToRValue>
+|     | | |   `-MemberExpr 0x6a0a5c0 <col:14, col:23> 'long long':'long long' lvalue .first 0x6a09990
+|     | | |     `-DeclRefExpr 0x6a0a598 <col:14> 'pair<long long, long long>':'struct std::pair<long long, long long>' lvalue ParmVar 0x69f6e20 'solution' 'pair<long long, long long> &'
+|     | | |-CompoundStmt 0x6a0a7e0 <line:33:7, line:36:7>
+|     | | | |-BinaryOperator 0x6a0a6e0 <line:34:8, col:23> 'long long':'long long' lvalue '='
+|     | | | | |-MemberExpr 0x6a0a670 <col:8, col:17> 'long long':'long long' lvalue .first 0x6a09990
+|     | | | | | `-DeclRefExpr 0x6a0a648 <col:8> 'pair<long long, long long>':'struct std::pair<long long, long long>' lvalue ParmVar 0x69f6e20 'solution' 'pair<long long, long long> &'
+|     | | | | `-ImplicitCastExpr 0x6a0a6c8 <col:23> 'long long' <LValueToRValue>
+|     | | | |   `-DeclRefExpr 0x6a0a6a0 <col:23> 'long long' lvalue ParmVar 0x69f6f00 'sum' 'long long'
+|     | | | `-BinaryOperator 0x6a0a7b8 <line:35:8, col:24> 'long long':'long long' lvalue '='
+|     | | |   |-MemberExpr 0x6a0a730 <col:8, col:17> 'long long':'long long' lvalue .second 0x6a099f0
+|     | | |   | `-DeclRefExpr 0x6a0a708 <col:8> 'pair<long long, long long>':'struct std::pair<long long, long long>' lvalue ParmVar 0x69f6e20 'solution' 'pair<long long, long long> &'
+|     | | |   `-ImplicitCastExpr 0x6a0a7a0 <col:24> 'long long':'long long' <IntegralCast>
+|     | | |     `-ImplicitCastExpr 0x6a0a788 <col:24> 'int' <LValueToRValue>
+|     | | |       `-DeclRefExpr 0x6a0a760 <col:24> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|     | | `-<<<NULL>>>
+|     | `-IfStmt 0x6a0ab28 <line:37:7, line:41:7>
+|     |   |-<<<NULL>>>
+|     |   |-BinaryOperator 0x6a0a8e8 <line:37:10, col:24> '_Bool' '=='
+|     |   | |-ImplicitCastExpr 0x6a0a8b8 <col:10> 'long long' <LValueToRValue>
+|     |   | | `-DeclRefExpr 0x6a0a838 <col:10> 'long long' lvalue ParmVar 0x69f6f00 'sum' 'long long'
+|     |   | `-ImplicitCastExpr 0x6a0a8d0 <col:15, col:24> 'long long':'long long' <LValueToRValue>
+|     |   |   `-MemberExpr 0x6a0a888 <col:15, col:24> 'long long':'long long' lvalue .first 0x6a09990
+|     |   |     `-DeclRefExpr 0x6a0a860 <col:15> 'pair<long long, long long>':'struct std::pair<long long, long long>' lvalue ParmVar 0x69f6e20 'solution' 'pair<long long, long long> &'
+|     |   |-CompoundStmt 0x6a0ab08 <line:38:7, line:41:7>
+|     |   | `-IfStmt 0x6a0aad8 <line:39:8, line:40:25>
+|     |   |   |-<<<NULL>>>
+|     |   |   |-BinaryOperator 0x6a0a9d8 <line:39:11, col:22> '_Bool' '>'
+|     |   |   | |-ImplicitCastExpr 0x6a0a9c0 <col:11> 'long long' <IntegralCast>
+|     |   |   | | `-ImplicitCastExpr 0x6a0a990 <col:11> 'int' <LValueToRValue>
+|     |   |   | |   `-DeclRefExpr 0x6a0a910 <col:11> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|     |   |   | `-ImplicitCastExpr 0x6a0a9a8 <col:13, col:22> 'long long':'long long' <LValueToRValue>
+|     |   |   |   `-MemberExpr 0x6a0a960 <col:13, col:22> 'long long':'long long' lvalue .second 0x6a099f0
+|     |   |   |     `-DeclRefExpr 0x6a0a938 <col:13> 'pair<long long, long long>':'struct std::pair<long long, long long>' lvalue ParmVar 0x69f6e20 'solution' 'pair<long long, long long> &'
+|     |   |   |-BinaryOperator 0x6a0aab0 <line:40:9, col:25> 'long long':'long long' lvalue '='
+|     |   |   | |-MemberExpr 0x6a0aa28 <col:9, col:18> 'long long':'long long' lvalue .second 0x6a099f0
+|     |   |   | | `-DeclRefExpr 0x6a0aa00 <col:9> 'pair<long long, long long>':'struct std::pair<long long, long long>' lvalue ParmVar 0x69f6e20 'solution' 'pair<long long, long long> &'
+|     |   |   | `-ImplicitCastExpr 0x6a0aa98 <col:25> 'long long':'long long' <IntegralCast>
+|     |   |   |   `-ImplicitCastExpr 0x6a0aa80 <col:25> 'int' <LValueToRValue>
+|     |   |   |     `-DeclRefExpr 0x6a0aa58 <col:25> 'int' lvalue ParmVar 0x69f6e90 'i' 'int'
+|     |   |   `-<<<NULL>>>
+|     |   `-<<<NULL>>>
+|     `-<<<NULL>>>

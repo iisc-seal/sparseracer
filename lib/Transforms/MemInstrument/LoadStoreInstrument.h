@@ -35,7 +35,7 @@ namespace MemInstrument {
     const DataLayout *DL;
 
     std::set<std::string> InstrumentedTypes = {
-      //      "product",                                                                                  
+      //      "product", 
       "nsFrameSelection",
       "nsGenericHTMLElement",
       "nsHTMLEditor",
@@ -51,8 +51,8 @@ namespace MemInstrument {
     static char ID;
   LoadStoreInstrument() : ModulePass(ID) {ID = 0;}
     virtual bool runOnModule(Module &M);
-    void Instrument(BasicBlock::iterator &BI, bool isStore);
-    virtual bool runOnBasicBlock(Function::iterator &BB);
+    void Instrument(BasicBlock::iterator &BI, bool isStore, std::string fName);
+    virtual bool runOnBasicBlock(Function::iterator &BB, std::string fName);
   
   };
 

@@ -32,10 +32,10 @@ namespace MemInstrument {
     //                               UIntPtr, Type::getInt32Ty(*Context),Type::getInt32Ty(*Context),
     //                               (Type*)0);
     const Type *SBP = Type::getInt8PtrTy(*Context);
-    std::string mopName("_Z13mopInstrumentiiPcS_");
+    std::string mopName("_Z13mopInstrumentiiPcS_S_");
     MopFn = M.getOrInsertFunction("mopInstrument", Void,
 				  IntptrTy, Type::getInt64Ty(*Context),
-				  SBP, SBP,
+				  SBP, SBP, SBP,
 				  (Type*)0);
     
     Function *tmp = cast<Function>(MopFn);
@@ -43,13 +43,14 @@ namespace MemInstrument {
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-	LoadStoreInstrument::runOnBasicBlock(BB);
+	std::string fName = F->getName().str();
+	LoadStoreInstrument::runOnBasicBlock(BB, fName);
       }
     }
     return true;
   }
 
-  void LoadStoreInstrument::Instrument(BasicBlock::iterator &BI, bool isStore) {
+  void LoadStoreInstrument::Instrument(BasicBlock::iterator &BI, bool isStore, std::string fName) {
     std::vector<Value*> Args(3);
     
     llvm::Instruction &IN = *BI;
@@ -89,23 +90,23 @@ namespace MemInstrument {
     std::string underlying = getTypeAsString(UnderlyingObjectType);
     std::string original = getTypeAsString(OrigPtrTy);
 
-    bool flag = false;
+    // bool flag = false;
       
-    std::set<std::string>::iterator it;
-    for (it = InstrumentedTypes.begin(); it != InstrumentedTypes.end(); ++it){
-      std::string current = *it; 
-      std::size_t found = underlying.find(current);
-      if (found==std::string::npos){
-	continue;
-      }
-      else{
-	flag = true;
-	break;
-      }
-    }
+    // std::set<std::string>::iterator it;
+    // for (it = InstrumentedTypes.begin(); it != InstrumentedTypes.end(); ++it){
+    //   std::string current = *it; 
+    //   std::size_t found = underlying.find(current);
+    //   if (found==std::string::npos){
+    // 	continue;
+    //   }
+    //   else{
+    // 	flag = true;
+    // 	break;
+    //   }
+    // }
     
-    if(false == flag)
-      return;
+    // if(false == flag)
+    //   return;
     
     //Start writing out bitcode instructions to perform the instrumentation
     IRBuilder<> IRB(BI);
@@ -126,23 +127,28 @@ namespace MemInstrument {
     
     //Get a pointer to the string
     Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
+ 
+    Value *FunctionNameString = IRB.CreateGlobalString(fName);
     
-    IRB.CreateCall4(MopFn, AddrLong, Size, TypeStringPtr, DebugStringPtr);
+    //Get a pointer to the string
+    Value *FunctionStringPtr = IRB.CreateBitCast(FunctionNameString, IRB.getInt8PtrTy());
+     
+    IRB.CreateCall5(MopFn, AddrLong, Size, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
   }
   
-  bool LoadStoreInstrument::runOnBasicBlock(Function::iterator &BB) {
+  bool LoadStoreInstrument::runOnBasicBlock(Function::iterator &BB, std::string fName) {
     //errs() << "========BB===========\n";
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
-	LoadStoreInstrument::Instrument(BI, false);
+	LoadStoreInstrument::Instrument(BI, false, fName);
       } else {
 	if (isa<StoreInst>(BI)) {
 	  //errs() << ">";
 	  // Instrument STORE here
-	  LoadStoreInstrument::Instrument(BI, true);
+	  LoadStoreInstrument::Instrument(BI, true, fName);
 	} else {
 	  //errs() << " ";
 	}

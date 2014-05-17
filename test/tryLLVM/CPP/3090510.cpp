@@ -6,6 +6,7 @@
     using namespace std;
     
     int DP[105][106],K[105],C[105],P[105],T[105];
+    bool DP1[105][106];
     
     int main()
     {
@@ -24,6 +25,8 @@
     		
     		for(int i=0; i<W+1; i++)
     			DP[0][i]=0;
+    		for(int i=0; i<W+1; i++)
+    			DP[0][i]=1;
     		
     		L(i,1,N+1)
     		{
@@ -34,6 +37,17 @@
     					DP[i][j]=max(DP[i-1][j],(K[i]+DP[i-1][d]));
     				else
     					DP[i][j]=DP[i-1][j];
+    			}
+    		}
+    		L(i,1,N+1)
+    		{
+    			L(j,0,W+1)
+    			{
+    				d=j-T[i];
+    				if(d>=0)
+    					DP1[i][j]=DP1[i-1][j] || (K[i]+DP1[i-1][d]);
+    				else
+    					DP1[i][j]=DP1[i-1][j];
     			}
     		}
     		cout<<DP[N][W]<<endl;

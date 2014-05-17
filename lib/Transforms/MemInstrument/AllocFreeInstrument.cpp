@@ -31,23 +31,23 @@ namespace MemInstrument {
 
     Type *Void = Type::getVoidTy(*Context);
     const Type *SBP = Type::getInt8PtrTy(*Context);
-    std::string allocInstrFnName("_Z8mopAllociiPcS_");
-    std::string dallocInstrFnName("_Z10mopDeallociiPcS_");
+    std::string allocInstrFnName("_Z8mopAllociiPcS_S_");
+    std::string dallocInstrFnName("_Z10mopDeallociiPcS_S_");
     MAllocFn = M.getOrInsertFunction("mopAlloc", Void,
 				     IntptrTy, Type::getInt64Ty(*Context), 
-				     SBP, SBP,
+				     SBP, SBP, SBP,
 				     (Type*)0);
     MDallocFn = M.getOrInsertFunction("mopDealloc", Void,
 				      IntptrTy, Type::getInt64Ty(*Context), 
-				      SBP, SBP,
+				      SBP, SBP, SBP,
 				      (Type*)0);
     (cast<Function>(MAllocFn))->setCallingConv(CallingConv::C);
     (cast<Function>(MDallocFn))->setCallingConv(CallingConv::C);
 
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
-      if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
-	continue;
+      // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
+      // 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	AllocFreeInstrument::runOnBasicBlock(BB);
       }
@@ -81,6 +81,11 @@ namespace MemInstrument {
     //errs() << "\n";
 
     // Get size of type being freed
+    if(!OrigTy->isSized()){
+      errs() << "Failed to track free on :"; 
+      OrigTy->dump();
+      return;
+    }
     assert(OrigTy->isSized());
     uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
     //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
@@ -103,10 +108,17 @@ namespace MemInstrument {
     //Get a pointer to the string
     Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
 
+    //Get a string representing the function this write is in
+    Value *FunctionNameString = IRB.CreateGlobalString(fName);
+
+    //Get a pointer to the string representing the function name
+    Value *FunctionStringPtr = IRB.CreateBitCast(FunctionNameString, IRB.getInt8PtrTy());
+
+
     //Track if this is an allocate (or deallocate)
     // Value *Allocate = ConstantInt::get(Type::getInt32Ty(*Context), isAlloc);
     //errs() << "Got here! \n";
-    IRB.CreateCall4(MDallocFn, AddrLong, Size, TypeStringPtr, DebugStringPtr);
+    IRB.CreateCall5(MDallocFn, AddrLong, Size, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
   }
 
   void AllocFreeInstrument::InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName) {
@@ -156,7 +168,14 @@ namespace MemInstrument {
     Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
     //errs() << "DebugStrPtr" << *DebugStringPtr<< "\n";
     //errs() <<"Alloc! \n";
-    IRB.CreateCall4(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr);
+    //Get a string representing the function this write is in
+    Value *FunctionNameString = IRB.CreateGlobalString(fName);
+    
+    //Get a pointer to the string representing the function name
+    Value *FunctionStringPtr = IRB.CreateBitCast(FunctionNameString, IRB.getInt8PtrTy());
+
+
+    IRB.CreateCall5(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
     //errs() << "Problem! \n";
     //errs() << *CI << "\n";
         

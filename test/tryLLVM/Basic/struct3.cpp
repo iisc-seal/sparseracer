@@ -11,11 +11,11 @@ struct product{
 
 int main(){
   struct product *p = new product;
-  printf("%x\n", p);
+  //printf("%x\n", p);
   p->serialNum = 10;
   p->nested.f1 = 10;
   p->nested.f2 = new int;
-  printf("%p\n", p->nested.f2);
+  //printf("%p\n", p->nested.f2);
   *(p->nested.f2) = 3;
   //return 0;
 }
