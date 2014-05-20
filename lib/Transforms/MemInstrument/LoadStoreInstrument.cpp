@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "LoadStoreInstrument.h"
+#include "AllocFreeInstrument.h"
 
 using namespace llvm;
 namespace MemInstrument {
@@ -40,10 +41,20 @@ namespace MemInstrument {
     
     Function *tmp = cast<Function>(MopFn);
     tmp->setCallingConv(CallingConv::C);
+    AllocFreeInstrument passObject;
+    const std::set<std::string> allocFunctions = passObject.getAllocFunctions();
+    const std::set<std::string> freeFunctions = passObject.getFreeFunctions();
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	std::string fName = F->getName().str();
+	// don't instrument functions that have to deal with memory management
+       
+	const bool found = 
+	  (freeFunctions.find(fName) != freeFunctions.end() || 
+	   allocFunctions.find(fName) != allocFunctions.end());
+	if(found)
+	  return true;
 	LoadStoreInstrument::runOnBasicBlock(BB, fName);
       }
     }

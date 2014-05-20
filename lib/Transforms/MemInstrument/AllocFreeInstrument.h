@@ -71,6 +71,11 @@ namespace MemInstrument {
     void InstrumentDealloc(BasicBlock::iterator &BI, std::string fName);
     void InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName);
     virtual bool runOnBasicBlock(Function::iterator &BB);
-    
+    std::set<std::string> getAllocFunctions(){
+      return allocFunctions;
+    }
+    std::set<std::string> getFreeFunctions(){
+      return freeFunctions;
+    }
   };
 }
