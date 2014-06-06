@@ -4,12 +4,15 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../racedetector/HBGraph.cpp \
 ../racedetector/UAFDetector.cpp 
 
 OBJS += \
+./racedetector/HBGraph.o \
 ./racedetector/UAFDetector.o 
 
 CPP_DEPS += \
+./racedetector/HBGraph.d \
 ./racedetector/UAFDetector.d 
 
 

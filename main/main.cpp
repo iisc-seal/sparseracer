@@ -9,6 +9,8 @@
 #include <parser/TraceParser.h>
 #include <racedetector/UAFDetector.h>
 
+#include <debugconfig.h>
+
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
 		cout << "ERROR: Missing input:- trace-file name\n";
@@ -19,9 +21,20 @@ int main(int argc, char* argv[]) {
 	UAFDetector detectorObj;
 
 	if (parser.parse(detectorObj) < 0) {
-		cout << "ERROR\n";
+		cout << "ERROR while parsing the trace\n";
 		return -1;
 	}
 
+#ifdef TRACEDEBUG
 	cout << "map size: " << detectorObj.opIDMap.size() << endl;
+#endif
+
+	if (detectorObj.addEdges() < 0) {
+		cout << "ERROR while constructing HB Graph\n";
+		return -1;
+	}
+
+#ifdef GRAPHDEBUG
+	detectorObj.printEdges();
+#endif
 }

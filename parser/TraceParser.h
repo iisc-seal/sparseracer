@@ -22,8 +22,7 @@ public:
 	virtual ~TraceParser();
 
 	// checks whether each line from the trace file is a valid operation
-	int parse(UAFDetector detector);
-//	int parse();
+	int parse(UAFDetector &detector);
 
 
 private:
@@ -35,7 +34,7 @@ private:
 		   prefixRegEx, // regex for prefix (if any) of each line in the trace file
 		   finalRegEx;  // regex for a valid line in the trace file
 
-	int opCount;		// no of operations in the trace
+	long long opCount;		// no of operations in the trace
 };
 
 #endif /* TRACEPARSER_H_ */

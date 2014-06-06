@@ -4,12 +4,15 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../parser/MultiStack.cpp \
 ../parser/TraceParser.cpp 
 
 OBJS += \
+./parser/MultiStack.o \
 ./parser/TraceParser.o 
 
 CPP_DEPS += \
+./parser/MultiStack.d \
 ./parser/TraceParser.d 
 
 
