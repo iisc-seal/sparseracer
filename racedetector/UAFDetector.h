@@ -225,6 +225,11 @@ private:
 	int addCallbackSTEdges();
 	int addFifoAtomicEdges();
 	int addNoPreEdges();
+	int addFifoCallbackEdges();
+	int addFifoNestedEdges();
+	int addNoPrePrefixEdges();
+	int addNoPreSuffixEdges();
+	int addTransSTOrMTEdges();
 };
 
 #endif /* UAFDETECTOR_H_ */
