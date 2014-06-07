@@ -78,7 +78,7 @@ int HBGraph::edgeExists(long long source, long long destination) {
 }
 
 void HBGraph::printGraph(bool flag) {
-	cout << endl << totalNodes;
+//	cout << endl << totalNodes;
 	if (flag) {
 	cout << endl << "Matrix";
 	for (long long i=1; i <= totalNodes; i++) {
@@ -90,7 +90,7 @@ void HBGraph::printGraph(bool flag) {
 	cout << "\n";
 	}
 
-	cout << "List";
+//	cout << "List";
 	for (long long i=1; i <= totalNodes; i++) {
 		cout << endl << i << ": ";
 		struct adjListNode* currNode = adjList[i].head;

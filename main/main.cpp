@@ -41,9 +41,8 @@ int main(int argc, char* argv[]) {
 	}
 
 //#ifdef GRAPHDEBUG
-#ifdef TRACEDEBUG
-	detectorObj.printEdges();
-#endif
+//	detectorObj.printEdges();
+//#endif
 
 	detectorObj.findUAF(logger);
 

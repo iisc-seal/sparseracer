@@ -70,6 +70,8 @@ public:
 		long long enqOpID;
 		string callback;
 
+		string parentTask; // ID of immediate parent task
+
 		taskDetails() {
 			threadID = -1;
 			firstPauseOpID = -1;
@@ -79,12 +81,15 @@ public:
 			endOpID = -1;
 			enqOpID = -1;
 			callback = "";
+
+			parentTask = "";
 		}
 
 		void printTaskDetails() {
 			cout << "threadID " << threadID << " first-pause " << firstPauseOpID
 				 << " last-resume " << lastResumeOpID << " deq " << deqOpID
-				 << " end " << endOpID << " enq " << enqOpID << " callback " << callback;
+				 << " end " << endOpID << " enq " << enqOpID << " callback " << callback
+				 << " parent task " << parentTask;
 		}
 	};
 

@@ -83,8 +83,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	bool flag;
 	long long typePos, threadPos;
 	MultiStack stack1;	// keeps track of last deq, pause and resume operations - to obtain first pause and last resume.
-	MultiStack stack2;	// keeps track of last op in each thread - to obtain next op ID in the same task
+	MultiStack stack2;	// keeps track of last op in each thread - to obtain next op ID in the same task.
 	MultiStack stack3;  // keeps track of last op in each thread - to obtain next op ID for every operation in the thread.
+	MultiStack stack4;  // keeps track of last deq, pause - to obtain task nesting.
 
 	while (traceFile >> line) {
 		// Check whether the line is a valid line according to finalRegEx
@@ -162,6 +163,35 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							element.taskID = opdetails.taskID;
 							element.threadID = opdetails.threadID;
 							stack2.push(element);
+
+							MultiStack::stackElementType top = stack4.peek(opdetails.threadID);
+							if (!stack4.isBottom(top)) {
+								if (top.opType.compare("pause") == 0) {
+									if (detector.taskIDMap.find(opdetails.taskID) == detector.taskIDMap.end()) {
+										UAFDetector::taskDetails details;
+										details.parentTask = top.taskID;
+										detector.taskIDMap[opdetails.taskID] = details;
+									} else {
+										UAFDetector::taskDetails existingDetails = detector.taskIDMap.find(opdetails.taskID)->second;
+										existingDetails.parentTask = top.taskID;
+										detector.taskIDMap.erase(detector.taskIDMap.find(opdetails.taskID));
+										detector.taskIDMap[opdetails.taskID] = existingDetails;
+									}
+								}
+							} else {
+								detector.taskIDMap[opdetails.taskID].parentTask = "";
+								if (detector.taskIDMap.find(opdetails.taskID) == detector.taskIDMap.end()) {
+									UAFDetector::taskDetails details;
+									details.parentTask = "";
+									detector.taskIDMap[opdetails.taskID] = details;
+								} else {
+									UAFDetector::taskDetails existingDetails = detector.taskIDMap.find(opdetails.taskID)->second;
+									existingDetails.parentTask = "";
+									detector.taskIDMap.erase(detector.taskIDMap.find(opdetails.taskID));
+									detector.taskIDMap[opdetails.taskID] = existingDetails;
+								}
+							}
+							stack4.push(element); // push deq to stack4.
 						} else if (match.compare("end") == 0) {
 							// If the current operation is end, pop the top element from stack 2.
 							// Don't push the end.
@@ -185,6 +215,13 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							} else {
 								cout << "ERROR: Found stack bottom when analyzing end for next op in task\n";
 								return -1;
+							}
+
+							top = stack4.peek(opdetails.threadID);
+							if (!stack4.isBottom(top)) {
+								if (top.opType.compare("deq") == 0) {
+									stack4.pop(opdetails.threadID);
+								}
 							}
 						} else {
 							// Obtain the top element in stack2, make curr op the next op ID of the top.
@@ -259,6 +296,20 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										cout << "ERROR: Cannot find map entry for task " << opdetails.taskID << endl;
 										return -1;
 									}
+								}
+
+								MultiStack::stackElementType element;
+								element.opID = opCount;
+								element.opType = "pause";
+								element.taskID = opdetails.taskID;
+								element.threadID = opdetails.threadID;
+								stack4.push(element);
+							}
+
+							if (match.compare("resume") == 0) {
+								MultiStack::stackElementType top = stack4.peek(opdetails.threadID);
+								if (top.opType.compare("pause") == 0) {
+									stack4.pop(opdetails.threadID);
 								}
 							}
 

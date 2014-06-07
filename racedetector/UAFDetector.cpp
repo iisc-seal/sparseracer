@@ -694,6 +694,15 @@ int UAFDetector::addFifoCallbackEdges() {
 					break;
 				}
 
+				string parentTask = taskIDMap[task1].parentTask;
+				long long enq_parent = taskIDMap[parentTask].enqOpID;
+				if (enq_parent == -1) {
+					cout << "ERROR: Cannot find enq of task " << parentTask << ", the parent task of " << task1 << endl;
+					continue;
+				}
+
+				if (graph.edgeExists(enq_parent, enq_1) != 1) continue;
+
 				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 				if (addEdgeRetValue == 1) flag = true; // New edge added.
 				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
