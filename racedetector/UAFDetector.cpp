@@ -80,6 +80,7 @@ int UAFDetector::addEdges(Logger &logger) {
 		graph.printGraph(false);
 #endif
 
+		cout << "Adding Fifo-Atomic edges\n";
 		// FIFO-ATOMIC
 		retValue = addFifoAtomicEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -97,6 +98,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+		cout << "Adding No-Pre edges\n";
 		// NO-PRE
 		retValue = addNoPreEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -114,6 +116,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+		cout << "Adding Fifo-Callback edges\n";
 		// FIFO-CALLBACK
 		retValue = addFifoCallbackEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -131,6 +134,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+		cout << "Adding Fifo-Nested edges\n";
 		// FIFO-NESTED
 		retValue = addFifoNestedEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -148,6 +152,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+		cout << "Adding NoPre-Prefix edges\n";
 		// NOPRE-PREFIX
 		retValue = addNoPrePrefixEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -165,6 +170,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+		cout << "Adding NoPre-Suffix edges\n";
 		// NOPRE-SUFFIX
 		retValue = addNoPreSuffixEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -182,6 +188,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+		cout << "Adding Trans-ST/MT edges\n";
 		// TRANS-ST/MT
 		retValue = addTransSTOrMTEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -696,8 +703,13 @@ int UAFDetector::addFifoCallbackEdges() {
 
 				string parentTask = taskIDMap[task1].parentTask;
 				long long enq_parent = taskIDMap[parentTask].enqOpID;
-				if (enq_parent == -1) {
+				if (enq_parent == -1 && parentTask.compare("") != 0) {
 					cout << "ERROR: Cannot find enq of task " << parentTask << ", the parent task of " << task1 << endl;
+					continue;
+				}
+
+				if (enq_parent == -1) {
+					cout << "ERROR: No parent for task " << task1 << endl;
 					continue;
 				}
 
