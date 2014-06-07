@@ -25,7 +25,7 @@ void UAFDetector::initGraph(long long countOfNodes) {
 	graph = HBGraph(countOfNodes);
 }
 
-int UAFDetector::addEdges() {
+int UAFDetector::addEdges(Logger &logger) {
 	assert (graph.totalNodes != 0);
 
 	// LOOP-PO
@@ -40,7 +40,7 @@ int UAFDetector::addEdges() {
 		return -1;
 	}
 
-	// ENQUEUE-ST
+	// ENQUEUE-ST/MT
 	if (addEnqueueSTorMTEdges() < 0) {
 		cout << "ERROR: While adding ENQUEUE-ST/MT edges\n";
 		return -1;
@@ -66,13 +66,19 @@ int UAFDetector::addEdges() {
 
 	// CALLBACK-ST
 	if (addCallbackSTEdges() < 0) {
-		cout << "ERROR: While adding LOCK edges\n";
+		cout << "ERROR: While adding CALLBACK-ST edges\n";
 		return -1;
 	}
+#if 0
+#endif
 
 	bool edgeAdded = false;
 	while (true) {
 		int retValue;
+
+#ifdef GRAPHDEBUG
+		graph.printGraph(false);
+#endif
 
 		// FIFO-ATOMIC
 		retValue = addFifoAtomicEdges();
@@ -86,7 +92,11 @@ int UAFDetector::addEdges() {
 			return -1;
 		}
 
-#if 0
+#ifdef GRAPHDEBUG
+		if (retValue == 1)
+			graph.printGraph(false);
+#endif
+
 		// NO-PRE
 		retValue = addNoPreEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -98,6 +108,11 @@ int UAFDetector::addEdges() {
 			cout << "ERROR: Unknown return value from addNoPreEdges()\n";
 			return -1;
 		}
+
+#ifdef GRAPHDEBUG
+		if (retValue == 1)
+			graph.printGraph(false);
+#endif
 
 		// FIFO-CALLBACK
 		retValue = addFifoCallbackEdges();
@@ -111,6 +126,11 @@ int UAFDetector::addEdges() {
 			return -1;
 		}
 
+#ifdef GRAPHDEBUG
+		if (retValue == 1)
+			graph.printGraph(false);
+#endif
+
 		// FIFO-NESTED
 		retValue = addFifoNestedEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -122,6 +142,11 @@ int UAFDetector::addEdges() {
 			cout << "ERROR: Unknown return value from addFifoNestedEdges()\n";
 			return -1;
 		}
+
+#ifdef GRAPHDEBUG
+		if (retValue == 1)
+			graph.printGraph(false);
+#endif
 
 		// NOPRE-PREFIX
 		retValue = addNoPrePrefixEdges();
@@ -135,6 +160,11 @@ int UAFDetector::addEdges() {
 			return -1;
 		}
 
+#ifdef GRAPHDEBUG
+		if (retValue == 1)
+			graph.printGraph(false);
+#endif
+
 		// NOPRE-SUFFIX
 		retValue = addNoPreSuffixEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -147,6 +177,11 @@ int UAFDetector::addEdges() {
 			return -1;
 		}
 
+#ifdef GRAPHDEBUG
+		if (retValue == 1)
+			graph.printGraph(false);
+#endif
+
 		// TRANS-ST/MT
 		retValue = addTransSTOrMTEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -158,11 +193,19 @@ int UAFDetector::addEdges() {
 			cout << "ERROR: Unknown return value from addTransSTOrMTEdges()\n";
 			return -1;
 		}
+#if 0
 #endif
 
 		if (!edgeAdded) // If no edges were added in this iteration, stop.
 			break;
+		else
+			edgeAdded = false;
 	}
+
+#ifdef GRAPHDEBUG
+	graph.printGraph(false);
+#endif
+
 	return 0;
 }
 
@@ -188,7 +231,7 @@ int UAFDetector::addLoopPOEdges() {
 				if (alpha_i < alpha_j) {
 					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 					if (addEdgeRetValue == 1) flag = true; // New edge added
-					else if (addEdgeRetValue == 0) flag = false; // Edge already present.
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 					else if (addEdgeRetValue == -1) {
 						cout << "ERROR: While adding Loop-PO edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
@@ -196,51 +239,15 @@ int UAFDetector::addLoopPOEdges() {
 						cout << "ERROR: Unknown return value from graph.addSingleEdge(" << alpha_i << ", " << alpha_j << ")\n";
 						return -1;
 					}
-				}
-				alpha_j = opToNextOpInThread[alpha_j];
-			}
-			alpha_i = opToNextOpInThread[alpha_i];
-		}
-#if 0
-		long long enterloopid; // temporary to store the id of enterloop operation.
-		// Until we find enterloop in this thread
-		while (opIDMap[alpha_i].opType.compare("enterloop") != 0) {
-			alpha_j = opToNextOpInThread[alpha_i];
-			while (alpha_j != 0) {
-				if (alpha_i < alpha_j) {
-					if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
-						cout << "ERROR: While adding Loop-PO edge from " << alpha_i << " to " << alpha_j;
-						return -1;
-					} else
-						flag = true;
-					alpha_j = opToNextOpInThread[alpha_j];
-				} else {
-					cout << "ERROR: Found potential edge between " << alpha_i << " and " << alpha_j << endl;
-					return -1;
-				}
-			}
-			alpha_i = opToNextOpInThread[alpha_i];
-		}
-
-		// We found enterloop. We need to add edges from enterloop to all other ops as well.
-		// May be bad programming - because replicating the entire loop body here.
-		// alpha_i is enterloop.
-		enterloopid = alpha_i;
-		alpha_j = opToNextOpInThread[alpha_i];
-		while (alpha_j != 0) {
-			if (alpha_i < alpha_j) {
-				if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
-					cout << "ERROR: While adding Loop-PO edge from " << alpha_i << " to " << alpha_j;
-					return -1;
-				} else
-						flag = true;
-				alpha_j = opToNextOpInThread[alpha_j];
-			} else {
-				cout << "ERROR: Found potential edge between " << alpha_i << " and " << alpha_j << endl;
-				return -1;
-			}
-		}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "Loop-PO edge (" << alpha_i << "," << alpha_j << ")" << endl;
 #endif
+				}
+				alpha_j = opToNextOpInThread[alpha_j];
+			}
+			alpha_i = opToNextOpInThread[alpha_i];
+		}
 
 		// Start from exitloop. For each op2 \in {exitloop, ... threadexit}, add edge (any-op-before-op2, op2).
 		// For ops \in {threadinit, ... , enterloop}, this would be redundant, so we skip those and start after enterloop.
@@ -248,18 +255,7 @@ int UAFDetector::addLoopPOEdges() {
 
 		// Obtain the exitloop corresponding to this thread.
 		alpha_j = threadIDMap[threadID].exitloopOpID;
-#if 0
-		set<long long>::iterator exitIt;
-		for (exitIt = exitloopSet.begin(); exitIt != exitloopSet.end(); exitIt++) {
-			if (opIDMap[*exitIt].threadID == opIDMap[*it].threadID) {
-				// Found the exitloop corresponding to the threadinit
-				break;
-			}
-		}
 
-		if (exitIt != exitloopSet.end()) {
-			alpha_j = *exitIt;
-#endif
 #if 0
 			// Until we find threadexit, add edges.
 			//while (opIDMap[alpha_j].opType.compare("threadexit") != 0)
@@ -271,16 +267,24 @@ int UAFDetector::addLoopPOEdges() {
 				alpha_i = opToNextOpInThread[enterloopid]; // alpha_i is initialized to next operation after enterloop.
 				// Loop till you reach alpha_j
 				while (alpha_i < alpha_j) {
-					if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
-						cout << "ERROR: While adding Loop-PO edge from " << alpha_i << " to " << alpha_j;
+					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+					if (addEdgeRetValue == 1) flag = true;
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+					else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding Loop-PO edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
-					} else
-						flag = true;
+					} else {
+						cout << "ERROR: Unknown return value from addSingleEdge() when adding Loop-PO edge from " << alpha_i << " to " << alpha_j << endl;
+						return -1;
+					}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "Loop-PO edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 					alpha_i = opToNextOpInThread[alpha_i];
 				}
 				alpha_j = opToNextOpInThread[alpha_j];
 			}
-//		}
 #if 0
 		// Currently assuming there need not be exitloop for all threads.
 		else {
@@ -312,7 +316,7 @@ int UAFDetector::addTaskPOEdges() {
 			while (alpha_j != 0) {
 				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 				if (addEdgeRetValue == 1) flag = true; // New edge added
-				else if (addEdgeRetValue == 0) flag = false; // Edge already present
+				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 				else if (addEdgeRetValue == -1) {
 					cout << "ERROR: While adding Task-PO edge from " << alpha_i << " to " << alpha_j << endl;
 					return -1;
@@ -320,6 +324,10 @@ int UAFDetector::addTaskPOEdges() {
 					cout << "ERROR: Unknown return value when addSingleEdge(" << alpha_i << ", " << alpha_j << ")\n";
 					return -1;
 				}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "Task-PO edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 				alpha_j = opToNextOpInTask[alpha_j];
 			}
 			alpha_i = opToNextOpInTask[alpha_i];
@@ -338,34 +346,13 @@ int UAFDetector::addEnqueueSTorMTEdges() {
 
 	bool flag = false; // To keep track of whether edges were added.
 
-#if 0
-	for (map<long long, enqOpDetails>::iterator enqIt = enqSet.begin(); enqIt != enqSet.end(); enqIt++) {
-		long long alpha_i = enqIt->first;
-		long long alpha_j;
-
-		string enqTask = enqIt->second.taskEnqueued;
-		long long enqTargetThread = enqIt->second.targetThreadID;
-
-		for (set<long long>::iterator deqit = deqSet.begin(); deqit != deqSet.end(); deqit++) {
-			alpha_j = *deqit;
-			if (opIDMap[alpha_j].taskID.compare(enqTask) == 0 && opIDMap[alpha_j].threadID == enqTargetThread) {
-				if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
-					cout << "ERROR: While adding Enqueue-ST/MT edge from " << alpha_i << " to " << alpha_j	<< endl;
-					return -1;
-				} else
-					flag = true;
-			}
-		}
-	}
-#endif
 	for (map<string, taskDetails>::iterator taskIt = taskIDMap.begin(); taskIt != taskIDMap.end(); taskIt++) {
-		cout << "Task " << taskIt->first << endl;
 		long long alpha_i = taskIt->second.enqOpID;
 		long long alpha_j = taskIt->second.deqOpID;
 
 		int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 		if (addEdgeRetValue == 1) flag = true; // New edge added
-		else if (addEdgeRetValue == 0) flag = false; // Edge already present
+		else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 		else if (addEdgeRetValue == -1) {
 			cout << "ERROR: While adding Enqueue-ST/MT edge from " << alpha_i << " to " << alpha_j << endl;
 			return -1;
@@ -373,6 +360,10 @@ int UAFDetector::addEnqueueSTorMTEdges() {
 			cout << "ERROR: Unknown return value from addSingleEdge(" << alpha_i << ", " << alpha_j << ")\n";
 			return -1;
 		}
+#ifdef GRAPHDEBUG
+		if (addEdgeRetValue == 1)
+			cout << "Enqueue-ST/MT edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 	}
 
 	if (flag)
@@ -387,41 +378,21 @@ int UAFDetector::addForkEdges() {
 
 	bool flag = false; // To keep track of whether edges were added.
 
-#if 0
-	for (map<long long, forkAndJoinOpDetails>::iterator forkIt = forkSet.begin(); forkIt != forkSet.end(); forkIt++) {
-		long long alpha_i = forkIt->first;
-		long long alpha_j;
-
-		long long forkedThreadID = forkIt->second.targetThreadID;
-		for (set<long long>::iterator threadinitIt = threadinitSet.begin(); threadinitIt != threadinitSet.end(); threadinitIt++) {
-			alpha_j = *threadinitIt;
-			if (opIDMap[alpha_j].threadID == forkedThreadID) {
-				if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
-					cout << "ERROR: While adding Fork edge from " << alpha_i << " to " << alpha_j	<< endl;
-					return -1;
-				} else
-					flag = true;
-			}
-		}
-	}
-#endif
 	for (map<long long, threadDetails>::iterator threadIt = threadIDMap.begin(); threadIt != threadIDMap.end(); threadIt++) {
 		long long alpha_i = threadIt->second.forkOpID;
 		long long alpha_j = threadIt->second.threadinitOpID;
 
 		if (alpha_i == -1) {
-//			ERRLOG("Cannot find fork for thread " + threadIt->first);
-			cout << "Cannot find fork for thread " << threadIt->first;
+			cout << "Cannot find fork for thread " << threadIt->first << endl;
 			continue;
 		}
 		else if (alpha_j == -1) {
-//			ERRLOG("Cannot find threadinit for thread " + threadIt->first);
-			cout << "Cannot find threadinit for thread " << threadIt->first;
+			cout << "Cannot find threadinit for thread " << threadIt->first << endl;
 			continue;
 		}
 		int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 		if (addEdgeRetValue == 1) flag = true; // New edge added
-		else if (addEdgeRetValue == 0) flag = false; // Edge already present
+		else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 		else if (addEdgeRetValue == -1) {
 			cout << "ERROR: While adding Fork edge from " << alpha_i << " to " << alpha_j << endl;
 			return -1;
@@ -429,6 +400,10 @@ int UAFDetector::addForkEdges() {
 			cout << "ERROR: Unknown return value from addSingleEdge(" << alpha_i << ", " << alpha_j << ")\n";
 			return -1;
 		}
+#ifdef GRAPHDEBUG
+		if (addEdgeRetValue == 1)
+			cout << "Fork edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 	}
 
 	if (flag)
@@ -443,40 +418,21 @@ int UAFDetector::addJoinEdges() {
 
 	bool flag = false; // To keep track of whether edges were added.
 
-#if 0
-	for (set<long long>::iterator threadexitIt = threadexitSet.begin(); threadexitIt != threadexitSet.end(); threadexitIt++) {
-		long long alpha_i = *threadexitIt;
-		long long alpha_j;
-
-		for (map<long long, forkAndJoinOpDetails>::iterator joinIt = joinSet.begin(); joinIt != joinSet.end(); joinIt++) {
-			alpha_j = joinIt->first;
-			if (joinIt->second.targetThreadID == opIDMap[alpha_i].threadID) {
-				if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
-					cout << "ERROR: While adding Join edge from " << alpha_i << " to " << alpha_j	<< endl;
-					return -1;
-				} else
-					flag = true;
-			}
-		}
-	}
-#endif
 	for (map<long long, threadDetails>::iterator threadIt = threadIDMap.begin(); threadIt != threadIDMap.end(); threadIt++) {
 		long long alpha_i = threadIt->second.threadexitOpID;
 		long long alpha_j = threadIt->second.joinOpID;
 
 		if (alpha_i == -1) {
-//			ERRLOG("Cannot find threadexit for thread " + threadIt->first);
-			cout << "Cannot find threadinit for thread " << threadIt->first;
+			cout << "Cannot find threadexit for thread " << threadIt->first << endl;
 			continue;
 		}
 		else if (alpha_j == -1) {
-//			ERRLOG("Cannot find join for thread " + threadIt->first);
-			cout << "Cannot find join for thread " << threadIt->first;
+			cout << "Cannot find join for thread " << threadIt->first << endl;
 			continue;
 		}
 		int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 		if (addEdgeRetValue == 1) flag = true; // New edge added
-		else if (addEdgeRetValue == 0) flag = false; // Edge already present
+		else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 		else if (addEdgeRetValue == -1) {
 			cout << "ERROR: While adding Join edge from " << alpha_i << " to " << alpha_j << endl;
 			return -1;
@@ -484,6 +440,10 @@ int UAFDetector::addJoinEdges() {
 			cout << "ERROR: Unknown return value from addSingleEdge(" << alpha_i << ", " << alpha_j << ")\n";
 			return -1;
 		}
+#ifdef GRAPHDEBUG
+		if (addEdgeRetValue == 1)
+			cout << "Join edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 	}
 
 	if (flag)
@@ -511,11 +471,20 @@ int UAFDetector::addLockEdges() {
 			long long acquireThreadID = acquireIt->second.currThreadID;
 			string acquireLockID = acquireIt->second.lockID;
 			if(releaseLockID.compare(acquireLockID) == 0 && releaseThreadID != acquireThreadID) {
-				if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
+				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+				if (addEdgeRetValue == 1) flag = true;
+				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+				else if (addEdgeRetValue == -1) {
 					cout << "ERROR: While adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
 					return -1;
-				} else
-					flag = true;
+				} else {
+					cout << "ERROR: Unknown return value from addSingleEdge() while adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				}
+#ifdef GRAPHDEBUG
+				if (addEdgeRetValue == 1)
+					cout << "Lock edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 			}
 		}
 	}
@@ -542,11 +511,20 @@ int UAFDetector::addCallbackSTEdges() {
 		alpha_j = opToNextOpInThread[alpha_i];
 		if (alpha_j != 0) {
 			if (opIDMap[alpha_j].opType.compare("resume") == 0 && opIDMap[alpha_j].threadID == endThreadID) {
-				if (graph.addSingleEdge(alpha_i, alpha_j) < 0) {
+				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+				if (addEdgeRetValue == 1) flag = true;
+				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+				else if (addEdgeRetValue == -1) {
 					cout << "ERROR: While adding Callback-ST edge from " << alpha_i << " to " << alpha_j << endl;
 					return -1;
-				} else
-					flag = true;
+				} else {
+					cout << "ERROR: Unknown return value from addSingleEdge() while adding Callback-ST edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				}
+#ifdef GRAPHDEBUG
+				if (addEdgeRetValue == 1)
+					cout << "Callback-ST edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 			}
 		}
 	}
@@ -582,7 +560,8 @@ int UAFDetector::addFifoAtomicEdges() {
 			if (opIDMap[currNode->destination].opType.compare("enq") == 0) {
 				long long enq_2 = currNode->destination;
 				string task2 = enqSet[enq_2].taskEnqueued;
-				if (task1.compare(task2) != 0 && opIDMap[enq_i].threadID == opIDMap[enq_2].threadID) {
+
+				if (task1.compare(task2) != 0 && enqSet[enq_i].targetThreadID == enqSet[enq_2].targetThreadID) {
 					long long alpha_j = taskIDMap[task2].deqOpID;
 
 					if (alpha_j == -1) {
@@ -592,7 +571,7 @@ int UAFDetector::addFifoAtomicEdges() {
 
 					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 					if (addEdgeRetValue == 1) flag = true; // New edge added.
-					else if (addEdgeRetValue == 0) flag = false; // Edge already present.
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 					else if (addEdgeRetValue == -1) {
 						cout << "ERROR: While adding Fifo-Atomic edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
@@ -600,6 +579,10 @@ int UAFDetector::addFifoAtomicEdges() {
 						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Fifo-Atomic edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
 					}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "Fifo-Atomic edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 				}
 			}
 		}
@@ -624,14 +607,6 @@ int UAFDetector::addNoPreEdges() {
 		long long alpha_i, alpha_j;
 
 		// Obtain end(p1).
-#if 0
-		for (set<long long>::iterator endIt = endSet.begin(); endIt != endSet.end(); endIt++) {
-			if (opIDMap[*endIt].taskID.compare(p1) == 0) {
-				alpha_i = *endIt;
-				break;
-			}
-		}
-#endif
 		alpha_i = taskIDMap[*atomicIt].endOpID;
 		if (alpha_i == -1) {
 			cout << "ERROR: Cannot find end of atomic task " << *atomicIt << endl;
@@ -662,7 +637,7 @@ int UAFDetector::addNoPreEdges() {
 							if (graph.edgeExists(op, alpha_j) == 1) {
 								int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 								if (addEdgeRetValue == 1) flag = true; // New edge added.
-								else if (addEdgeRetValue == 0) flag = false; // Edge already present.
+								else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 								else if (addEdgeRetValue == -1) {
 									cout << "ERROR: While adding Nopre edge from " << alpha_i << " to " << alpha_j << endl;
 									return -1;
@@ -670,6 +645,10 @@ int UAFDetector::addNoPreEdges() {
 									cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Nopre edge from " << alpha_i << " to " << alpha_j << endl;
 									return -1;
 								}
+#ifdef GRAPHDEBUG
+								if (addEdgeRetValue == 1)
+									cout << "Nopre edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 								break;
 							}
 							op = opToNextOpInTask[op];
@@ -697,36 +676,38 @@ int UAFDetector::addFifoCallbackEdges() {
 
 		for (HBGraph::adjListNode* currNode = graph.adjList[enq_1].head; currNode != NULL; currNode = currNode->next) {
 			long long destination = currNode->destination;
-			if (opIDMap[destination].opType.compare("enq") == 0) {
-				if ((enqSet[enq_1].targetThreadID == enqSet[destination].targetThreadID) && (enqSet[enq_1].taskEnqueued.compare(enqSet[destination].taskEnqueued) != 0) && (enqSet[destination].callback.compare(NILCallback) == 0)) {
-					string task1 = enq1It->second.taskEnqueued;
-					long long alpha_i = taskIDMap[task1].endOpID;
+			if (opIDMap[destination].opType.compare("enq") != 0) continue;
 
-					string callback2 = enqSet[destination].taskEnqueued;
-					long long alpha_j = taskIDMap[callback2].deqOpID;
+			if ((enqSet[enq_1].targetThreadID == enqSet[destination].targetThreadID) && (enqSet[enq_1].taskEnqueued.compare(enqSet[destination].taskEnqueued) != 0) && (enqSet[destination].callback.compare(NILCallback) == 0)) {
+				string task1 = enq1It->second.taskEnqueued;
+				long long alpha_i = taskIDMap[task1].endOpID;
 
-					if (alpha_j == -1) {
-//						ERRLOG("ERROR: Found enq of task " + callback2 + " at " + destination + ", but cannot find deq\n");
-						cout << "ERROR: Found enq of task " << callback2 << " at " << destination << ", but cannot find deq\n";
-						continue;
-					}
-					if (alpha_i == -1) {
-//						ERRLOG("ERROR: Found enq of task " + task1 + " at " + enq_1 + ", but cannot find end\n");
-						cout << "ERROR: Found enq of task " << task1 << " at " << enq_1 << ", but cannot find end\n";
-						break;
-					}
+				string callback2 = enqSet[destination].taskEnqueued;
+				long long alpha_j = taskIDMap[callback2].deqOpID;
 
-					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
-					if (addEdgeRetValue == 1) flag = true; // New edge added.
-					else if (addEdgeRetValue == 0) flag = false; // Edge already present.
-					else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding Fifo-Callback edge from " << alpha_i << " to " << alpha_j << endl;
-						return -1;
-					} else {
-						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Fifo-Callback edge from " << alpha_i << " to " << alpha_j << endl;
-						return -1;
-					}
+				if (alpha_j == -1) {
+					cout << "ERROR: Found enq of task " << callback2 << " at " << destination << ", but cannot find deq\n";
+					continue;
 				}
+				if (alpha_i == -1) {
+					cout << "ERROR: Found enq of task " << task1 << " at " << enq_1 << ", but cannot find end\n";
+					break;
+				}
+
+				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+				if (addEdgeRetValue == 1) flag = true; // New edge added.
+				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+				else if (addEdgeRetValue == -1) {
+					cout << "ERROR: While adding Fifo-Callback edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				} else {
+					cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Fifo-Callback edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				}
+#ifdef GRAPHDEBUG
+				if (addEdgeRetValue == 1)
+					cout << "Fifo-Callback edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 			}
 		}
 	}
@@ -770,7 +751,7 @@ int UAFDetector::addFifoNestedEdges() {
 
 					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 					if (addEdgeRetValue == 1) flag = true; // New edge added.
-					else if (addEdgeRetValue == 0) flag = false; // Edge already present.
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 					else if (addEdgeRetValue == -1) {
 						cout << "ERROR: While adding Fifo-Nested edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
@@ -778,6 +759,10 @@ int UAFDetector::addFifoNestedEdges() {
 						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Fifo-Nested edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
 					}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "Fifo-Nested edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 				}
 			}
 		}
@@ -795,6 +780,7 @@ int UAFDetector::addNoPrePrefixEdges() {
 	bool flag = false;
 
 	for (map<string, taskDetails>::iterator taskIt = taskIDMap.begin(); taskIt != taskIDMap.end(); taskIt++) {
+		// Find task with first pause.
 		long long alpha_i = taskIt->second.firstPauseOpID;
 		if (alpha_i == -1) continue;
 
@@ -807,10 +793,14 @@ int UAFDetector::addNoPrePrefixEdges() {
 		long long currOp = deqTask1;
 		while (currOp != 0) {
 			for (HBGraph::adjListNode* currNode = graph.adjList[currOp].head; currNode != NULL; currNode = currNode->next) {
+				// See if there is an edge to enq from currOp
 				long long dest = currNode->destination;
 				if (opIDMap[dest].opType.compare("enq") != 0) continue;
 
 				string enqTask = enqSet[dest].taskEnqueued;
+				// Check if the enq's targetThread is same as that of the currOp
+				if (enqSet[dest].targetThreadID != opIDMap[currOp].threadID) continue;
+
 				if (graph.edgeExists(currOp, alpha_i) == 1) {
 					// currOp < enq and currOp < first-pause
 					long long alpha_j = taskIDMap[enqTask].deqOpID;
@@ -821,7 +811,7 @@ int UAFDetector::addNoPrePrefixEdges() {
 
 					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 					if (addEdgeRetValue == 1) flag = true; // New edge added.
-					else if (addEdgeRetValue == 0) flag = false; // Edge already present.
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 					else if (addEdgeRetValue == -1) {
 						cout << "ERROR: While adding NoPre-Prefix edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
@@ -829,6 +819,10 @@ int UAFDetector::addNoPrePrefixEdges() {
 						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding NoPre-Prefix edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
 					}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "NoPrePrefix edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 				}
 			}
 			currOp = opToNextOpInTask[currOp];
@@ -853,7 +847,7 @@ int UAFDetector::addNoPreSuffixEdges() {
 		long long threadTask1 = taskIt->second.threadID;
 		if (lastresume == -1) continue;
 		if (alpha_i == -1) {
-			cout << "ERROR: Cannot find end of task " << taskIt->first;
+			cout << "ERROR: Cannot find end of task " << taskIt->first << endl;
 			continue;
 		}
 
@@ -872,7 +866,7 @@ int UAFDetector::addNoPreSuffixEdges() {
 
 					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 					if (addEdgeRetValue == 1) flag = true; // New edge added.
-					else if (addEdgeRetValue == 0) flag = false; // Edge already present.
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 					else if (addEdgeRetValue == -1) {
 						cout << "ERROR: While adding NoPre-Prefix edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
@@ -880,6 +874,10 @@ int UAFDetector::addNoPreSuffixEdges() {
 						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding NoPre-Prefix edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
 					}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "NoPreSuffix edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 				}
 			}
 		}
@@ -909,7 +907,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 				if ((opIDMap[alpha_j].threadID == threadID_i && opIDMap[alpha_k].threadID == threadID_i) || (opIDMap[alpha_j].threadID != threadID_i)) {
 					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 					if (addEdgeRetValue == 1) flag = true; // New edge added.
-					else if (addEdgeRetValue == 0) flag = false; // Edge already present.
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
 					else if (addEdgeRetValue == -1) {
 						cout << "ERROR: While adding Trans-ST/MT edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
@@ -917,6 +915,10 @@ int UAFDetector::addTransSTOrMTEdges() {
 						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Trans-ST/MT edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
 					}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "Trans-ST/MT edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 				}
 			}
 		}
@@ -926,6 +928,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 1;
 	else
 		return 0;
+}
+
+void UAFDetector::findUAF(Logger &logger) {
+
+	// Loop through free set, loop through
 }
 
 #ifdef GRAPHDEBUG

@@ -12,6 +12,7 @@
 #include "HBGraph.h"
 
 #include <debugconfig.h>
+#include <logging/Logger.h>
 using namespace std;
 
 #ifndef UAFDETECTOR_H_
@@ -208,7 +209,9 @@ public:
 
 	void initGraph(long long countOfNodes);
 
-	int addEdges();
+	int addEdges(Logger &logger);
+
+	void findUAF(Logger &logger);
 
 #ifdef GRAPHDEBUG
 	void printEdges();

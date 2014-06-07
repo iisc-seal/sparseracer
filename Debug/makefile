@@ -11,6 +11,7 @@ RM := rm -rf
 -include racedetector/subdir.mk
 -include parser/subdir.mk
 -include main/subdir.mk
+-include logging/subdir.mk
 -include subdir.mk
 -include objects.mk
 

@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <racedetector/UAFDetector.h>
+#include <logging/Logger.h>
 using namespace std;
 
 #ifndef TRACEPARSER_H_
@@ -18,11 +19,11 @@ using namespace std;
  */
 class TraceParser {
 public:
-	TraceParser(char* traceFileName);
+	TraceParser(char* traceFileName, Logger &logger);
 	virtual ~TraceParser();
 
 	// checks whether each line from the trace file is a valid operation
-	int parse(UAFDetector &detector);
+	int parse(UAFDetector &detector, Logger &logger);
 
 
 private:

@@ -1,2 +1,2 @@
-#define TRACEDEBUG
+//#define TRACEDEBUG
 #define GRAPHDEBUG

@@ -26,4 +26,5 @@ SUBDIRS := \
 racedetector \
 parser \
 main \
+logging \
 

@@ -35,6 +35,15 @@ HBGraph::~HBGraph() {
 int HBGraph::addSingleEdge(long long source, long long destination) {
 
 	if (source >= 1 && source <= totalNodes && destination >=1 && destination <= totalNodes) {
+		if (edgeExists(destination, source) == 1) {
+			cout << "ERROR: Edge exists from " << destination << " to " << source << " and we are edding edge from " << source << " to "
+				 << destination << endl;
+			return -1;
+		}
+		if (source == destination) {
+			cout << "ERROR: Adding self-loop edge on " << source << endl;
+			return -1;
+		}
 		int retValue = edgeExists(source, destination);
 		if (retValue == 0) {
 			adjMatrix[source][destination] = 1;

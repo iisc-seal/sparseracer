@@ -8,6 +8,7 @@
 #include <iostream>
 #include <parser/TraceParser.h>
 #include <racedetector/UAFDetector.h>
+#include <logging/Logger.h>
 
 #include <debugconfig.h>
 
@@ -17,10 +18,15 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	TraceParser parser(argv[1]);
+	string logFileName = "UAF.log";
+
+	Logger logger(logFileName);
+	logger.initLog();
+
+	TraceParser parser(argv[1], logger);
 	UAFDetector detectorObj;
 
-	if (parser.parse(detectorObj) < 0) {
+	if (parser.parse(detectorObj, logger) < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
 	}
@@ -29,12 +35,17 @@ int main(int argc, char* argv[]) {
 	cout << "map size: " << detectorObj.opIDMap.size() << endl;
 #endif
 
-	if (detectorObj.addEdges() < 0) {
+	if (detectorObj.addEdges(logger) < 0) {
 		cout << "ERROR while constructing HB Graph\n";
 		return -1;
 	}
 
-#ifdef GRAPHDEBUG
+//#ifdef GRAPHDEBUG
+#ifdef TRACEDEBUG
 	detectorObj.printEdges();
 #endif
+
+	detectorObj.findUAF(logger);
+
+	return 0;
 }

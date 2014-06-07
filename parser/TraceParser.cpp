@@ -18,10 +18,12 @@
  * Takes as argument name of the tracefile
  * Creates regex for a valid operation.
  */
-TraceParser::TraceParser(char* traceFileName) {
+TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 	traceFile.open(traceFileName, ios_base::in);
-	if (!traceFile.is_open())
+	if (!traceFile.is_open()) {
 		cout << "Cannot open trace file\n";
+		logger.writeLog("Cannot open trace-file");
+	}
 
 	opCount = 0;
 	// The prefix regular expression
@@ -63,7 +65,7 @@ TraceParser::TraceParser(char* traceFileName) {
 TraceParser::~TraceParser() {
 }
 
-int TraceParser::parse(UAFDetector &detector) {
+int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	string line;
 	boost::regex reg;
 	boost::cmatch matches;
@@ -412,17 +414,23 @@ int TraceParser::parse(UAFDetector &detector) {
 
 							string taskID = opdetails.taskID;
 							if (detector.taskIDMap.find(taskID) == detector.taskIDMap.end()){
-								detector.taskIDMap[taskID].deqOpID = opCount;
+								UAFDetector::taskDetails details;
+								details.deqOpID = opCount;
+								detector.taskIDMap[taskID] = details;
 							} else if (detector.taskIDMap[taskID].deqOpID != -1 && detector.taskIDMap[taskID].deqOpID != opCount) {
 								cout << "ERROR: deq already seen for task " << taskID << " at op " << detector.taskIDMap[taskID].deqOpID << endl;
 								return -1;
 							} else {
 								UAFDetector::taskDetails existingDetails = detector.taskIDMap.find(taskID)->second;
 								existingDetails.deqOpID = opCount;
-//								detector.taskIDMap[taskID].deqOpID = opCount;
 								detector.taskIDMap.erase(detector.taskIDMap.find(taskID));
 								detector.taskIDMap[taskID] = existingDetails;
 							}
+#ifdef TRACEDEBUG
+							cout << "Task " << taskID << " at deq: ";
+							detector.taskIDMap[taskID].printTaskDetails();
+							cout << endl;
+#endif
 						} else if (match.compare("end") == 0) {
 							detector.endSet.insert(opCount);
 
@@ -478,23 +486,25 @@ int TraceParser::parse(UAFDetector &detector) {
 							string taskID = enqopdetails.taskEnqueued;
 							string callback = enqopdetails.callback;
 							if (detector.taskIDMap.find(taskID) == detector.taskIDMap.end()){
-								detector.taskIDMap[taskID].enqOpID = opCount;
-								detector.taskIDMap[taskID].callback = callback;
+								UAFDetector::taskDetails details;
+								details.enqOpID = opCount;
+								details.callback = callback;
+								detector.taskIDMap[taskID] = details;
 							} else if (detector.taskIDMap[taskID].enqOpID != -1 && detector.taskIDMap[taskID].enqOpID != opCount) {
 								cout << "ERROR: enq already seen for task " << taskID << " at op " << detector.taskIDMap[taskID].enqOpID << endl;
 								return -1;
 							} else {
 								UAFDetector::taskDetails existingDetails = detector.taskIDMap.find(taskID)->second;
-//								detector.taskIDMap[taskID].enqOpID = opCount;
-//								detector.taskIDMap[taskID].callback = callback;
 								existingDetails.enqOpID = opCount;
 								existingDetails.callback = callback;
 								detector.taskIDMap.erase(detector.taskIDMap.find(taskID));
 								detector.taskIDMap[taskID] = existingDetails;
 							}
-							cout << "Task at enq ";
+#ifdef TRACEDEBUG
+							cout << "Task " << taskID << " at enq ";
 							detector.taskIDMap[taskID].printTaskDetails();
 							cout << endl;
+#endif
 						} else if (match.compare("fork") == 0) {
 							// Obtain two arguments of fork.
 							UAFDetector::forkAndJoinOpDetails forkopdetails;
