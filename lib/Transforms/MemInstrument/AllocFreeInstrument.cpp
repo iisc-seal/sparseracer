@@ -46,6 +46,9 @@ namespace MemInstrument {
 
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
+      // don't instrument syslog
+      if(F->getName().str().find("syslog")!=std::string::npos)
+	continue;
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
@@ -95,6 +98,7 @@ namespace MemInstrument {
     
     //Cast the address being written to into an int
     Value *AddrLong = IRB.CreatePointerCast(Addr, IntptrTy);
+    assert (AddrLong!=NULL);
 
     //Create a string representing the type being written to
     Value *TypeString = IRB.CreateGlobalString(getTypeAsString(OrigPtrTy));
@@ -192,6 +196,9 @@ namespace MemInstrument {
       	//errs() << "Got here! \n";
 	flag = false;
       }
+      
+      if(!shouldInstrumentDirectory(getDirName(BI)))
+	continue;
       
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
 	if (Function * CalledFunc = CI->getCalledFunction()) {

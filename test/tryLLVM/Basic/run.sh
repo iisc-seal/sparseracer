@@ -1,4 +1,5 @@
 export PATH=/mnt/hdd2/anirudh/software/llvm-ff/build/bin:$PATH
+export INSTRUMENTDIRS="/home/anirudh/software/llvm/test/tryLLVM/Basic"
 #clang mop.c -c -o mop.o
 #clang allocDalloc.c -c -o allocDalloc.o
 # clang++ -O0 -Xclang -load -Xclang /home/anirudh/software/llvm/build/lib/LLVMLoadStoreInstrument.so -Xclang -load -Xclang /home/anirudh/software/llvm/build/lib/LLVMAllocFreeInstrument.so -Xclang -load -Xclang /home/anirudh/software/llvm/build/lib/LLVMFInstrument.so -g struct3.cpp -c -o struct3.o
