@@ -189,6 +189,28 @@ public:
 	// maps the op ID of a release operation to its arguments.
 	map<long long, acquireAndReleaseOpDetails> releaseSet;
 
+	class lockDetails {
+	public:
+		set<long long> acquireOps;
+		set<long long> releaseOps;
+
+		lockDetails() {
+			acquireOps = set<long long>();
+			releaseOps = set<long long>();
+		}
+
+		void printDetails() {
+			cout << "acquire ops: ";
+			for (set<long long>::iterator it = acquireOps.begin(); it != acquireOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nrelease ops: ";
+			for (set<long long>::iterator it = releaseOps.begin(); it != releaseOps.end(); it++)
+				cout << *it << " ";
+		}
+	};
+
+	map<string, lockDetails> lockIDMap;
+
 	class memoryOpDetails {
 	public:
 		long long threadID;
@@ -210,13 +232,86 @@ public:
 	map<long long, memoryOpDetails> incSet;
 	map<long long, memoryOpDetails> decSet;
 
+	class allocOpDetails {
+	public:
+		set<long long> readOps;
+		set<long long> writeOps;
+		set<long long> freeOps;
+		set<long long> incOps;
+		set<long long> decOps;
+
+		allocOpDetails() {
+			readOps = set<long long>();
+			writeOps = set<long long>();
+			freeOps = set<long long>();
+			incOps = set<long long>();
+			decOps = set<long long>();
+		}
+
+		void printDetails() {
+			cout << "read ops: ";
+			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nwrite ops: ";
+			for (set<long long>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nfree ops: ";
+			for (set<long long>::iterator it = freeOps.begin(); it != freeOps.end(); it++)
+				cout << *it << " ";
+			cout << "\ninc ops: ";
+			for (set<long long>::iterator it = incOps.begin(); it != incOps.end(); it++)
+				cout << *it << " ";
+			cout << "\ndec ops: ";
+			for (set<long long>::iterator it = decOps.begin(); it != decOps.end(); it++)
+				cout << *it << " ";
+		}
+	};
+
+	map<long long, allocOpDetails> allocIDMap;
+
+	class freeOpDetails {
+	public:
+		long long allocOpID;
+		set<long long> readOps;
+		set<long long> writeOps;
+		set<long long> incOps;
+		set<long long> decOps;
+
+		freeOpDetails() {
+			allocOpID = -1;
+			readOps = set<long long>();
+			writeOps = set<long long>();
+			incOps = set<long long>();
+			decOps = set<long long>();
+		}
+
+		void printDetails() {
+			cout << "alloc op: " << allocOpID << endl;
+			cout << "read ops: ";
+			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
+				cout << *it << " ";
+			cout << "\n write ops: ";
+			for (set<long long>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
+				cout << *it << " ";
+			cout << "\n inc ops: ";
+			for (set<long long>::iterator it = incOps.begin(); it != incOps.end(); it++)
+				cout << *it << " ";
+			cout << "\n dec ops: ";
+			for (set<long long>::iterator it = decOps.begin(); it != decOps.end(); it++)
+				cout << *it << " ";
+		}
+	};
+
+	map<long long, freeOpDetails> freeIDMap;
+
 	HBGraph graph;
 
 	void initGraph(long long countOfNodes);
 
 	int addEdges(Logger &logger);
 
-	void findUAF(Logger &logger);
+	int findUAFusingAlloc(Logger &logger);
+	int findUAFwithoutAlloc(Logger &logger);
 
 #ifdef GRAPHDEBUG
 	void printEdges();

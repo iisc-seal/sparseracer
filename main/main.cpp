@@ -6,6 +6,7 @@
  */
 
 #include <iostream>
+#include <cstdlib>
 #include <parser/TraceParser.h>
 #include <racedetector/UAFDetector.h>
 #include <logging/Logger.h>
@@ -13,8 +14,10 @@
 #include <debugconfig.h>
 
 int main(int argc, char* argv[]) {
-	if (argc < 2) {
-		cout << "ERROR: Missing input:- trace-file name\n";
+	if (argc < 3) {
+		cout << "ERROR: Missing input\n";
+		cout << "Input trace-file name as argument 1\n";
+		cout << "Input 1 as argument 2 if you want to use alloc while finding UAF\n";
 		return -1;
 	}
 
@@ -40,11 +43,25 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-//#ifdef GRAPHDEBUG
-//	detectorObj.printEdges();
-//#endif
+#ifdef GRAPHDEBUG
+	detectorObj.printEdges();
+#endif
 
-	detectorObj.findUAF(logger);
+	int flag = atoi(argv[2]);
+	int retfindUAF;
+	if (flag == 1) {
+		retfindUAF = detectorObj.findUAFusingAlloc(logger);
+	} else {
+		retfindUAF = detectorObj.findUAFwithoutAlloc(logger);
+	}
+
+	if (retfindUAF == -1) {
+		cout << "ERROR: While finding UAF\n";
+		return -1;
+	} else if (retfindUAF == 0) {
+		cout << "No UAF in the trace\n";
+		return 0;
+	}
 
 	return 0;
 }

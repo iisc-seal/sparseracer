@@ -80,7 +80,9 @@ int UAFDetector::addEdges(Logger &logger) {
 		graph.printGraph(false);
 #endif
 
+#ifdef GRAPHDEBUG
 		cout << "Adding Fifo-Atomic edges\n";
+#endif
 		// FIFO-ATOMIC
 		retValue = addFifoAtomicEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -98,7 +100,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+#ifdef GRAPHDEBUG
 		cout << "Adding No-Pre edges\n";
+#endif
 		// NO-PRE
 		retValue = addNoPreEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -116,7 +120,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+#ifdef GRAPHDEBUG
 		cout << "Adding Fifo-Callback edges\n";
+#endif
 		// FIFO-CALLBACK
 		retValue = addFifoCallbackEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -134,7 +140,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+#ifdef GRAPHDEBUG
 		cout << "Adding Fifo-Nested edges\n";
+#endif
 		// FIFO-NESTED
 		retValue = addFifoNestedEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -152,7 +160,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+#ifdef GRAPHDEBUG
 		cout << "Adding NoPre-Prefix edges\n";
+#endif
 		// NOPRE-PREFIX
 		retValue = addNoPrePrefixEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -170,7 +180,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+#ifdef GRAPHDEBUG
 		cout << "Adding NoPre-Suffix edges\n";
+#endif
 		// NOPRE-SUFFIX
 		retValue = addNoPreSuffixEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -188,7 +200,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+#ifdef GRAPHDEBUG
 		cout << "Adding Trans-ST/MT edges\n";
+#endif
 		// TRANS-ST/MT
 		retValue = addTransSTOrMTEdges();
 		if (retValue == 1) edgeAdded = true;
@@ -356,6 +370,15 @@ int UAFDetector::addEnqueueSTorMTEdges() {
 	for (map<string, taskDetails>::iterator taskIt = taskIDMap.begin(); taskIt != taskIDMap.end(); taskIt++) {
 		long long alpha_i = taskIt->second.enqOpID;
 		long long alpha_j = taskIt->second.deqOpID;
+
+		if (alpha_i == -1) {
+			cout << "ERROR: Cannot find enq of task " << taskIt->first << endl;
+			continue;
+		}
+		if (alpha_j == -1) {
+			cout << "ERROR: Cannot find deq of task " << taskIt->first << endl;
+			continue;
+		}
 
 		int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 		if (addEdgeRetValue == 1) flag = true; // New edge added
@@ -951,9 +974,151 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 0;
 }
 
-void UAFDetector::findUAF(Logger &logger) {
+int UAFDetector::findUAFusingAlloc(Logger &logger) {
 
-	// Loop through free set, loop through
+	bool flag = false; // To keep track of whether a UAF was flagged or not
+
+	// Loop through allocIDMap, for each alloc, loop through freeops corresponding to the alloc.
+	// check if there is an edge from alloc to the free. Then find the useops of this free.
+	// obtain the use that has edge from alloc. If there is no edge between the free and this use, report UAF
+
+	for (map<long long, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
+		long long allocID = allocIt->first;
+		for (set<long long>::iterator freeIt = allocIt->second.freeOps.begin(); freeIt != allocIt->second.freeOps.end(); freeIt++) {
+			long long freeID = *freeIt;
+			if (!graph.edgeExists(allocID, freeID)) continue;
+
+			// There is an edge from alloc to free
+
+			for (set<long long>::iterator readIt = freeIDMap[freeID].readOps.begin(); readIt != freeIDMap[freeID].readOps.end(); readIt++) {
+				long long readID = *readIt;
+				// Discard reads that does not have edge from alloc
+				if (!graph.edgeExists(allocID, readID)) continue;
+
+				// There is an edge from free to read.
+				if (graph.edgeExists(freeID, readID)) {
+					cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
+						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+						 << ")\n";
+					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+						 << allocSet[allocID].startingAddress << ")\n";
+					flag = true;
+					continue;
+				}
+
+				// There is no edge from free to read and no edge from read to free.
+				if (!graph.edgeExists(readID, freeID)) {
+					cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
+						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+						 << ")\n";
+					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+						 << allocSet[allocID].startingAddress << ")\n";
+					flag = true;
+					continue;
+				}
+			}
+
+			for (set<long long>::iterator writeIt = freeIDMap[freeID].writeOps.begin(); writeIt != freeIDMap[freeID].writeOps.end(); writeIt++) {
+				long long writeID = *writeIt;
+				if (!graph.edgeExists(allocID, writeID)) continue;
+
+				if (graph.edgeExists(freeID, writeID)) {
+					cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
+						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+						 << ")\n";
+					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+						 << allocSet[allocID].startingAddress << ")\n";
+					flag = true;
+					continue;
+				}
+
+				if (!graph.edgeExists(writeID, freeID)) {
+					cout << "Potential UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
+						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+						 << ")\n";
+					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+						 << allocSet[allocID].startingAddress << ")\n";
+					flag = true;
+					continue;
+				}
+			}
+		}
+	}
+
+	if (flag)
+		return 1;
+	else
+		return 0;
+}
+
+int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
+
+	bool flag = false;
+
+	// Loop through freeIDMap, for each free, find use that no HB edge
+
+	for (map<long long, freeOpDetails>::iterator freeIt = freeIDMap.begin(); freeIt != freeIDMap.end(); freeIt++) {
+		long long freeID = freeIt->first;
+		long long allocID = freeIt->second.allocOpID;
+
+		if (allocID == -1) {
+			cout << "ERROR: Cannot find alloc for free op " << freeID << endl;
+			return -1;
+		}
+
+		for (set<long long>::iterator readIt = freeIt->second.readOps.begin(); readIt != freeIt->second.readOps.end(); readIt++) {
+			long long readID = *readIt;
+
+			if (graph.edgeExists(freeID, readID)) {
+				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				flag = true;
+				continue;
+			}
+
+			if (!graph.edgeExists(readID, freeID)) {
+				cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				flag = true;
+				continue;
+			}
+		}
+
+		for (set<long long>::iterator writeIt = freeIt->second.writeOps.begin(); writeIt != freeIt->second.writeOps.end(); writeIt++) {
+			long long writeID = *writeIt;
+
+			if (graph.edgeExists(freeID, writeID)) {
+				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				flag = true;
+				continue;
+			}
+
+			if (!graph.edgeExists(writeID, freeID)) {
+				cout << "Potential UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				flag = true;
+				continue;
+			}
+		}
+	}
+
+	if (flag)
+		return 1;
+	else
+		return 0;
 }
 
 #ifdef GRAPHDEBUG
