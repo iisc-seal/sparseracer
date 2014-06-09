@@ -197,6 +197,9 @@ namespace MemInstrument {
 	flag = false;
       }
       
+      if(!shouldInstrumentDirectory(getDirName(BI)))
+	continue;
+      
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();

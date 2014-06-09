@@ -1,6 +1,24 @@
 #include "Utils.h"
+#include <cstdlib>
+#include <set>
+#include <sstream>
 
 namespace MemInstrument {
+
+  std::set<std::string> &split(const std::string &s, char delim, std::set<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+      elems.insert(item);
+    }
+    return elems;
+  }
+
+  std::set<std::string> split(const std::string &s, char delim) {
+    std::set<std::string> elems;
+    split(s, delim, elems);
+    return elems;
+  }
 
   std::string getTypeAsString(Type* T){
     std::string type_str;
@@ -16,6 +34,16 @@ namespace MemInstrument {
     return "";
   }
 
+  std::string getDirName(Instruction *I){
+    if (MDNode *N = I->getMetadata("dbg")) {  // Here I is an LLVM instruction
+      DILocation Loc(N);                      // DILocation is in DebugInfo.h
+      //std::string File = Loc.getFilename().str();
+      std::string Dir = Loc.getDirectory().str();
+      return Dir;
+    }
+    return "";
+  }
+
   std::string getSourceInfoAsString(Instruction *I, std::string name){
     if (MDNode *N = I->getMetadata("dbg")) {  // Here I is an LLVM instruction
       DILocation Loc(N);                      // DILocation is in DebugInfo.h
@@ -27,9 +55,22 @@ namespace MemInstrument {
     return name;
   }
 
-  bool shouldInstrument(std::string name, std::set<std::string> whiteList){
+  bool shouldInstrumentFunction(std::string name, std::set<std::string> whiteList){
     if(whiteList.find(name) != whiteList.end())
       return true;
+    return false;
+  }
+
+  bool shouldInstrumentDirectory(std::string name){
+    char *dirs = getenv("INSTRUMENTDIRS");
+    if(dirs == NULL)
+      return false;
+    std::string instrDirs(dirs);
+    std::set<std::string> wList = split(instrDirs, ':');
+    std::set<std::string>::iterator it = wList.find(name);
+    if(it != wList.end()){
+      return true;
+    }  
     return false;
   }
 

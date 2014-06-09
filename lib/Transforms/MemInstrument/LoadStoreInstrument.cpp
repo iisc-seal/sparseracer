@@ -58,6 +58,7 @@ namespace MemInstrument {
 	// don't instrument syslog
 	if(fName.find("syslog")!=std::string::npos)
 	  return true;
+	
 	LoadStoreInstrument::runOnBasicBlock(BB, fName);
       }
     }
@@ -154,14 +155,20 @@ namespace MemInstrument {
     //errs() << "========BB===========\n";
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
+      if(!shouldInstrumentDirectory(getDirName(BI))){
+	//llvm::outs() << "Skipping: " << getDirName(BI) << "\n";
+	continue;
+      }
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
+	//llvm::outs() << "\n Load: " << getDirName(BI) << "\n";
 	LoadStoreInstrument::Instrument(BI, false, fName);
       } else {
 	if (isa<StoreInst>(BI)) {
 	  //errs() << ">";
 	  // Instrument STORE here
+	  //llvm::outs() << "\n Store: " << getDirName(BI) << "\n";
 	  LoadStoreInstrument::Instrument(BI, true, fName);
 	} else {
 	  //errs() << " ";

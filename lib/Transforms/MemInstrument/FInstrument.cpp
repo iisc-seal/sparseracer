@@ -66,7 +66,7 @@ namespace MemInstrument {
     //errs() << F->getName().str() << "\n";
     name = F->getName().str();
     std::string unmangled(demangleFunctionName(name));
-    bool flag = shouldInstrument(unmangled, whiteList);
+    bool flag = shouldInstrumentFunction(unmangled, whiteList);
     //flag = true;
     // for (std::set<std::string>::iterator it=whiteList.begin(); it!=whiteList.end(); ++it){
     // 	if (it->find(unmangled) != std::string::npos && unmangled.length() > 10) {
@@ -100,7 +100,7 @@ namespace MemInstrument {
       name = F->getName().str();
       std::string unmangled(demangleFunctionName(name));
       
-      bool flag = shouldInstrument(unmangled, whiteList);
+      bool flag = shouldInstrumentFunction(unmangled, whiteList);
       // flag = true;	
       // for (std::set<std::string>::iterator it=whiteList.begin(); it!=whiteList.end(); ++it){
       //   if (it->find(unmangled) != std::string::npos && unmangled.length() > 10) {

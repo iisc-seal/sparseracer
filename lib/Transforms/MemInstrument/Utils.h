@@ -24,7 +24,11 @@ namespace MemInstrument {
 
   std::string getSourceInfoAsString(Instruction *I, std::string name);
 
-  bool shouldInstrument(std::string name, std::set<std::string> whiteList);
+  std::string getDirName(Instruction *I);
+
+  bool shouldInstrumentFunction(std::string name, std::set<std::string> whiteList);
+
+  bool shouldInstrumentDirectory(std::string name);
 
   std::string demangleFunctionName(std::string functionName); 
 
