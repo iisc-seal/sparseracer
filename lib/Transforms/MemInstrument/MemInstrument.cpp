@@ -15,9 +15,10 @@ namespace MemInstrument{
     // char MemInstrument::FInstrument::ID = 0;
     // char MemInstrument::LoadStoreInstrument::ID = 0;
     // char MemInstrument::AllocFreeInstrument::ID = 0;
+    PM.add(new MemInstrument::AllocFreeInstrument());
     PM.add(new MemInstrument::LoadStoreInstrument());
     //PM.add(new MemInstrument::FInstrument());
-    PM.add(new MemInstrument::AllocFreeInstrument());
+    
   }
 
   RegisterStandardPasses

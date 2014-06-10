@@ -52,7 +52,8 @@ namespace MemInstrument {
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-	AllocFreeInstrument::runOnBasicBlock(BB);
+	std::string name = F->getName().str();
+	AllocFreeInstrument::runOnBasicBlock(BB, name);
       }
     }
     return true;
@@ -185,7 +186,7 @@ namespace MemInstrument {
         
   }
 
-  bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB) {
+  bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB, std::string callerName) {
     //errs() << "========BB===========\n";
     bool flag = false;
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
@@ -197,15 +198,21 @@ namespace MemInstrument {
 	flag = false;
       }
       
-      if(!shouldInstrumentDirectory(getDirName(BI)))
-	continue;
-      
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
+	std::string dirName = getDirName(CI);
+        // llvm::outs() << dirName << "\n";
+	if(!shouldInstrumentDirectory(dirName))
+	  continue;
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
+	  // llvm::outs() << name << "\n"; 
 	  const bool found = (freeFunctions.find(name) != freeFunctions.end());
 	  if(found){
-	    AllocFreeInstrument::InstrumentDealloc(BI, name);
+	    // delete and delete[] are overloaded to redirect to moz_free
+	    // so avoid instrumenting twice
+	    if(callerName.compare("_ZdlPv") == 0 || callerName.compare("_ZdaPv") == 0)
+	      continue;
+	    AllocFreeInstrument::InstrumentDealloc(BI, callerName);
 	  }
 	  
 	}
@@ -218,7 +225,7 @@ namespace MemInstrument {
 	    const bool found = (allocFunctions.find(name) != allocFunctions.end());
 	    if(found){
 	      //BI->dump();
-	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, name);
+	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, callerName);
 	      //errs() << "Alloc insert success!" ;
 	      flag = true;
 	      //BI->dump();
