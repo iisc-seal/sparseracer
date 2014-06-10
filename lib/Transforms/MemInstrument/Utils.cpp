@@ -5,17 +5,17 @@
 
 namespace MemInstrument {
 
-  std::set<std::string> &split(const std::string &s, char delim, std::set<std::string> &elems) {
+  std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
     while (std::getline(ss, item, delim)) {
-      elems.insert(item);
+      elems.push_back(item);
     }
     return elems;
   }
 
-  std::set<std::string> split(const std::string &s, char delim) {
-    std::set<std::string> elems;
+  std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
     split(s, delim, elems);
     return elems;
   }
@@ -66,11 +66,15 @@ namespace MemInstrument {
     if(dirs == NULL)
       return false;
     std::string instrDirs(dirs);
-    std::set<std::string> wList = split(instrDirs, ':');
-    std::set<std::string>::iterator it = wList.find(name);
-    if(it != wList.end()){
-      return true;
-    }  
+    std::vector<std::string> wList = split(instrDirs, ':');
+
+    for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
+      std::size_t found = name.find(*it);
+      if (found != std::string::npos){
+	return true;
+      }
+    }
+    
     return false;
   }
 
