@@ -58,7 +58,10 @@ namespace MemInstrument {
 	// don't instrument syslog
 	if(fName.find("syslog")!=std::string::npos)
 	  return true;
-	
+	// don't instrument functions used in mopInstrument
+	if(fName.find("PR_GetThreadID")!=std::string::npos || 
+	   fName.find("PR_GetCurrentThread")!=std::string::npos)
+	  return true;
 	LoadStoreInstrument::runOnBasicBlock(BB, fName);
       }
     }
@@ -155,10 +158,10 @@ namespace MemInstrument {
     //errs() << "========BB===========\n";
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
-      // if(!shouldInstrumentDirectory(getDirName(BI))){
-      // 	//llvm::outs() << "Skipping: " << getDirName(BI) << "\n";
-      // 	continue;
-      // }
+      if(!shouldInstrumentDirectory(getDirName(BI))){
+	//llvm::outs() << "Skipping: " << getDirName(BI) << "\n";
+	continue;
+      }
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
