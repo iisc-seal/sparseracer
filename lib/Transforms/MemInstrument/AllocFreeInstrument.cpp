@@ -202,7 +202,7 @@ namespace MemInstrument {
 	std::string dirName = getDirName(CI);
         // llvm::outs() << dirName << "\n";
 	if(!shouldInstrumentDirectory(dirName))
-	  continue;
+	   continue;
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  // llvm::outs() << name << "\n"; 
@@ -220,6 +220,9 @@ namespace MemInstrument {
       // assume an alloc is always followed by a bitcast
       else if (BitCastInst *BCI = dyn_cast<BitCastInst>(BI)) {
 	if (CallInst * CI = dyn_cast<CallInst>(BCI->getOperand(0))) {
+	  std::string dirName = getDirName(CI);
+	  if(!shouldInstrumentDirectory(dirName))
+	   continue;
 	  if (Function * CalledFunc = CI->getCalledFunction()) {
 	    std::string name = CalledFunc->getName();
 	    const bool found = (allocFunctions.find(name) != allocFunctions.end());
