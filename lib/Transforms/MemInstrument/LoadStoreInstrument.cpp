@@ -155,10 +155,10 @@ namespace MemInstrument {
     //errs() << "========BB===========\n";
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
-      if(!shouldInstrumentDirectory(getDirName(BI))){
-	//llvm::outs() << "Skipping: " << getDirName(BI) << "\n";
-	continue;
-      }
+      // if(!shouldInstrumentDirectory(getDirName(BI))){
+      // 	//llvm::outs() << "Skipping: " << getDirName(BI) << "\n";
+      // 	continue;
+      // }
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here

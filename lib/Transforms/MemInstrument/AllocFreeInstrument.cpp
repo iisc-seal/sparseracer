@@ -201,8 +201,8 @@ namespace MemInstrument {
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
 	std::string dirName = getDirName(CI);
         // llvm::outs() << dirName << "\n";
-	if(!shouldInstrumentDirectory(dirName))
-	  continue;
+	// if(!shouldInstrumentDirectory(dirName))
+	//   continue;
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  // llvm::outs() << name << "\n"; 
