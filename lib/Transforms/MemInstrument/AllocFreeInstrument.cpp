@@ -43,17 +43,32 @@ namespace MemInstrument {
 				      (Type*)0);
     (cast<Function>(MAllocFn))->setCallingConv(CallingConv::C);
     (cast<Function>(MDallocFn))->setCallingConv(CallingConv::C);
-
+    
+    std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
+      std::string fName = F->getName().str();
+      std::string dirName = "";
+      // Try to abort early based on the directories to be instrumented 
+      std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
+      if(search != funcNameToDirName.end()) {
+        dirName = search->second;
+      }
+      if(dirName.compare("")!=0)
+        if(!shouldInstrumentDirectory(dirName))
+          continue;
+      
       // don't instrument syslog
-      if(F->getName().str().find("syslog")!=std::string::npos)
+      if(fName.find("syslog")!=std::string::npos)
+	continue;
+      if(fName.find("PR_GetThreadID")!=std::string::npos || 
+	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
+	 fName.find("_PR_") != std::string::npos) 
 	continue;
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-	std::string name = F->getName().str();
-	AllocFreeInstrument::runOnBasicBlock(BB, name);
+	AllocFreeInstrument::runOnBasicBlock(BB, fName, dirName);
       }
     }
     return true;
@@ -186,7 +201,8 @@ namespace MemInstrument {
         
   }
 
-  bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB, std::string callerName) {
+  bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB, 
+					    std::string callerName, std::string dName) {
     //errs() << "========BB===========\n";
     bool flag = false;
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
@@ -199,10 +215,12 @@ namespace MemInstrument {
       }
       
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
-	std::string dirName = getDirName(CI);
         // llvm::outs() << dirName << "\n";
-	// if(!shouldInstrumentDirectory(dirName))
-	//   continue;
+	if(dName.compare("")==0){
+	  std::string dirName = getDirName(CI);
+	  if(!shouldInstrumentDirectory(dirName))
+	    continue;
+	}
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  // llvm::outs() << name << "\n"; 
@@ -220,9 +238,11 @@ namespace MemInstrument {
       // assume an alloc is always followed by a bitcast
       else if (BitCastInst *BCI = dyn_cast<BitCastInst>(BI)) {
 	if (CallInst * CI = dyn_cast<CallInst>(BCI->getOperand(0))) {
-	  //std::string dirName = getDirName(CI);
-	  //if(!shouldInstrumentDirectory(dirName))
-	   //continue;
+	  if(dName.compare("")==0){
+	  std::string dirName = getDirName(CI);
+	  if(!shouldInstrumentDirectory(dirName))
+	    continue;
+	  }
 	  if (Function * CalledFunc = CI->getCalledFunction()) {
 	    std::string name = CalledFunc->getName();
 	    const bool found = (allocFunctions.find(name) != allocFunctions.end());

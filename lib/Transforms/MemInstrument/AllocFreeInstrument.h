@@ -70,7 +70,7 @@ namespace MemInstrument {
     virtual bool runOnModule(Module &M);
     void InstrumentDealloc(BasicBlock::iterator &BI, std::string fName);
     void InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName);
-    virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName);
+    virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName, std::string dirName);
     std::set<std::string> getAllocFunctions(){
       return allocFunctions;
     }

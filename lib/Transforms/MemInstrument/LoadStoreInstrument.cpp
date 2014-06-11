@@ -41,28 +41,55 @@ namespace MemInstrument {
     
     Function *tmp = cast<Function>(MopFn);
     tmp->setCallingConv(CallingConv::C);
-    AllocFreeInstrument passObject;
-    const std::set<std::string> allocFunctions = passObject.getAllocFunctions();
-    const std::set<std::string> freeFunctions = passObject.getFreeFunctions();
+    
+    std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
+
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
-      for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-	std::string fName = F->getName().str();
+      std::string fName = F->getName().str();
+      std::string dirName = "";
 
-	// don't instrument functions that have to deal with memory management   
-	const bool found = 
-	  (freeFunctions.find(fName) != freeFunctions.end() || 
-	   allocFunctions.find(fName) != allocFunctions.end());
-	if(found)
-	  return true;
-	// don't instrument syslog
-	if(fName.find("syslog")!=std::string::npos)
-	  return true;
+      // Try to abort early based on the directories to be instrumented
+      std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
+      if(search != funcNameToDirName.end()) {
+	dirName = search->second;
+      }
+      if(dirName.compare("")!=0)
+	if(!shouldInstrumentDirectory(dirName))
+	  continue;
+  
+      if(fName.find("CaptureStreamInternal") != std::string::npos){
+      	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
+      	       BI != BE; ++BI) { 
+      	    BI->dump();
+      	    llvm::outs() << "\n";
+      	  }
+      	  LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
+      	  llvm::outs() << "After: \n";
+      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
+      	       BI != BE; ++BI) { 
+      	    BI->dump();
+      	    llvm::outs() << "\n";
+      	  }
+      	}
+      }
+      else
+      	return true;
+      // don't instrument functions that have to deal with memory management
+      const bool found = (blacklist.find(fName) != blacklist.end());
+      if(found)
+	continue;
+      // don't instrument syslog
+      if(fName.find("syslog")!=std::string::npos)
+	continue;
 	// don't instrument functions used in mopInstrument
-	if(fName.find("PR_GetThreadID")!=std::string::npos || 
-	   fName.find("PR_GetCurrentThread")!=std::string::npos)
-	  return true;
-	LoadStoreInstrument::runOnBasicBlock(BB, fName);
+      if(fName.find("PR_GetThreadID")!=std::string::npos || 
+	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
+	 fName.find("_PR_") != std::string::npos) 
+	continue;
+      for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
       }
     }
     return true;
@@ -154,14 +181,15 @@ namespace MemInstrument {
     IRB.CreateCall5(MopFn, AddrLong, Size, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
   }
   
-  bool LoadStoreInstrument::runOnBasicBlock(Function::iterator &BB, std::string fName) {
+  bool LoadStoreInstrument::runOnBasicBlock(Function::iterator &BB, 
+					    std::string fName, std::string dName) {
     //errs() << "========BB===========\n";
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
-      if(!shouldInstrumentDirectory(getDirName(BI))){
-	//llvm::outs() << "Skipping: " << getDirName(BI) << "\n";
-	continue;
-      }
+      // Getting the dirname earlier failed. Try again using the instruction
+      if(dName.compare("")==0)
+       if(!shouldInstrumentDirectory(getDirName(BI)))
+	 continue;
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
