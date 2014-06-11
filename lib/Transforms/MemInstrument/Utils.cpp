@@ -78,6 +78,27 @@ namespace MemInstrument {
     return false;
   }
 
+  std::map<std::string, std::string> getDebugInformation(Module &M){
+    DebugInfoFinder Finder;
+    std::map<std::string, std::string> funcToDebugInfo;
+    Finder.processModule(M);
+    for (DebugInfoFinder::iterator i = Finder.subprogram_begin(),
+	   e = Finder.subprogram_end();
+	 i != e; ++i) {
+      DISubprogram S(*i);
+      Function *F = S.getFunction();
+      MDNode *N = S.getVariablesNodes();
+      if(F){
+	if (N){
+	  DILocation Loc(N);                     
+	  std::string Dir = Loc.getDirectory().str();
+	  funcToDebugInfo[F->getName().str()] = Dir;
+	}
+      }
+    }
+    return funcToDebugInfo;
+  }
+
   std::string demangleFunctionName(std::string func) {
     std::string ret(func);
     // Check for name mangling. C++ functions will always start with _Z                                 

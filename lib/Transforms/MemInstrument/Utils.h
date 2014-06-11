@@ -32,5 +32,7 @@ namespace MemInstrument {
 
   std::string demangleFunctionName(std::string functionName); 
 
+  std::map<std::string, std::string> getDebugInformation(Module &M);
+
 }
 #endif

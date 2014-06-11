@@ -34,6 +34,34 @@ namespace MemInstrument {
     LLVMContext *Context;
     const DataLayout *DL;
 
+    std::set<std::string> blacklist = {
+      "free",
+      "malloc",
+      "calloc",
+      "realloc",
+      "strdup",
+      "xstrndup",
+      "memalign",
+      "valloc",
+      "moz_free",
+      "moz_malloc",
+      "moz_calloc",
+      "moz_realloc",
+      "moz_strdup",
+      "moz_strndup",
+      "moz_valloc",
+      "moz_xmalloc",
+      "moz_xcalloc",
+      "moz_xrealloc",
+      "moz_xstrdup",
+      "moz_xstrndup",
+      "moz_xvalloc",
+      "_Znwm",  // operator new(unsigned long)
+      "_Znam",  // operator new[](unsigned long)
+      "_ZdlPv", // operator delete(void*)
+      "_ZdaPv" // operator delete[](void*)
+    };
+
     std::set<std::string> InstrumentedTypes = {
       //      "product", 
       "nsFrameSelection",
@@ -52,7 +80,7 @@ namespace MemInstrument {
   LoadStoreInstrument() : ModulePass(ID) {ID = 0;}
     virtual bool runOnModule(Module &M);
     void Instrument(BasicBlock::iterator &BI, bool isStore, std::string fName);
-    virtual bool runOnBasicBlock(Function::iterator &BB, std::string fName);
+    virtual bool runOnBasicBlock(Function::iterator &BB, std::string fName, std::string dName);
   
   };
 
