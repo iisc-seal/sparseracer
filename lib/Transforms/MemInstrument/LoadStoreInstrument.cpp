@@ -45,8 +45,9 @@ namespace MemInstrument {
     std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
 
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-      if (F->isDeclaration()) continue;
+      //if (F->isDeclaration()) continue;
       std::string fName = F->getName().str();
+      
       std::string dirName = "";
 
       // Try to abort early based on the directories to be instrumented
@@ -57,26 +58,29 @@ namespace MemInstrument {
       if(dirName.compare("")!=0)
 	if(!shouldInstrumentDirectory(dirName))
 	  continue;
-  
-      // if(fName.find("CaptureStreamInternal") != std::string::npos){
-      // 	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-      // 	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      // 	       BI != BE; ++BI) { 
-      // 	    BI->dump();
-      // 	    llvm::outs() << "\n";
-      // 	  }
-      // 	  LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
-      // 	  llvm::outs() << "After: \n";
-      // 	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      // 	       BI != BE; ++BI) { 
-      // 	    BI->dump();
-      // 	    llvm::outs() << "\n";
-      // 	  }
-      // 	}
-      // }
-      // else
-      // 	return true;
+
+      llvm::outs() << "Processing " << fName << "\n";
+      if(fName.find("Capture") != std::string::npos){
+	llvm::outs() << "Instrumenting " << fName << "\n";
+      	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
+      	       BI != BE; ++BI) { 
+      	    BI->print(llvm::outs());
+      	    llvm::outs() << "\n";
+      	  }
+      	  LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
+      	  llvm::outs() << "After: \n";
+      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
+      	       BI != BE; ++BI) { 
+      	    BI->print(llvm::outs());
+      	    llvm::outs() << "\n";
+      	  }
+      	}
+      }
+      else
+      	continue;
       // don't instrument functions that have to deal with memory management
+      // and our own instrumentation routines, if they show up somehow
       const bool found = (blacklist.find(fName) != blacklist.end());
       if(found)
 	continue;
@@ -86,7 +90,8 @@ namespace MemInstrument {
 	// don't instrument functions used in mopInstrument
       if(fName.find("PR_GetThreadID")!=std::string::npos || 
 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("_PR_") != std::string::npos) 
+	 fName.find("_PR_") != std::string::npos||
+	 fName.find("pt_") != std::string::npos) 
 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);

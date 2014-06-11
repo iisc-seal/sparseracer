@@ -57,13 +57,20 @@ namespace MemInstrument {
       if(dirName.compare("")!=0)
         if(!shouldInstrumentDirectory(dirName))
           continue;
-      
+      // don't instrument within alloc and free functions
+      // becuse this will cause duplicates in the trace
+      const bool found = (allocFunctions.find(fName) != allocFunctions.end() ||
+			  freeFunctions.find(fName) != freeFunctions.end());
+      if(found)
+	continue;
       // don't instrument syslog
       if(fName.find("syslog")!=std::string::npos)
 	continue;
       if(fName.find("PR_GetThreadID")!=std::string::npos || 
 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("_PR_") != std::string::npos) 
+	 fName.find("_PR_") != std::string::npos ||
+	 fName.find("pt_") !=std::string::npos || fName.compare("mopAlloc")==0
+	 || fName.compare("mopDealloc") == 0 || fName.compare("mopInstrument")==0) 
 	continue;
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
@@ -227,9 +234,11 @@ namespace MemInstrument {
 	  const bool found = (freeFunctions.find(name) != freeFunctions.end());
 	  if(found){
 	    // delete and delete[] are overloaded to redirect to moz_free
+	    // moz_free in turn calls free
 	    // so avoid instrumenting twice
-	    if(callerName.compare("_ZdlPv") == 0 || callerName.compare("_ZdaPv") == 0)
-	      continue;
+	    // if(callerName.compare("_ZdlPv") == 0 || callerName.compare("_ZdaPv") == 0
+	    //    || callerName.compare("moz_free") == 0)
+	    //   continue;
 	    AllocFreeInstrument::InstrumentDealloc(BI, callerName);
 	  }
 	  
@@ -247,6 +256,14 @@ namespace MemInstrument {
 	    std::string name = CalledFunc->getName();
 	    const bool found = (allocFunctions.find(name) != allocFunctions.end());
 	    if(found){
+	      // new and new[] are overloaded to redirect to moz_malloc/moz_xmalloc
+	      // moz_malloc and moz_xmalloc in turn call malloc
+	      // so avoid instrumenting twice
+	      // if(callerName.compare("_Znwm") == 0 
+	      // 	 || callerName.compare("_Znam") == 0
+	      // 	 || callerName.compare("moz_malloc") == 0 
+	      // 	 || callerName.compare("moz_xmalloc") == 0)
+	      // 	continue;
 	      //BI->dump();
 	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, callerName);
 	      //errs() << "Alloc insert success!" ;
