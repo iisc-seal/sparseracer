@@ -58,24 +58,24 @@ namespace MemInstrument {
 	if(!shouldInstrumentDirectory(dirName))
 	  continue;
   
-      if(fName.find("CaptureStreamInternal") != std::string::npos){
-      	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      	       BI != BE; ++BI) { 
-      	    BI->dump();
-      	    llvm::outs() << "\n";
-      	  }
-      	  LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
-      	  llvm::outs() << "After: \n";
-      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      	       BI != BE; ++BI) { 
-      	    BI->dump();
-      	    llvm::outs() << "\n";
-      	  }
-      	}
-      }
-      else
-      	return true;
+      // if(fName.find("CaptureStreamInternal") != std::string::npos){
+      // 	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+      // 	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
+      // 	       BI != BE; ++BI) { 
+      // 	    BI->dump();
+      // 	    llvm::outs() << "\n";
+      // 	  }
+      // 	  LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
+      // 	  llvm::outs() << "After: \n";
+      // 	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
+      // 	       BI != BE; ++BI) { 
+      // 	    BI->dump();
+      // 	    llvm::outs() << "\n";
+      // 	  }
+      // 	}
+      // }
+      // else
+      // 	return true;
       // don't instrument functions that have to deal with memory management
       const bool found = (blacklist.find(fName) != blacklist.end());
       if(found)
