@@ -41,6 +41,7 @@ namespace MemInstrument {
       "realloc",
       "strdup",
       "xstrndup",
+      "memalign",
       "posix_memalign",
       "valloc",
       "moz_free",
@@ -56,6 +57,9 @@ namespace MemInstrument {
       "moz_xstrdup",
       "moz_xstrndup",
       "moz_xvalloc",
+      "mopAlloc",
+      "mopDealloc",
+      "mopInstrument"
       "_Znwm",  // operator new(unsigned long)
       "_Znam",  // operator new[](unsigned long)
       "_ZdlPv", // operator delete(void*)

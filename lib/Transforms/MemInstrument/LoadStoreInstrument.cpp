@@ -77,6 +77,7 @@ namespace MemInstrument {
       // else
       // 	return true;
       // don't instrument functions that have to deal with memory management
+      // and our own instrumentation routines, if they show up somehow
       const bool found = (blacklist.find(fName) != blacklist.end());
       if(found)
 	continue;
@@ -86,7 +87,8 @@ namespace MemInstrument {
 	// don't instrument functions used in mopInstrument
       if(fName.find("PR_GetThreadID")!=std::string::npos || 
 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("_PR_") != std::string::npos) 
+	 fName.find("_PR_") != std::string::npos||
+	 fName.find("pt_") != std::string::npos) 
 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);

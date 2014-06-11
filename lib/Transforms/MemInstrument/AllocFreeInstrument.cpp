@@ -63,7 +63,9 @@ namespace MemInstrument {
 	continue;
       if(fName.find("PR_GetThreadID")!=std::string::npos || 
 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("_PR_") != std::string::npos) 
+	 fName.find("_PR_") != std::string::npos ||
+	 fName.find("pt_") !=std::string::npos || fName.compare("mopAlloc")==0
+	 || fName.compare("mopDealloc") == 0 || fName.compare("mopInstrument")==0) 
 	continue;
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
