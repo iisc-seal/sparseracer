@@ -54,9 +54,9 @@ namespace MemInstrument {
       if(search != funcNameToDirName.end()) {
         dirName = search->second;
       }
-      if(dirName.compare("")!=0)
-        if(!shouldInstrumentDirectory(dirName))
-          continue;
+      // if(dirName.compare("")!=0)
+      //   if(!shouldInstrumentDirectory(dirName))
+      //     continue;
       
       // don't instrument syslog
       if(fName.find("syslog")!=std::string::npos)
@@ -216,11 +216,11 @@ namespace MemInstrument {
       
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
         // llvm::outs() << dirName << "\n";
-	if(dName.compare("")==0){
-	  std::string dirName = getDirName(CI);
-	  if(!shouldInstrumentDirectory(dirName))
-	    continue;
-	}
+	// if(dName.compare("")==0){
+	//   std::string dirName = getDirName(CI);
+	//   if(!shouldInstrumentDirectory(dirName))
+	//     continue;
+	// }
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  // llvm::outs() << name << "\n"; 
@@ -238,11 +238,11 @@ namespace MemInstrument {
       // assume an alloc is always followed by a bitcast
       else if (BitCastInst *BCI = dyn_cast<BitCastInst>(BI)) {
 	if (CallInst * CI = dyn_cast<CallInst>(BCI->getOperand(0))) {
-	  if(dName.compare("")==0){
-	  std::string dirName = getDirName(CI);
-	  if(!shouldInstrumentDirectory(dirName))
-	    continue;
-	  }
+	  // if(dName.compare("")==0){
+	  // std::string dirName = getDirName(CI);
+	  // if(!shouldInstrumentDirectory(dirName))
+	  //   continue;
+	  // }
 	  if (Function * CalledFunc = CI->getCalledFunction()) {
 	    std::string name = CalledFunc->getName();
 	    const bool found = (allocFunctions.find(name) != allocFunctions.end());

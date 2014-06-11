@@ -41,7 +41,7 @@ namespace MemInstrument {
       "realloc",
       "strdup",
       "xstrndup",
-      "memalign",
+      "posix_memalign",
       "valloc",
       "moz_free",
       "moz_malloc",

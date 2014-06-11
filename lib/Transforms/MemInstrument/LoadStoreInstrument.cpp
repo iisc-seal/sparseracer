@@ -54,9 +54,9 @@ namespace MemInstrument {
       if(search != funcNameToDirName.end()) {
 	dirName = search->second;
       }
-      if(dirName.compare("")!=0)
-	if(!shouldInstrumentDirectory(dirName))
-	  continue;
+      // if(dirName.compare("")!=0)
+      // 	if(!shouldInstrumentDirectory(dirName))
+      // 	  continue;
   
       // if(fName.find("CaptureStreamInternal") != std::string::npos){
       // 	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
@@ -187,9 +187,9 @@ namespace MemInstrument {
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
       // Getting the dirname earlier failed. Try again using the instruction
-      if(dName.compare("")==0)
-       if(!shouldInstrumentDirectory(getDirName(BI)))
-	 continue;
+      // if(dName.compare("")==0)
+      //  if(!shouldInstrumentDirectory(getDirName(BI)))
+      // 	 continue;
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
