@@ -54,6 +54,8 @@ namespace MemInstrument {
       if(search != funcNameToDirName.end()) {
 	dirName = search->second;
       }
+      if(dirName.find("nsprpub/pr/src/pthreads") != std::string::npos)
+	continue;
       // if(dirName.compare("")!=0)
       // 	if(!shouldInstrumentDirectory(dirName))
       // 	  continue;
@@ -85,10 +87,12 @@ namespace MemInstrument {
       if(fName.find("syslog")!=std::string::npos)
 	continue;
 	// don't instrument functions used in mopInstrument
+        // or functions that are reachable, transitively
       if(fName.find("PR_GetThreadID")!=std::string::npos || 
 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("_PR_") != std::string::npos||
-	 fName.find("pt_") != std::string::npos) 
+	 fName.find("PR_") != std::string::npos||
+	 fName.find("getId") != std::string::npos||
+	 fName.find("pt_AttachThread") != std::string::npos) 
 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
