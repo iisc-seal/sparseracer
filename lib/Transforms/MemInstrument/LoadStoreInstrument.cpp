@@ -45,8 +45,9 @@ namespace MemInstrument {
     std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
 
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-      if (F->isDeclaration()) continue;
+      //if (F->isDeclaration()) continue;
       std::string fName = F->getName().str();
+      
       std::string dirName = "";
 
       // Try to abort early based on the directories to be instrumented
@@ -54,8 +55,8 @@ namespace MemInstrument {
       if(search != funcNameToDirName.end()) {
 	dirName = search->second;
       }
-      if(dirName.find("nsprpub/pr/src/pthreads") != std::string::npos)
-	continue;
+      //if(dirName.find("nsprpub/pr/src/pthreads") != std::string::npos)
+	//continue;
       // if(dirName.compare("")!=0)
       // 	if(!shouldInstrumentDirectory(dirName))
       // 	  continue;
@@ -193,9 +194,9 @@ namespace MemInstrument {
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
       // Getting the dirname earlier failed. Try again using the instruction
-      // if(dName.compare("")==0)
-      //  if(!shouldInstrumentDirectory(getDirName(BI)))
-      // 	 continue;
+      if(dName.compare("")==0)
+       if(!shouldInstrumentDirectory(getDirName(BI)))
+	 continue;
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
