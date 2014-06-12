@@ -52,30 +52,26 @@ namespace MemInstrument {
 
       // Try to abort early based on the directories to be instrumented
       std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
+      
       if(search != funcNameToDirName.end()) {
 	dirName = search->second;
       }
+      
       if(dirName.compare("")!=0)
 	if(!shouldInstrumentDirectory(dirName))
 	  continue;
 
-      llvm::outs() << "Processing " << fName << "\n";
+      llvm::outs() << "Processing " << fName+" in "+dirName << "\n";
       if(fName.find("Capture") != std::string::npos){
 	llvm::outs() << "Instrumenting " << fName << "\n";
+	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+	  errs() << *I << "\n";
       	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      	       BI != BE; ++BI) { 
-      	    BI->print(llvm::outs());
-      	    llvm::outs() << "\n";
-      	  }
-      	  LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
-      	  llvm::outs() << "After: \n";
-      	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      	       BI != BE; ++BI) { 
-      	    BI->print(llvm::outs());
-      	    llvm::outs() << "\n";
-      	  }
-      	}
+      	    LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
+	}
+	llvm::outs() << "After: \n";
+	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+	  errs() << *I << "\n";
       }
       else
       	continue;
@@ -88,10 +84,12 @@ namespace MemInstrument {
       if(fName.find("syslog")!=std::string::npos)
 	continue;
 	// don't instrument functions used in mopInstrument
+        // or functions that are called transitively
       if(fName.find("PR_GetThreadID")!=std::string::npos || 
 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("_PR_") != std::string::npos||
-	 fName.find("pt_") != std::string::npos) 
+	 fName.find("_PR_") != std::string::npos ||
+	 fName.find("getID") != std::string::npos ||
+	 fName.find("pt_AttachThread") != std::string::npos) 
 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);

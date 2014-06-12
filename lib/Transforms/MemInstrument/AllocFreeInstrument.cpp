@@ -54,8 +54,11 @@ namespace MemInstrument {
       if(search != funcNameToDirName.end()) {
         dirName = search->second;
       }
+      // also, abort if function is related to the allocation of threads
+      // we don't want to read thread id's before the memory is allocated
       if(dirName.compare("")!=0)
-        if(!shouldInstrumentDirectory(dirName))
+        if(!shouldInstrumentDirectory(dirName) 
+	   || dirName.find("nsprpub/pr/src") != std::string::npos)
           continue;
       // don't instrument within alloc and free functions
       // becuse this will cause duplicates in the trace

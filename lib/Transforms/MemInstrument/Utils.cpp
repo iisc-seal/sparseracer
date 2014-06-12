@@ -87,12 +87,14 @@ namespace MemInstrument {
 	 i != e; ++i) {
       DISubprogram S(*i);
       Function *F = S.getFunction();
-      MDNode *N = S.getVariablesNodes();
       if(F){
-	if (N){
-	  DILocation Loc(N);                     
-	  std::string Dir = Loc.getDirectory().str();
-	  funcToDebugInfo[F->getName().str()] = Dir;
+	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I){
+	  if (MDNode *N = I->getMetadata("dbg")) {
+	    DILocation Loc(N);                     
+	    std::string Dir = Loc.getDirectory().str();
+	    funcToDebugInfo[F->getName().str()] = Dir;
+	    break;
+	  }
 	}
       }
     }
