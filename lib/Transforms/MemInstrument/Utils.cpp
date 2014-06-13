@@ -5,6 +5,11 @@
 
 namespace MemInstrument {
 
+  bool isPointerToPointer(const Value* V) {
+    const Type* T = V->getType();
+    return T->isPointerTy() && T->getContainedType(0)->isPointerTy();
+  }
+
   std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;

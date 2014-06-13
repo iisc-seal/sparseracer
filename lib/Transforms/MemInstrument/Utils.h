@@ -18,6 +18,8 @@
 
 using namespace llvm;
 namespace MemInstrument {
+
+  bool isPointerToPointer(const Value* V);
   
   std::string getTypeAsString(Type* T);
 

@@ -52,33 +52,34 @@ namespace MemInstrument {
 
       // Try to abort early based on the directories to be instrumented
       std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
+      
       if(search != funcNameToDirName.end()) {
 	dirName = search->second;
       }
-      //if(dirName.find("nsprpub/pr/src/pthreads") != std::string::npos)
-	//continue;
-      // if(dirName.compare("")!=0)
-      // 	if(!shouldInstrumentDirectory(dirName))
+      
+       if(dirName.compare("")!=0)
+	 if(!shouldInstrumentDirectory(dirName))
+      // 	   || dirName.find("nsprpub/pr/src") != std::string::npos
+      // 	   || dirName.find("ipc/chromium/src/base") != std::string::npos)
       // 	  continue;
-  
-      // if(fName.find("CaptureStreamInternal") != std::string::npos){
+
+      // Debug output to see that the IR being generated is OK	   
+      // llvm::outs() << "Processing " << fName+" in "+dirName << "\n";
+      // if(fName.find("Capture") != std::string::npos){
+      // 	llvm::outs() << "Instrumenting " << fName << "\n";
+      // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+      // 	  llvm::outs() << *I << "\n";
       // 	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-      // 	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      // 	       BI != BE; ++BI) { 
-      // 	    BI->dump();
-      // 	    llvm::outs() << "\n";
-      // 	  }
-      // 	  LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
-      // 	  llvm::outs() << "After: \n";
-      // 	  for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
-      // 	       BI != BE; ++BI) { 
-      // 	    BI->dump();
-      // 	    llvm::outs() << "\n";
-      // 	  }
+      // 	    LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
       // 	}
+      // 	llvm::outs() << "After: \n";
+      // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+      // 	  llvm::outs() << *I << "\n";
+      // 	continue;
       // }
       // else
-      // 	return true;
+      // 	continue;
+
       // don't instrument functions that have to deal with memory management
       // and our own instrumentation routines, if they show up somehow
       const bool found = (blacklist.find(fName) != blacklist.end());
@@ -88,7 +89,7 @@ namespace MemInstrument {
       if(fName.find("syslog")!=std::string::npos)
 	continue;
 	// don't instrument functions used in mopInstrument
-        // or functions that are reachable, transitively
+        // or functions that are called transitively
       if(fName.find("PR_GetThreadID")!=std::string::npos || 
 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
 	 fName.find("PR_") != std::string::npos||
@@ -117,14 +118,20 @@ namespace MemInstrument {
     else
       Addr = (static_cast<LoadInst&>(IN).getPointerOperand());
     
-      // We don't care about addresses on the stack
-    if(dyn_cast<AllocaInst>(Addr))
-      return;
+    // We don't care about pointer operands that aren't double pointers
+    // Edit: Actually, we do :( 
+    // if(!isPointerToPointer(Addr))
+    //   return;
 
+    // This is too simplistic :( The problem is, heap addresses can be stored
+    // into stack variable, say as a return from a function call
+    //if(dyn_cast<AllocaInst>(Addr))
+    //return;
+    
     Type *OrigPtrTy = Addr->getType();
     Type *OrigTy = cast<PointerType>(OrigPtrTy)->getElementType();
     
-    // Get size of type being freed
+    // Get size of type being accessed
     assert(OrigTy->isSized());
     uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
     //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";

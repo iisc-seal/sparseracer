@@ -1,6 +1,8 @@
 #include<cstdio>
 #include <syslog.h>
 
+extern void mopInstrument(int address, int typeSize, char* type, char* debugLoc, char *fName);
+
 struct product{
   int serialNum;
   int price;
