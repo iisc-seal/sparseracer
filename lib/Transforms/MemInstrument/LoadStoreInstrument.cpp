@@ -57,24 +57,29 @@ namespace MemInstrument {
 	dirName = search->second;
       }
       
-      if(dirName.compare("")!=0)
-	if(!shouldInstrumentDirectory(dirName))
-	  continue;
+       if(dirName.compare("")!=0)
+	 if(!shouldInstrumentDirectory(dirName))
+      // 	   || dirName.find("nsprpub/pr/src") != std::string::npos
+      // 	   || dirName.find("ipc/chromium/src/base") != std::string::npos)
+      // 	  continue;
 
-      llvm::outs() << "Processing " << fName+" in "+dirName << "\n";
-      if(fName.find("Capture") != std::string::npos){
-	llvm::outs() << "Instrumenting " << fName << "\n";
-	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
-	  errs() << *I << "\n";
-      	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-      	    LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
-	}
-	llvm::outs() << "After: \n";
-	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
-	  errs() << *I << "\n";
-      }
-      else
-      	continue;
+      // Debug output to see that the IR being generated is OK	   
+      // llvm::outs() << "Processing " << fName+" in "+dirName << "\n";
+      // if(fName.find("Capture") != std::string::npos){
+      // 	llvm::outs() << "Instrumenting " << fName << "\n";
+      // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+      // 	  llvm::outs() << *I << "\n";
+      // 	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+      // 	    LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
+      // 	}
+      // 	llvm::outs() << "After: \n";
+      // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+      // 	  llvm::outs() << *I << "\n";
+      // 	continue;
+      // }
+      // else
+      // 	continue;
+
       // don't instrument functions that have to deal with memory management
       // and our own instrumentation routines, if they show up somehow
       const bool found = (blacklist.find(fName) != blacklist.end());
@@ -113,17 +118,23 @@ namespace MemInstrument {
     else
       Addr = (static_cast<LoadInst&>(IN).getPointerOperand());
     
-      // We don't care about addresses on the stack
-    if(dyn_cast<AllocaInst>(Addr))
-      return;
+    // We don't care about pointer operands that aren't double pointers
+    // Edit: Actually, we do :( 
+    // if(!isPointerToPointer(Addr))
+    //   return;
 
+    // This is too simplistic :( The problem is, heap addresses can be stored
+    // into stack variable, say as a return from a function call
+    //if(dyn_cast<AllocaInst>(Addr))
+    //return;
+    
     Type *OrigPtrTy = Addr->getType();
     Type *OrigTy = cast<PointerType>(OrigPtrTy)->getElementType();
     
-    // Get size of type being freed
+    // Get size of type being accessed
     assert(OrigTy->isSized());
     uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
-    //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
+    // errs() << "\n"<< "Got here: " << TypeSize << "\n";
       
     Value *Size =  ConstantInt::get(Type::getInt64Ty(Context), TypeSize/8);
     assert((TypeSize % 8) == 0);
