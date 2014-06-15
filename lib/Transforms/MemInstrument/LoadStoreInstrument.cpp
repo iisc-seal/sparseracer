@@ -59,6 +59,7 @@ namespace MemInstrument {
       
        if(dirName.compare("")!=0)
 	 if(!shouldInstrumentDirectory(dirName))
+	   continue;
       // 	   || dirName.find("nsprpub/pr/src") != std::string::npos
       // 	   || dirName.find("ipc/chromium/src/base") != std::string::npos)
       // 	  continue;
