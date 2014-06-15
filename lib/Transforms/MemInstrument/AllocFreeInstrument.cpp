@@ -56,9 +56,9 @@ namespace MemInstrument {
       }
       // also, abort if function is related to the allocation of threads
       // we don't want to read thread id's before the memory is allocated
-      if(dirName.compare("")!=0)
-        if(!shouldInstrumentDirectory(dirName) 
-	   || dirName.find("nsprpub/pr/src") != std::string::npos
+      //if(dirName.compare("")!=0)
+        //if(!shouldInstrumentDirectory(dirName) 
+      if(dirName.find("nsprpub/pr/src") != std::string::npos
 	   || dirName.find("ipc/chromium/src/base") !=std::string::npos)
           continue;
       // don't instrument within alloc and free functions

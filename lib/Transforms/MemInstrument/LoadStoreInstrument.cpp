@@ -57,8 +57,9 @@ namespace MemInstrument {
 	dirName = search->second;
       }
       
-       if(dirName.compare("")!=0)
-	 if(!shouldInstrumentDirectory(dirName))
+       // if(dirName.compare("")!=0)
+       // 	 if(!shouldInstrumentDirectory(dirName))
+       // 	   continue;
       // 	   || dirName.find("nsprpub/pr/src") != std::string::npos
       // 	   || dirName.find("ipc/chromium/src/base") != std::string::npos)
       // 	  continue;
@@ -201,9 +202,9 @@ namespace MemInstrument {
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
       // Getting the dirname earlier failed. Try again using the instruction
-      if(dName.compare("")==0)
-       if(!shouldInstrumentDirectory(getDirName(BI)))
-	 continue;
+      // if(dName.compare("")==0)
+      //  if(!shouldInstrumentDirectory(getDirName(BI)))
+      // 	 continue;
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
