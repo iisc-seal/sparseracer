@@ -26,8 +26,11 @@
 
 #include "Utils.h"
 
-using namespace llvm;
+#define DEBUG_TYPE "AllocFreeInstrument"
 
+using namespace llvm;
+STATISTIC(MissedFrees, "Counts number of free sites untracked");
+STATISTIC(MissedMalloc, "Counts number of malloc sites untracked");
 namespace MemInstrument {
   class AllocFreeInstrument : public ModulePass {
 
@@ -54,7 +57,8 @@ namespace MemInstrument {
       "_ZdlPv", // operator delete(void*)
       "_ZdaPv", // operator delete[](void*)
       "free",
-      "moz_free"
+      "_ZdlPvRKSt9nothrow_t",  // delete(void*, nothrow)
+      "ZdaPvRKSt9nothrow_t"   // delete[](void*, nothrow)
     };
 
     std::set<std::string> whiteList = {

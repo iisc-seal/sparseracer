@@ -117,8 +117,9 @@ namespace MemInstrument {
 
     // Get size of type being freed
     if(!OrigTy->isSized()){
-      errs() << "Failed to track free on :"; 
-      OrigTy->dump();
+      //errs() << "Failed to track free on :"; 
+      //OrigTy->dump();
+      ++MissedFrees;
       return;
     }
     assert(OrigTy->isSized());
@@ -275,6 +276,21 @@ namespace MemInstrument {
 	  if(!shouldInstrumentDirectory(dirName))
 	    continue;
 	}
+
+	/*Debug Stats: How many malloc like functions don't have bitcast?*/
+	/*We're essentially gonna miss these sites*/
+	// Determine if CallInst has a bitcast use.
+	if(isMallocLikeFn(CI, TLI)){
+	  int NumOfBitCastUses = 0;
+	  
+	  for (User *U : CI->users())
+	    if (dyn_cast<BitCastInst>(U)) 
+	      NumOfBitCastUses++;
+	  
+	  if(NumOfBitCastUses == 0)
+	    ++MissedMalloc;
+	}
+
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  // llvm::outs() << name << "\n"; 
