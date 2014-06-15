@@ -170,21 +170,18 @@ namespace MemInstrument {
   }
 
   // TODO : refactor to remove redundant code
-  Value* AllocFreeInstrument::getMemSize(CallInst* Original, std::string fName, IRBuilder<> IRB){
+  Value* AllocFreeInstrument::getMemSize(CallInst* Original, 
+					 const TargetLibraryInfo *TLI, IRBuilder<> IRB){
     Value* MemSize;
-    if(fName.compare("malloc")==0 || fName.compare("_Znwm") == 0 ||
-       fName.compare("_Znam")==0 || fName.compare("valloc")==0){
+    if(llvm::isOperatorNewLikeFn(Original, TLI) 
+       || llvm::isMallocLikeFn(Original, TLI)) 
       MemSize = getIntegerValue(Original->getOperand(0));
-    }
-    else if(fName.compare("realloc") == 0){
+    else if(Original->getCalledFunction()->getName().compare("realloc") == 0)
       MemSize = getIntegerValue(Original->getOperand(1));
-    }  
-    else if(fName.compare("calloc") == 0){
+    else if(Original->getCalledFunction()->getName().compare("calloc") == 0){
       Value *size1 = getIntegerValue(Original->getOperand(0));
       Value *size2 = getIntegerValue(Original->getOperand(1));
-      Value* totalSize = IRB.CreateMul(size1, size2);
-      MemSize = totalSize;
-      //MemSize = IRB.CreatePointerCast(totalSize, IntptrTy);
+      MemSize = IRB.CreateMul(size1, size2);
     }
     else 
       assert("Trying to instrument unsupported allocator!");
@@ -223,7 +220,7 @@ namespace MemInstrument {
     Value *AddrLong = IRB.CreatePointerCast(Original, IntptrTy);
     // errs() << "Address " << *AddrLong << "\n";
     // Get the number of bytes allocated
-    Value *MemSize = getMemSize(Original, Original->getCalledFunction()->getName(), IRB);
+    Value *MemSize = getMemSize(Original, TLI, IRB);
     // if(isa<llvm::ConstantInt>(Original->getOperand(0)))
     //   MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
     // else

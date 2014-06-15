@@ -88,7 +88,8 @@ namespace MemInstrument {
 			 const TargetLibraryInfo *TLI);
     virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName, 
 				 std::string dirName, const TargetLibraryInfo *TLI);
-    Value* getMemSize(CallInst* Original, std::string fName, IRBuilder<> IRB);
+    Value* getMemSize(CallInst* Original, const TargetLibraryInfo *TLI
+		      , IRBuilder<> IRB);
     std::set<std::string> getAllocFunctions(){
       return allocFunctions;
     }
