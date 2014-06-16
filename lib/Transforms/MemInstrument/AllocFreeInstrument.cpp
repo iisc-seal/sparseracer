@@ -44,6 +44,10 @@ namespace MemInstrument {
     (cast<Function>(MAllocFn))->setCallingConv(CallingConv::C);
     (cast<Function>(MDallocFn))->setCallingConv(CallingConv::C);
     
+    // Figure out TargetLibraryInfo.
+    Triple TargetTriple(M.getTargetTriple());
+    const TargetLibraryInfo *TLI = new TargetLibraryInfo(TargetTriple); 
+    
     std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
@@ -79,14 +83,15 @@ namespace MemInstrument {
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-	AllocFreeInstrument::runOnBasicBlock(BB, fName, dirName);
+	AllocFreeInstrument::runOnBasicBlock(BB, fName, dirName, TLI);
       }
     }
     return true;
   }
     
 
-  void AllocFreeInstrument::InstrumentDealloc(BasicBlock::iterator &BI, std::string fName) {
+  void AllocFreeInstrument::InstrumentDealloc(BasicBlock::iterator &BI, std::string fName, 
+					      const TargetLibraryInfo *TLI) {
     
     // Output instruction currently being processed
     llvm::Instruction &IN = *BI;
@@ -112,16 +117,21 @@ namespace MemInstrument {
 
     // Get size of type being freed
     if(!OrigTy->isSized()){
-      errs() << "Failed to track free on :"; 
-      OrigTy->dump();
+      //errs() << "Failed to track free on :"; 
+      //OrigTy->dump();
+      ++MissedFrees;
       return;
     }
     assert(OrigTy->isSized());
-    uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
+    //uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
     //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
+    uint64_t TypeSize;
+    if(!getObjectSize(Addr, TypeSize, DL, TLI, false)){
+      TypeSize = DL->getTypeStoreSizeInBits(OrigTy)/8;
+    }
 
-    Value *Size =  ConstantInt::get(Type::getInt64Ty(*Context), TypeSize/8);
-    assert((TypeSize % 8) == 0);
+    Value *Size =  ConstantInt::get(Type::getInt64Ty(*Context), TypeSize);
+    //assert((TypeSize % 8) == 0);
     
     //Cast the address being written to into an int
     Value *AddrLong = IRB.CreatePointerCast(Addr, IntptrTy);
@@ -152,14 +162,44 @@ namespace MemInstrument {
     IRB.CreateCall5(MDallocFn, AddrLong, Size, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
   }
 
-  void AllocFreeInstrument::InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName) {
+  Value* getIntegerValue(Value* val){
+    if(isa<llvm::ConstantInt>(val))
+      return dyn_cast<llvm::ConstantInt>(val);
+    
+    return val;
+  }
+
+  // TODO : refactor to remove redundant code
+  Value* AllocFreeInstrument::getMemSize(CallInst* Original, std::string fName, IRBuilder<> IRB){
+    Value* MemSize;
+    if(fName.compare("malloc")==0 || fName.compare("_Znwm") == 0 ||
+       fName.compare("_Znam")==0 || fName.compare("valloc")==0){
+      MemSize = getIntegerValue(Original->getOperand(0));
+    }
+    else if(fName.compare("realloc") == 0){
+      MemSize = getIntegerValue(Original->getOperand(1));
+    }  
+    else if(fName.compare("calloc") == 0){
+      Value *size1 = getIntegerValue(Original->getOperand(0));
+      Value *size2 = getIntegerValue(Original->getOperand(1));
+      Value* totalSize = IRB.CreateMul(size1, size2);
+      MemSize = totalSize;
+      //MemSize = IRB.CreatePointerCast(totalSize, IntptrTy);
+    }
+    else 
+      assert("Trying to instrument unsupported allocator!");
+    return MemSize;
+  }
+
+  void AllocFreeInstrument::InstrumentAlloc(BitCastInst* Succ, CallInst *Original, 
+					    std::string fName, const TargetLibraryInfo *TLI) {
 
     // This is fragile in the sense that it assumes that a cast
     // instruction always follows an alloc instruction where the
     // address returned by the alloc is cast to the type of the
     // register. The pass will break if the assumption does not hold.
 
-    Type *OrigTy;
+    //Type *OrigTy;
     
     // for (Value::use_iterator i = Original->use_begin(), e = Original->use_end(); i != e; ++i)
     //   if (Instruction *Inst = dyn_cast<Instruction>(*i)) {
@@ -168,26 +208,31 @@ namespace MemInstrument {
     //   }
 
 
-    OrigTy = Succ->getType();
-    //errs() << OrigTy << "\n";
+    //OrigTy = Succ->getDestTy();
+    //errs() << *OrigTy << "\n";
     //OrigTy->dump();
     
     
     IRBuilder<> IRB(Succ);
+    Type *AllocatedType = Succ -> getDestTy();
+    if(isMallocLikeFn(Original, TLI)){
+      PointerType *PType =  llvm::getMallocType(Original, TLI); 
+      AllocatedType = PType ? PType->getElementType() : nullptr;
+    }
     
     // Get the address allocated
     Value *AddrLong = IRB.CreatePointerCast(Original, IntptrTy);
     //errs() << "Address " << *AddrLong << "\n";
     // Get the number of bytes allocated
-    Value *MemSize;
-    if(isa<llvm::ConstantInt>(Original->getOperand(0)))
-      MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
-    else
-      MemSize = Original->getOperand(0);
+    Value *MemSize = getMemSize(Original, Original->getCalledFunction()->getName(), IRB);
+    // if(isa<llvm::ConstantInt>(Original->getOperand(0)))
+    //   MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
+    // else
+    //   MemSize = Original->getOperand(0);
 
     //errs() << "Size " << *MemSize<< "\n";
     //Create a string representing the type being written to
-    Value *TypeString = IRB.CreateGlobalString(getTypeAsString(OrigTy));
+    Value *TypeString = IRB.CreateGlobalString(getTypeAsString(AllocatedType));
     //errs() << "Type String" << *TypeString<< "\n";
     //Get a pointer to the string   
     Value *TypeStringPtr = IRB.CreateBitCast(TypeString, IRB.getInt8PtrTy());
@@ -207,13 +252,13 @@ namespace MemInstrument {
 
 
     IRB.CreateCall5(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
-    //errs() << "Problem! \n";
+    // errs() << "Got Here after call! \n";
     //errs() << *CI << "\n";
         
   }
 
-  bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB, 
-					    std::string callerName, std::string dName) {
+  bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB, std::string callerName, 
+					    std::string dName, const TargetLibraryInfo *TLI) {
     //errs() << "========BB===========\n";
     bool flag = false;
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
@@ -227,11 +272,26 @@ namespace MemInstrument {
       
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
         // llvm::outs() << dirName << "\n";
-	// if(dName.compare("")==0){
-	//   std::string dirName = getDirName(CI);
-	//   if(!shouldInstrumentDirectory(dirName))
-	//     continue;
-	// }
+	//if(dName.compare("")==0){
+	  //std::string dirName = getDirName(CI);
+	  //if(!shouldInstrumentDirectory(dirName))
+	    //continue;
+	//}
+
+	/*Debug Stats: How many malloc like functions don't have bitcast?*/
+	/*We're essentially gonna miss these sites*/
+	// Determine if CallInst has a bitcast use.
+	if(isMallocLikeFn(CI, TLI)){
+	  int NumOfBitCastUses = 0;
+	  
+	  for (User *U : CI->users())
+	    if (dyn_cast<BitCastInst>(U)) 
+	      NumOfBitCastUses++;
+	  
+	  if(NumOfBitCastUses == 0)
+	    ++MissedMalloc;
+	}
+
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  // llvm::outs() << name << "\n"; 
@@ -243,7 +303,7 @@ namespace MemInstrument {
 	    // if(callerName.compare("_ZdlPv") == 0 || callerName.compare("_ZdaPv") == 0
 	    //    || callerName.compare("moz_free") == 0)
 	    //   continue;
-	    AllocFreeInstrument::InstrumentDealloc(BI, callerName);
+	    AllocFreeInstrument::InstrumentDealloc(BI, callerName, TLI);
 	  }
 	  
 	}
@@ -269,7 +329,7 @@ namespace MemInstrument {
 	      // 	 || callerName.compare("moz_xmalloc") == 0)
 	      // 	continue;
 	      //BI->dump();
-	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, callerName);
+	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, callerName, TLI);
 	      //errs() << "Alloc insert success!" ;
 	      flag = true;
 	      //BI->dump();

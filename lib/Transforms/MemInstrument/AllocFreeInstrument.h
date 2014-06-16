@@ -19,33 +19,46 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/InstIterator.h"
-
+#include "llvm/Target/TargetLibraryInfo.h"
+#include "llvm/ADT/Triple.h"
+#include "llvm/Analysis/MemoryBuiltins.h"
 #include <stdint.h>
 
 #include "Utils.h"
 
-using namespace llvm;
+#define DEBUG_TYPE "AllocFreeInstrument"
 
+using namespace llvm;
+STATISTIC(MissedFrees, "Counts number of free sites untracked");
+STATISTIC(MissedMalloc, "Counts number of malloc sites untracked");
 namespace MemInstrument {
   class AllocFreeInstrument : public ModulePass {
 
     Constant *MDallocFn;
     Constant *MAllocFn;
-
+    
     // Consider storing in a sorted vector once the code is stable                                       
     std::set<std::string> allocFunctions = {
-      "_Znwm",  // operator new(unsigned long)
-      "_Znam",  // operator new[](unsigned long)
-      "malloc", // void *malloc(size_t size);
-      "moz_malloc", // void* moz_malloc(size_t size)
-      "moz_xmalloc" // The |moz_x| versions will never return a NULL pointer
+      "_Znwj,"               // new(unsigned int)
+      "_ZnwjRKSt9nothrow_t", // new(unsigned int, nothrow)
+      "_Znwm",               // new(unsigned long)
+      "_ZnwmRKSt9nothrow_t", // new(unsigned long, nothrow)
+      "_Znaj",               // new[](unsigned int)
+      "_ZnajRKSt9nothrow_t", // new[](unsigned int, nothrow)
+      "_Znam",               // new[](unsigned long)
+      "_ZnamRKSt9nothrow_t",  // new[](unsigned long, nothrow)
+      "malloc", 
+      "valloc",
+      "realloc",
+      "calloc",
     };
     
     std::set<std::string> freeFunctions = {
       "_ZdlPv", // operator delete(void*)
       "_ZdaPv", // operator delete[](void*)
       "free",
-      "moz_free"
+      "_ZdlPvRKSt9nothrow_t",  // delete(void*, nothrow)
+      "ZdaPvRKSt9nothrow_t"   // delete[](void*, nothrow)
     };
 
     std::set<std::string> whiteList = {
@@ -69,9 +82,13 @@ namespace MemInstrument {
     static char ID;
   AllocFreeInstrument() : ModulePass(ID) {ID = 0;}
     virtual bool runOnModule(Module &M);
-    void InstrumentDealloc(BasicBlock::iterator &BI, std::string fName);
-    void InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName);
-    virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName, std::string dirName);
+    void InstrumentDealloc(BasicBlock::iterator &BI, std::string fName, 
+			   const TargetLibraryInfo *TLI);
+    void InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName, 
+			 const TargetLibraryInfo *TLI);
+    virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName, 
+				 std::string dirName, const TargetLibraryInfo *TLI);
+    Value* getMemSize(CallInst* Original, std::string fName, IRBuilder<> IRB);
     std::set<std::string> getAllocFunctions(){
       return allocFunctions;
     }
