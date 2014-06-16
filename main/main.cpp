@@ -28,8 +28,6 @@ int main(int argc, char* argv[]) {
 	TraceParser parser(argv[1], logger);
 	UAFDetector detectorObj;
 
-	return 0;
-
 	if (parser.parse(detectorObj, logger) < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;

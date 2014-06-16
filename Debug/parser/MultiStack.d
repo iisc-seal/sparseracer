@@ -1,4 +1,3 @@
-parser/MultiStack.d: ../parser/MultiStack.cpp \
- /home/shalini/research/firefox/source/BugDetection/parser/MultiStack.h
+parser/MultiStack.d: ../parser/MultiStack.cpp ../parser/MultiStack.h
 
-/home/shalini/research/firefox/source/BugDetection/parser/MultiStack.h:
+../parser/MultiStack.h:

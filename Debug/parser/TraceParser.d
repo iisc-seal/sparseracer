@@ -1,18 +1,15 @@
 parser/TraceParser.d: ../parser/TraceParser.cpp ../parser/TraceParser.h \
- /home/shalini/research/firefox/source/BugDetection/racedetector/UAFDetector.h \
- /home/shalini/research/firefox/source/BugDetection/racedetector/HBGraph.h \
- /home/shalini/research/firefox/source/BugDetection/debugconfig.h \
- /home/shalini/research/firefox/source/BugDetection/logging/Logger.h \
- ../parser/MultiStack.h
+ ../racedetector/UAFDetector.h ../racedetector/HBGraph.h ../debugconfig.h \
+ ../logging/Logger.h ../parser/MultiStack.h
 
 ../parser/TraceParser.h:
 
-/home/shalini/research/firefox/source/BugDetection/racedetector/UAFDetector.h:
+../racedetector/UAFDetector.h:
 
-/home/shalini/research/firefox/source/BugDetection/racedetector/HBGraph.h:
+../racedetector/HBGraph.h:
 
-/home/shalini/research/firefox/source/BugDetection/debugconfig.h:
+../debugconfig.h:
 
-/home/shalini/research/firefox/source/BugDetection/logging/Logger.h:
+../logging/Logger.h:
 
 ../parser/MultiStack.h:

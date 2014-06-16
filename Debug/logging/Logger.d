@@ -1,4 +1,3 @@
-logging/Logger.d: ../logging/Logger.cpp \
- /home/shalini/research/firefox/source/BugDetection/logging/Logger.h
+logging/Logger.d: ../logging/Logger.cpp ../logging/Logger.h
 
-/home/shalini/research/firefox/source/BugDetection/logging/Logger.h:
+../logging/Logger.h:
