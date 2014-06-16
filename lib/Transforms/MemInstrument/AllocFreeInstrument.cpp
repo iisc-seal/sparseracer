@@ -295,12 +295,12 @@ namespace MemInstrument {
       IRBuilder<> IRB(Succ);
       AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
 
-      Interesting[i].first->print(llvm::outs());
-      llvm::outs() << "\n";
-      if(Interesting[i].second){
-      	Interesting[i].second->print(llvm::outs());
-      	llvm::outs() << "\n";
-      }
+      // Interesting[i].first->print(llvm::outs());
+      // llvm::outs() << "\n";
+      // if(Interesting[i].second){
+      // 	Interesting[i].second->print(llvm::outs());
+      // 	llvm::outs() << "\n";
+      // }
     }
 
     //errs() << "========B*B===========\n";
