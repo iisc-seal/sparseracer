@@ -11,10 +11,15 @@
 
 Logger::Logger(string fileName) {
 	logFileName = fileName;
-	logFile.open(logFileName.c_str(), std::ofstream::app);
+	logFile.open(logFileName.c_str(), std::ofstream::out);
 
 	if (!logFile.is_open()) {
 		cout << "ERROR: Cannot open log file " << logFileName << endl;
+	}
+
+	if (logFile.is_open()) {
+		cout << "Opened log file" << endl;
+		logFile << "Test stringgg";
 	}
 }
 
@@ -22,8 +27,11 @@ Logger::~Logger() {
 	logFile.close();
 }
 
-void Logger::writeLog(string message) {
+//void Logger::writeLog(string message) {
+void Logger::writeLog() {
+	string message = streamObject.str();
 	logFile << message << endl;
+	streamObject.flush();
 }
 
 void Logger::initLog() {

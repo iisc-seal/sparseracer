@@ -69,14 +69,12 @@ int UAFDetector::addEdges(Logger &logger) {
 		cout << "ERROR: While adding CALLBACK-ST edges\n";
 		return -1;
 	}
-#if 0
-#endif
 
 	bool edgeAdded = false;
 	while (true) {
 		int retValue;
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 		graph.printGraph(false);
 #endif
 
@@ -95,7 +93,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 		if (retValue == 1)
 			graph.printGraph(false);
 #endif
@@ -115,7 +113,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 		if (retValue == 1)
 			graph.printGraph(false);
 #endif
@@ -135,10 +133,26 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 		if (retValue == 1)
 			graph.printGraph(false);
 #endif
+
+#ifdef GRAPHDEBUG
+		cout << "Adding FIFO-Callback 2 edges\n";
+#endif
+
+		// FIFO-CALLBACK-2
+		retValue = addFifoCallback2Edges();
+		if (retValue == 1) edgeAdded = true;
+		else if (retValue == 0) edgeAdded = edgeAdded || false; // Didn't add any new edge
+		else if (retValue == -1) {
+			cout << "ERROR: While adding FIFO-CALLBACK-2 edges\n";
+			return -1;
+		} else {
+			cout << "ERROR: Unknown return value from addFifoCallbackEdges()\n";
+			return -1;
+		}
 
 #ifdef GRAPHDEBUG
 		cout << "Adding Fifo-Nested edges\n";
@@ -155,7 +169,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 		if (retValue == 1)
 			graph.printGraph(false);
 #endif
@@ -175,7 +189,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 		if (retValue == 1)
 			graph.printGraph(false);
 #endif
@@ -195,7 +209,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 		if (retValue == 1)
 			graph.printGraph(false);
 #endif
@@ -223,7 +237,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			edgeAdded = false;
 	}
 
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 	graph.printGraph(false);
 #endif
 
@@ -519,6 +533,103 @@ int UAFDetector::addLockEdges() {
 		}
 	}
 
+	for (map<long long, acquireAndReleaseOpDetails>::iterator exitmonitorIt = exitmonitorSet.begin(); exitmonitorIt != exitmonitorSet.end(); exitmonitorIt++) {
+		long long alpha_i = exitmonitorIt->first;
+		long long alpha_j;
+
+		long long exitmonitorThreadID = exitmonitorIt->second.currThreadID;
+		string exitmonitorLockID = exitmonitorIt->second.lockID;
+
+		for (map<long long, acquireAndReleaseOpDetails>::iterator entermonitorIt = entermonitorSet.begin(); entermonitorIt != entermonitorSet.end(); entermonitorIt++) {
+			alpha_j = entermonitorIt->first;
+
+			long long entermonitorThreadID = entermonitorIt->second.currThreadID;
+			string entermonitorLockID = entermonitorIt->second.lockID;
+			if(exitmonitorLockID.compare(entermonitorLockID) == 0 && exitmonitorThreadID != entermonitorThreadID) {
+				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+				if (addEdgeRetValue == 1) flag = true;
+				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+				else if (addEdgeRetValue == -1) {
+					cout << "ERROR: While adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				} else {
+					cout << "ERROR: Unknown return value from addSingleEdge() while adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				}
+#ifdef GRAPHDEBUG
+				if (addEdgeRetValue == 1)
+					cout << "Lock edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
+			}
+		}
+	}
+
+	for (map<long long, acquireAndReleaseOpDetails>::iterator notifyAllIt = notifyAllSet.begin(); notifyAllIt != notifyAllSet.end(); notifyAllIt++) {
+		long long alpha_i = notifyAllIt->first;
+		long long alpha_j;
+
+		long long notifyThreadID = notifyAllIt->second.currThreadID;
+		string notifyLockID = notifyAllIt->second.lockID;
+
+		for (map<long long, acquireAndReleaseOpDetails>::iterator waitIt = waitSet.begin(); waitIt != waitSet.end(); waitIt++) {
+			alpha_j = waitIt->first;
+
+			long long waitThreadID = waitIt->second.currThreadID;
+			string waitLockID = waitIt->second.lockID;
+			if(notifyLockID.compare(waitLockID) == 0 && notifyThreadID != waitThreadID) {
+				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+				if (addEdgeRetValue == 1) flag = true;
+				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+				else if (addEdgeRetValue == -1) {
+					cout << "ERROR: While adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				} else {
+					cout << "ERROR: Unknown return value from addSingleEdge() while adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				}
+#ifdef GRAPHDEBUG
+				if (addEdgeRetValue == 1)
+					cout << "Lock edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
+			}
+		}
+	}
+
+	for (map<long long, acquireAndReleaseOpDetails>::iterator notifyIt = notifySet.begin(); notifyIt != notifySet.end(); notifyIt++) {
+		long long alpha_i = notifyIt->first;
+		long long alpha_j;
+
+		long long notifyThreadID = notifyIt->second.currThreadID;
+		string notifyLockID = notifyIt->second.lockID;
+
+		// Assuming the wait ops are inserted into the waitOps set in the order of opIDs.
+		for (set<long long>::iterator waitIt = lockIDMap[notifyLockID].waitOps.begin(); waitIt != lockIDMap[notifyLockID].waitOps.end(); waitIt++) {
+			if (waitSet[*waitIt].currThreadID == notifyThreadID) continue;
+			if (*waitIt < alpha_i) continue;
+			if (*waitIt == alpha_i) {
+				cout << "ERROR: wait and notify has same op ID " << alpha_i	<< endl;
+				continue;
+			}
+			if (*waitIt > alpha_i) {
+				alpha_j = *waitIt;
+				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+				if (addEdgeRetValue == 1) flag = true;
+				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+				else if (addEdgeRetValue == -1) {
+					cout << "ERROR: While adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				} else {
+					cout << "ERROR: Unknown return value from addSingleEdge() while adding Lock edge from " << alpha_i << " to " << alpha_j << endl;
+					return -1;
+				}
+#ifdef GRAPHDEBUG
+				if (addEdgeRetValue == 1)
+					cout << "Lock edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
+			}
+		}
+	}
+
 	if (flag)
 		return 1;
 	else
@@ -762,6 +873,56 @@ int UAFDetector::addFifoCallbackEdges() {
 		return 0;
 }
 
+int UAFDetector::addFifoCallback2Edges() {
+	bool flag = false;
+
+	for(set<string>::iterator atomicTaskIt = atomicTasks.begin(); atomicTaskIt != atomicTasks.end(); atomicTaskIt++) {
+		long long enqOpofTask = taskIDMap[*atomicTaskIt].enqOpID;
+		string parentTask = taskIDMap[*atomicTaskIt].parentTask;
+
+		if (parentTask.compare("") == 0) continue;
+
+		if (enqOpofTask == -1) {
+			cout << "ERROR: Cannot find enq of task " << *atomicTaskIt << endl;
+			continue;
+		}
+
+		for (HBGraph::adjListNode* currNode = graph.adjList[enqOpofTask].head; currNode != NULL; currNode = currNode->next) {
+			if (opIDMap[currNode->destination].opType.compare("enq") != 0) continue;
+
+			long long enqOpOfTask2 = currNode->destination;
+			string task2 = enqSet[enqOpOfTask2].taskEnqueued;
+
+			long long lastResumeOfParent = taskIDMap[parentTask].lastResumeOpID;
+			if (lastResumeOfParent == -1) continue;
+
+			if (graph.edgeExists(currNode->destination, lastResumeOfParent) != 1) continue;
+
+			long long alpha_i = taskIDMap[parentTask].endOpID;
+			long long alpha_j = taskIDMap[task2].deqOpID;
+			int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+			if (addEdgeRetValue == 1) flag = true; // New edge added.
+			else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+			else if (addEdgeRetValue == -1) {
+				cout << "ERROR: While adding Fifo-Callback-2 edge from " << alpha_i << " to " << alpha_j << endl;
+				return -1;
+			} else {
+				cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Fifo-Callback-2 edge from " << alpha_i << " to " << alpha_j << endl;
+				return -1;
+			}
+#ifdef GRAPHDEBUG
+			if (addEdgeRetValue == 1)
+				cout << "Fifo-Callback-2 edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
+		}
+	}
+
+	if (flag)
+		return 1;
+	else
+		return 0;
+}
+
 int UAFDetector::addFifoNestedEdges() {
 	// Adding FIFO-NESTED
 	// Find two enqs such that enq(-,p1,t,c) < enq(-,p2,t,c'). Then add edge between first-pause(p1) and deq(p2)
@@ -974,6 +1135,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 0;
 }
 
+#if 0
 int UAFDetector::findUAFusingAlloc(Logger &logger) {
 
 	bool flag = false; // To keep track of whether a UAF was flagged or not
@@ -1050,6 +1212,7 @@ int UAFDetector::findUAFusingAlloc(Logger &logger) {
 	else
 		return 0;
 }
+#endif
 
 int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 
@@ -1063,13 +1226,14 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 
 		if (allocID == -1) {
 			cout << "ERROR: Cannot find alloc for free op " << freeID << endl;
-			return -1;
+//			return -1;
+			continue;
 		}
 
 		for (set<long long>::iterator readIt = freeIt->second.readOps.begin(); readIt != freeIt->second.readOps.end(); readIt++) {
 			long long readID = *readIt;
 
-			if (graph.edgeExists(freeID, readID)) {
+			if (graph.edgeExists(freeID, readID) == 1) {
 				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
 					 << ")\n";
@@ -1079,7 +1243,16 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 
-			if (!graph.edgeExists(readID, freeID)) {
+			if (graph.edgeExists(readID, freeID) == 0) {
+
+#ifdef ADDITIONS
+				// Even if there is no edge between read and free,
+				// if there is an edge from alloc to read (alloc happens before read), and the alloc is in the same task as the read and the task is atomic, this is a false positive.
+				// This is true only if free is in the same thread as alloc and read.
+				if (graph.edgeExists(allocID, readID) && opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
+					&& atomicTasks.find(opIDMap[allocID].taskID) != atomicTasks.end() && opIDMap[freeID].threadID == opIDMap[readID].threadID)
+					continue;
+#endif
 				cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
 					 << ")\n";
@@ -1093,7 +1266,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 		for (set<long long>::iterator writeIt = freeIt->second.writeOps.begin(); writeIt != freeIt->second.writeOps.end(); writeIt++) {
 			long long writeID = *writeIt;
 
-			if (graph.edgeExists(freeID, writeID)) {
+			if (graph.edgeExists(freeID, writeID) == 1) {
 				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
 					 << ")\n";
@@ -1103,7 +1276,17 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 
-			if (!graph.edgeExists(writeID, freeID)) {
+			if (graph.edgeExists(writeID, freeID) == 0) {
+
+#ifdef ADDITIONS
+				// Even if there is no edge between write and free,
+				// if there is an edge from alloc to write (alloc happens before write), and the alloc is in the same task as the write and the task is atomic, this is a false positive.
+				// This is true only if free is in the same thwrite as alloc and write.
+				if (graph.edgeExists(allocID, writeID) && opIDMap[allocID].taskID.compare(opIDMap[writeID].taskID) == 0
+					&& atomicTasks.find(opIDMap[allocID].taskID) != atomicTasks.end() && opIDMap[freeID].threadID == opIDMap[writeID].threadID)
+					continue;
+#endif
+
 				cout << "Potential UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
 					 << ")\n";
@@ -1111,6 +1294,53 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					 << allocSet[allocID].startingAddress << ")\n";
 				flag = true;
 				continue;
+			}
+		}
+	}
+
+	if (flag)
+		return 1;
+	else
+		return 0;
+}
+
+int UAFDetector::findDataRaces(Logger &logger){
+
+	bool flag = false;
+
+	for (map<long long, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
+		for (set<long long>::iterator writeIt = allocIt->second.writeOps.begin(); writeIt != allocIt->second.writeOps.end(); writeIt++) {
+
+			string writeAddress1 = writeSet[*writeIt].startingAddress;
+
+			// write-write races
+			for (set<long long>::iterator write2It = allocIt->second.writeOps.begin(); write2It != allocIt->second.writeOps.end(); write2It++) {
+				if (*write2It == *writeIt) continue;
+
+				string writeAddress2 = writeSet[*write2It].startingAddress;
+				if (writeAddress1.compare(writeAddress2) != 0) continue;
+
+				if (graph.edgeExists(*writeIt, *write2It) == 0 && graph.edgeExists(*write2It, *writeIt) == 0) {
+					cout << "Potential data race between write ops " << *writeIt << " and " << *write2It << " on address "
+						 << writeAddress1 << endl;
+					flag = true;
+					continue;
+				}
+			}
+
+			// write-read / read-write races
+			for (set<long long>::iterator readIt = allocIt->second.readOps.begin(); readIt != allocIt->second.readOps.end(); readIt++) {
+				if (*readIt == *writeIt) continue;
+
+				string readAddress = readSet[*readIt].startingAddress;
+				if (writeAddress1.compare(readAddress) != 0) continue;
+
+				if (graph.edgeExists(*writeIt, *readIt) == 0 && graph.edgeExists(*readIt, *writeIt) == 0) {
+					cout << "Potential data race between read op " << *readIt << " and write op " << *writeIt << " on address "
+						 << readAddress << endl;
+					flag = true;
+					continue;
+				}
 			}
 		}
 	}

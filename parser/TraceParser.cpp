@@ -22,12 +22,21 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 	traceFile.open(traceFileName, ios_base::in);
 	if (!traceFile.is_open()) {
 		cout << "Cannot open trace file\n";
-		logger.writeLog("Cannot open trace-file");
+		logger.streamObject << "Cannot open trace file "
+							<< traceFileName << endl;
+		logger.writeLog();
+	}
+	else {
+		logger.streamObject << "Test string 1";
+		logger.writeLog();
+		logger.streamObject << "Test string 2";
+		logger.writeLog();
 	}
 
 	opCount = 0;
 	// The prefix regular expression
 	prefixRegEx = "[0-9]+ *: *";
+//	prefixRegEx = " *";
 
 	intRegEx = "[0-9]+";
 	hexRegEx = "0[xX][0-9a-fA-F]+";
@@ -47,6 +56,11 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 			  " *(resume) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(acquire) *\\( *("    + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(release) *\\( *("    + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(entermonitor) *\\( *("    + intRegEx + ") *, *(" + hexRegEx + ") *\\) *" + "|" +
+			  " *(exitmonitor) *\\( *("    + intRegEx + ") *, *("  + hexRegEx + ") *\\) *" + "|" +
+			  " *(wait) *\\( *("       + intRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +
+			  " *(notify) *\\( *("     + intRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +
+			  " *(notifyall) *\\( *("  + intRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +
 			  " *(alloc) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
 			  	  	  	  	  	  	  	  	  	    		  	   + intRegEx + ") *\\) *" + "|" +
 			  " *(free) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
@@ -77,6 +91,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	catch (boost::regex_error& e) {
 		cout << finalRegEx << " is not a valid regular expression: \""
 			 << e.what() << "\"" << endl;
+		logger.streamObject << finalRegEx << " is not a valid regular expression: \""
+							<< e.what() << "\"" << endl;
+		logger.writeLog();
 		return -1;
 	}
 
@@ -87,7 +104,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	MultiStack stack3;  // keeps track of last op in each thread - to obtain next op ID for every operation in the thread.
 	MultiStack stack4;  // keeps track of last deq, pause - to obtain task nesting.
 
-//	while (traceFile >> line) {
 	while (getline(traceFile, line)) {
 		// Check whether the line is a valid line according to finalRegEx
 		if (!boost::regex_match(line.c_str(), matches, reg)) {
@@ -268,11 +284,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 									detector.taskIDMap.erase(detector.taskIDMap.find(opdetails.taskID));
 									detector.taskIDMap[opdetails.taskID] = oldDetails;
 								}
-#ifdef TRACEDEBUG
-								cout << "At a deq Task " << opdetails.taskID;
-								detector.taskIDMap[opdetails.taskID].printTaskDetails();
-								cout << endl;
-#endif
 							}
 
 							// Find out if this is the first pause
@@ -286,13 +297,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										UAFDetector::taskDetails oldDetails = detector.taskIDMap.find(opdetails.taskID)->second;
 										detector.taskIDMap.erase(detector.taskIDMap.find(opdetails.taskID));
 										oldDetails.firstPauseOpID = taskdetails.firstPauseOpID;
-//										detector.taskIDMap[opdetails.taskID] = taskdetails;
 										detector.taskIDMap[opdetails.taskID] = oldDetails;
-#ifdef TRACEDEBUG
-										cout << "At a pause Task " << opdetails.taskID;
-										detector.taskIDMap[opdetails.taskID].printTaskDetails();
-										cout << endl;
-#endif
 									} else {
 										cout << "ERROR: Cannot find map entry for task " << opdetails.taskID << endl;
 										return -1;
@@ -343,11 +348,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 									detector.taskIDMap.erase(detector.taskIDMap.find(opdetails.taskID));
 //									detector.taskIDMap[opdetails.taskID] = taskdetails;
 									detector.taskIDMap[opdetails.taskID] = existingTaskDetails;
-#ifdef TRACEDEBUG
-										cout << "At an end Task " << opdetails.taskID;
-										detector.taskIDMap[opdetails.taskID].printTaskDetails();
-										cout << endl;
-#endif
 								} else {
 									cout << "ERROR: Cannot find map entry for task " << opdetails.taskID << endl;
 									return -1;
@@ -478,11 +478,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								detector.taskIDMap.erase(detector.taskIDMap.find(taskID));
 								detector.taskIDMap[taskID] = existingDetails;
 							}
-#ifdef TRACEDEBUG
-							cout << "Task " << taskID << " at deq: ";
-							detector.taskIDMap[taskID].printTaskDetails();
-							cout << endl;
-#endif
 						} else if (match.compare("end") == 0) {
 							detector.endSet.insert(opCount);
 
@@ -552,11 +547,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								detector.taskIDMap.erase(detector.taskIDMap.find(taskID));
 								detector.taskIDMap[taskID] = existingDetails;
 							}
-#ifdef TRACEDEBUG
-							cout << "Task " << taskID << " at enq ";
-							detector.taskIDMap[taskID].printTaskDetails();
-							cout << endl;
-#endif
 						} else if (match.compare("fork") == 0) {
 							// Obtain two arguments of fork.
 							UAFDetector::forkAndJoinOpDetails forkopdetails;
@@ -675,14 +665,179 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 
 							if (detector.lockIDMap.find(releaseopdetails.lockID) == detector.lockIDMap.end()) {
 								UAFDetector::lockDetails details;
-								details.acquireOps.insert(opCount);
+								details.releaseOps.insert(opCount);
 								detector.lockIDMap[releaseopdetails.lockID] = details;
 							} else {
 								UAFDetector::lockDetails existingDetails;
 								existingDetails = detector.lockIDMap.find(releaseopdetails.lockID)->second;
-								existingDetails.acquireOps.insert(opCount);
+								existingDetails.releaseOps.insert(opCount);
 								detector.lockIDMap.erase(detector.lockIDMap.find(releaseopdetails.lockID));
 								detector.lockIDMap[releaseopdetails.lockID] = existingDetails;
+							}
+						} else if (match.compare("entermonitor") == 0) {
+							// Obtain two arguments of acquire.
+							UAFDetector::acquireAndReleaseOpDetails entermonitoropdetails;
+							unsigned j = typePos + 1;
+							for (; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									entermonitoropdetails.currThreadID = atoi(m1.c_str());
+									break;
+								}
+							}
+							for (j=j+1; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									entermonitoropdetails.lockID = m1;
+									break;
+								}
+							}
+
+							// Add this entermonitor op entry to the set.
+							detector.entermonitorSet[opCount] = entermonitoropdetails;
+
+							if (detector.lockIDMap.find(entermonitoropdetails.lockID) == detector.lockIDMap.end()) {
+								UAFDetector::lockDetails details;
+								details.entermonitorOps.insert(opCount);
+								detector.lockIDMap[entermonitoropdetails.lockID] = details;
+							} else {
+								UAFDetector::lockDetails existingDetails;
+								existingDetails = detector.lockIDMap.find(entermonitoropdetails.lockID)->second;
+								existingDetails.entermonitorOps.insert(opCount);
+								detector.lockIDMap.erase(detector.lockIDMap.find(entermonitoropdetails.lockID));
+								detector.lockIDMap[entermonitoropdetails.lockID] = existingDetails;
+							}
+						} else if (match.compare("exitmonitor") == 0) {
+							// Obtain two arguments of exitmonitor.
+							UAFDetector::acquireAndReleaseOpDetails exitmonitoropdetails;
+							unsigned j = typePos + 1;
+							for (; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									exitmonitoropdetails.currThreadID = atoi(m1.c_str());
+									break;
+								}
+							}
+							for (j=j+1; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									exitmonitoropdetails.lockID = m1;
+									break;
+								}
+							}
+
+							// Add this exitmonitor op entry to the set.
+							detector.exitmonitorSet[opCount] = exitmonitoropdetails;
+
+							if (detector.lockIDMap.find(exitmonitoropdetails.lockID) == detector.lockIDMap.end()) {
+								UAFDetector::lockDetails details;
+								details.exitmonitorOps.insert(opCount);
+								detector.lockIDMap[exitmonitoropdetails.lockID] = details;
+							} else {
+								UAFDetector::lockDetails existingDetails;
+								existingDetails = detector.lockIDMap.find(exitmonitoropdetails.lockID)->second;
+								existingDetails.exitmonitorOps.insert(opCount);
+								detector.lockIDMap.erase(detector.lockIDMap.find(exitmonitoropdetails.lockID));
+								detector.lockIDMap[exitmonitoropdetails.lockID] = existingDetails;
+							}
+						} else if (match.compare("wait") == 0) {
+							// Obtain two arguments of acquire.
+							UAFDetector::acquireAndReleaseOpDetails waitopdetails;
+							unsigned j = typePos + 1;
+							for (; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									waitopdetails.currThreadID = atoi(m1.c_str());
+									break;
+								}
+							}
+							for (j=j+1; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									waitopdetails.lockID = m1;
+									break;
+								}
+							}
+
+							// Add this wait op entry to the set.
+							detector.waitSet[opCount] = waitopdetails;
+
+							if (detector.lockIDMap.find(waitopdetails.lockID) == detector.lockIDMap.end()) {
+								UAFDetector::lockDetails details;
+								details.waitOps.insert(opCount);
+								detector.lockIDMap[waitopdetails.lockID] = details;
+							} else {
+								UAFDetector::lockDetails existingDetails;
+								existingDetails = detector.lockIDMap.find(waitopdetails.lockID)->second;
+								existingDetails.waitOps.insert(opCount);
+								detector.lockIDMap.erase(detector.lockIDMap.find(waitopdetails.lockID));
+								detector.lockIDMap[waitopdetails.lockID] = existingDetails;
+							}
+						} else if (match.compare("notify") == 0) {
+							// Obtain two arguments of notify.
+							UAFDetector::acquireAndReleaseOpDetails notifyopdetails;
+							unsigned j = typePos + 1;
+							for (; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									notifyopdetails.currThreadID = atoi(m1.c_str());
+									break;
+								}
+							}
+							for (j=j+1; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									notifyopdetails.lockID = m1;
+									break;
+								}
+							}
+
+							// Add this notify op entry to the set.
+							detector.notifySet[opCount] = notifyopdetails;
+
+							if (detector.lockIDMap.find(notifyopdetails.lockID) == detector.lockIDMap.end()) {
+								UAFDetector::lockDetails details;
+								details.notifyOps.insert(opCount);
+								detector.lockIDMap[notifyopdetails.lockID] = details;
+							} else {
+								UAFDetector::lockDetails existingDetails;
+								existingDetails = detector.lockIDMap.find(notifyopdetails.lockID)->second;
+								existingDetails.notifyOps.insert(opCount);
+								detector.lockIDMap.erase(detector.lockIDMap.find(notifyopdetails.lockID));
+								detector.lockIDMap[notifyopdetails.lockID] = existingDetails;
+							}
+						} else if (match.compare("notifyall") == 0) {
+							// Obtain two arguments of notifyAll.
+							UAFDetector::acquireAndReleaseOpDetails notifyAllopdetails;
+							unsigned j = typePos + 1;
+							for (; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									notifyAllopdetails.currThreadID = atoi(m1.c_str());
+									break;
+								}
+							}
+							for (j=j+1; j < matches.size(); j++) {
+								string m1(matches[j].first, matches[j].second);
+								if (!m1.empty() && m1.compare(" ") != 0){
+									notifyAllopdetails.lockID = m1;
+									break;
+								}
+							}
+
+							// Add this notifyAll op entry to the set.
+							detector.notifyAllSet[opCount] = notifyAllopdetails;
+
+							if (detector.lockIDMap.find(notifyAllopdetails.lockID) == detector.lockIDMap.end()) {
+								UAFDetector::lockDetails details;
+								details.notifyAllOps.insert(opCount);
+								detector.lockIDMap[notifyAllopdetails.lockID] = details;
+							} else {
+								UAFDetector::lockDetails existingDetails;
+								existingDetails = detector.lockIDMap.find(notifyAllopdetails.lockID)->second;
+								existingDetails.notifyAllOps.insert(opCount);
+								detector.lockIDMap.erase(detector.lockIDMap.find(notifyAllopdetails.lockID));
+								detector.lockIDMap[notifyAllopdetails.lockID] = existingDetails;
 							}
 						} else if (match.compare("alloc") == 0) {
 							UAFDetector::memoryOpDetails allocopdetails;
@@ -773,10 +928,54 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										if (detector.freeIDMap.find(opCount) == detector.freeIDMap.end()) {
 											UAFDetector::freeOpDetails freedetails;
 											freedetails.allocOpID = it->first;
-											freedetails.readOps.insert(allocdetails.readOps.begin(), allocdetails.readOps.end());
-											freedetails.writeOps.insert(allocdetails.writeOps.begin(), allocdetails.writeOps.end());
-											freedetails.incOps.insert(allocdetails.incOps.begin(), allocdetails.incOps.end());
-											freedetails.decOps.insert(allocdetails.decOps.begin(), allocdetails.decOps.end());
+
+											for (set<long long>::iterator readIt = allocdetails.readOps.begin(); readIt != allocdetails.readOps.end(); readIt++) {
+												string readAddress = detector.readSet[*readIt].startingAddress;
+												std::stringstream readStr;
+												readStr << readAddress;
+												long long readStartAddress;
+												readStr >> std::hex >> readStartAddress;
+
+												if (baseAddressFree <= readStartAddress && readStartAddress <= endAddressFree) {
+													freedetails.readOps.insert(*readIt);
+												}
+											}
+
+											for (set<long long>::iterator writeIt = allocdetails.writeOps.begin(); writeIt != allocdetails.writeOps.end(); writeIt++) {
+												string writeAddress = detector.writeSet[*writeIt].startingAddress;
+												std::stringstream writeStr;
+												writeStr << writeAddress;
+												long long writeStartAddress;
+												writeStr >> std::hex >> writeStartAddress;
+
+												if (baseAddressFree <= writeStartAddress && writeStartAddress <= endAddressFree) {
+													freedetails.writeOps.insert(*writeIt);
+												}
+											}
+
+											for (set<long long>::iterator incIt = allocdetails.incOps.begin(); incIt != allocdetails.incOps.end(); incIt++) {
+												string incAddress = detector.incSet[*incIt].startingAddress;
+												std::stringstream incStr;
+												incStr << incAddress;
+												long long incStartAddress;
+												incStr >> std::hex >> incStartAddress;
+
+												if (baseAddressFree <= incStartAddress && incStartAddress <= endAddressFree) {
+													freedetails.incOps.insert(*incIt);
+												}
+											}
+
+											for (set<long long>::iterator decIt = allocdetails.decOps.begin(); decIt != allocdetails.decOps.end(); decIt++) {
+												string decAddress = detector.decSet[*decIt].startingAddress;
+												std::stringstream decStr;
+												decStr << decAddress;
+												long long decStartAddress;
+												decStr >> std::hex >> decStartAddress;
+
+												if (baseAddressFree <= decStartAddress && decStartAddress <= endAddressFree) {
+													freedetails.decOps.insert(*decIt);
+												}
+											}
 											detector.freeIDMap[opCount] = freedetails;
 										} else {
 											cout << "ERROR: Found duplicate entry for free " << opCount << " in freeIDMap\n";
@@ -952,6 +1151,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							long long baseAddress;
 							str >> std::hex >> baseAddress;
 
+							bool allocFound = false;
 							for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.allocSet.begin(); it != detector.allocSet.end(); it++) {
 								std::stringstream str1;
 								str1 << it->second.startingAddress;
@@ -968,8 +1168,13 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										existingDetails.readOps.insert(opCount);
 										detector.allocIDMap.erase(detector.allocIDMap.find(it->first));
 										detector.allocIDMap[it->first] = existingDetails;
+										allocFound = true;
 									}
 								}
+							}
+							if (!allocFound) {
+								cout << "ERROR: Cannot find alloc for read op " << opCount << endl;
+								return -1;
 							}
 
 							for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.freeSet.begin(); it != detector.freeSet.end(); it++) {
@@ -1083,18 +1288,12 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 #ifdef TRACEDEBUG
 	cout << "No of ops: " << opCount << endl;
 	for (map<long long, UAFDetector::opDetails>::iterator it = detector.opIDMap.begin(); it != detector.opIDMap.end(); it++) {
-		cout << "Key: " << it->first << " - details: ";
-//		cout << "Optype: " << it->second.opType
-//			 << " TaskID: " << it->second.taskID
-//			 << " ThreadID: " << it->second.threadID << endl;
+		cout << "Op: " << it->first << " - details: ";
 		it->second.printOpDetails();
 		cout << endl;
 	}
 	for (map<string, UAFDetector::taskDetails>::iterator it = detector.taskIDMap.begin(); it != detector.taskIDMap.end(); it++) {
 		cout << "Task ID: " << it->first << " - details: ";
-//		cout << "Thread ID: " << it->second.threadID
-//			 << "First pause: " << it->second.firstPauseOpID
-//			 << "Last resume: " << it->second.lastResumeOpID << endl;
 		it->second.printTaskDetails();
 		cout << endl;
 	}
@@ -1106,82 +1305,114 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	for (set<string>::iterator it = detector.atomicTasks.begin(); it != detector.atomicTasks.end(); it++) {
 		cout << "Atomic Task: " << *it << endl;
 	}
+	cout << "Next-op-in-task map" << endl;
 	for (int i=1; i <= opCount; i++) {
 		cout << "Op " << i << "-> " << detector.opToNextOpInTask[i] << endl;
 	}
+	cout << "Next-op-in-thread map" << endl;
 	for (int i=1; i <= opCount; i++) {
 		cout << "Op " << i << "-> " << detector.opToNextOpInThread[i] << endl;
 	}
+	cout << "Set - threadinit\n";
 	for (set<long long>::iterator it = detector.threadinitSet.begin(); it != detector.threadinitSet.end(); it++) {
-		cout << "Threadinit: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - threadexit\n";
 	for (set<long long>::iterator it = detector.threadexitSet.begin(); it != detector.threadexitSet.end(); it++) {
-		cout << "Threadexit: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - enterloop\n";
 	for (set<long long>::iterator it = detector.enterloopSet.begin(); it != detector.enterloopSet.end(); it++) {
-		cout << "Enterloop: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - exitloop\n";
 	for (set<long long>::iterator it = detector.exitloopSet.begin(); it != detector.exitloopSet.end(); it++) {
-		cout << "Exitloop: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - deq\n";
 	for (set<long long>::iterator it = detector.deqSet.begin(); it != detector.deqSet.end(); it++) {
-		cout << "Deq: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - end\n";
 	for (set<long long>::iterator it = detector.endSet.begin(); it != detector.endSet.end(); it++) {
-		cout << "End: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - pause\n";
 	for (set<long long>::iterator it = detector.pauseSet.begin(); it != detector.pauseSet.end(); it++) {
-		cout << "Pause: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - resume\n";
 	for (set<long long>::iterator it = detector.resumeSet.begin(); it != detector.resumeSet.end(); it++) {
-		cout << "Resume: " << *it << endl;
+		cout << *it << " ";
 	}
+	cout << endl;
+	cout << "Set - enq\n";
 	for (map<long long, UAFDetector::enqOpDetails>::iterator it = detector.enqSet.begin(); it != detector.enqSet.end(); it++) {
-		cout << "Enq: " << it->first << "(" << it->second.currThreadID << ", " << it->second.taskEnqueued
+		cout << "Op- " << it->first << ":\n(" << it->second.currThreadID << ", " << it->second.taskEnqueued
 			 << ", " << it->second.targetThreadID << ", " << it->second.callback << ")" << endl;
 	}
+	cout << "Set - fork\n";
 	for (map<long long, UAFDetector::forkAndJoinOpDetails>::iterator it = detector.forkSet.begin(); it != detector.forkSet.end(); it++) {
-		cout << "Fork: " << it->first << "(" << it->second.currThreadID << ", " << it->second.targetThreadID << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.currThreadID << ", " << it->second.targetThreadID << ")\n";
 	}
+	cout << "Set - join\n";
 	for (map<long long, UAFDetector::forkAndJoinOpDetails>::iterator it = detector.joinSet.begin(); it != detector.joinSet.end(); it++) {
-		cout << "Join: " << it->first << "(" << it->second.currThreadID << ", " << it->second.targetThreadID << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.currThreadID << ", " << it->second.targetThreadID << ")\n";
 	}
+	cout << "Set - acquire\n";
 	for (map<long long, UAFDetector::acquireAndReleaseOpDetails>::iterator it = detector.acquireSet.begin(); it != detector.acquireSet.end(); it++) {
-		cout << "Acquire: " << it->first << "(" << it->second.currThreadID << ", " << it->second.lockID << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.currThreadID << ", " << it->second.lockID << ")\n";
 	}
+	cout << "Set - release\n";
 	for (map<long long, UAFDetector::acquireAndReleaseOpDetails>::iterator it = detector.releaseSet.begin(); it != detector.releaseSet.end(); it++) {
-		cout << "Release: " << it->first << "(" << it->second.currThreadID << ", " << it->second.lockID << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.currThreadID << ", " << it->second.lockID << ")\n";
 	}
+	cout << "Set - alloc\n";
 	for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.allocSet.begin(); it != detector.allocSet.end(); it++) {
-		cout << "Alloc: " << it->first << "(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
 	}
+	cout << "Set - free\n";
 	for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.freeSet.begin(); it != detector.freeSet.end(); it++) {
-		cout << "Free: " << it->first << "(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
 	}
+	cout << "Set - inc\n";
 	for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.incSet.begin(); it != detector.incSet.end(); it++) {
-		cout << "Inc: " << it->first << "(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
 	}
+	cout << "Set - dec\n";
 	for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.decSet.begin(); it != detector.decSet.end(); it++) {
-		cout << "Dec: " << it->first << "(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
 	}
+	cout << "Set - read\n";
 	for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.readSet.begin(); it != detector.readSet.end(); it++) {
-		cout << "Read: " << it->first << "(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
 	}
+	cout << "Set - write\n";
 	for (map<long long, UAFDetector::memoryOpDetails>::iterator it = detector.writeSet.begin(); it != detector.writeSet.end(); it++) {
-		cout << "Write: " << it->first << "(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
+		cout << "Op- " << it->first << ":\n(" << it->second.threadID << ", " << it->second.startingAddress << ", " << it->second.range << ")\n";
 	}
+	cout << "Set - lock\n";
 	for (map<string, UAFDetector::lockDetails>::iterator it = detector.lockIDMap.begin(); it != detector.lockIDMap.end(); it++) {
-		cout << "Lock: " << it->first << endl;
+		cout << it->first;
 		it->second.printDetails();
 		cout << endl;
 	}
+	cout << "Set - alloc\n";
 	for (map<long long, UAFDetector::allocOpDetails>::iterator it = detector.allocIDMap.begin(); it != detector.allocIDMap.end(); it++) {
-		cout << "Alloc: " << it->first << endl;
+		cout << "Op- " << it->first << endl;
 		it->second.printDetails();
 		cout << endl;
 	}
+	cout << "Set - free\n";
 	for (map<long long, UAFDetector::freeOpDetails>::iterator it = detector.freeIDMap.begin(); it != detector.freeIDMap.end(); it++) {
-		cout << "Free: " << it->first << endl;
+		cout << "Op- " << it->first << endl;
 		it->second.printDetails();
 		cout << endl;
 	}

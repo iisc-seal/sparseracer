@@ -6,6 +6,7 @@
  */
 
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -17,9 +18,11 @@ public:
 	Logger(string fileName);
 	virtual ~Logger();
 
-	void writeLog(string message);
+//	void writeLog(string message);
+	void writeLog();
 	void initLog();
 
+	std::stringstream streamObject;
 private:
 	ofstream logFile;
 	string logFileName;

@@ -189,14 +189,34 @@ public:
 	// maps the op ID of a release operation to its arguments.
 	map<long long, acquireAndReleaseOpDetails> releaseSet;
 
+	// maps the op ID of an entermonitor operation to its arguments.
+	map<long long, acquireAndReleaseOpDetails> entermonitorSet;
+
+	// maps the op ID of an exitmonitor operation to its arguments.
+	map<long long, acquireAndReleaseOpDetails> exitmonitorSet;
+
+	map<long long, acquireAndReleaseOpDetails> waitSet;
+	map<long long, acquireAndReleaseOpDetails> notifySet;
+	map<long long, acquireAndReleaseOpDetails> notifyAllSet;
+
 	class lockDetails {
 	public:
 		set<long long> acquireOps;
 		set<long long> releaseOps;
+		set<long long> entermonitorOps;
+		set<long long> exitmonitorOps;
+		set<long long> waitOps;
+		set<long long> notifyOps;
+		set<long long> notifyAllOps;
 
 		lockDetails() {
 			acquireOps = set<long long>();
 			releaseOps = set<long long>();
+			entermonitorOps = set<long long>();
+			exitmonitorOps = set<long long>();
+			waitOps = set<long long>();
+			notifyOps = set<long long>();
+			notifyAllOps = set<long long>();
 		}
 
 		void printDetails() {
@@ -205,6 +225,21 @@ public:
 				cout << *it << " ";
 			cout << "\nrelease ops: ";
 			for (set<long long>::iterator it = releaseOps.begin(); it != releaseOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nentermonitor ops: ";
+			for (set<long long>::iterator it = entermonitorOps.begin(); it != entermonitorOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nexitmonitor ops: ";
+			for (set<long long>::iterator it = exitmonitorOps.begin(); it != exitmonitorOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nwait ops: ";
+			for (set<long long>::iterator it = waitOps.begin(); it != waitOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nnotify ops: ";
+			for (set<long long>::iterator it = notifyOps.begin(); it != notifyOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nnotifyAll ops: ";
+			for (set<long long>::iterator it = notifyAllOps.begin(); it != notifyAllOps.end(); it++)
 				cout << *it << " ";
 		}
 	};
@@ -249,19 +284,19 @@ public:
 		}
 
 		void printDetails() {
-			cout << "read ops: ";
+			cout << " read ops: ";
 			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
-			cout << "\nwrite ops: ";
+			cout << "\n write ops: ";
 			for (set<long long>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
 				cout << *it << " ";
-			cout << "\nfree ops: ";
+			cout << "\n free ops: ";
 			for (set<long long>::iterator it = freeOps.begin(); it != freeOps.end(); it++)
 				cout << *it << " ";
-			cout << "\ninc ops: ";
+			cout << "\n inc ops: ";
 			for (set<long long>::iterator it = incOps.begin(); it != incOps.end(); it++)
 				cout << *it << " ";
-			cout << "\ndec ops: ";
+			cout << "\n dec ops: ";
 			for (set<long long>::iterator it = decOps.begin(); it != decOps.end(); it++)
 				cout << *it << " ";
 		}
@@ -287,7 +322,7 @@ public:
 
 		void printDetails() {
 			cout << "alloc op: " << allocOpID << endl;
-			cout << "read ops: ";
+			cout << " read ops: ";
 			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
 			cout << "\n write ops: ";
@@ -310,8 +345,10 @@ public:
 
 	int addEdges(Logger &logger);
 
-	int findUAFusingAlloc(Logger &logger);
+//	int findUAFusingAlloc(Logger &logger);
 	int findUAFwithoutAlloc(Logger &logger);
+
+	int findDataRaces(Logger &logger);
 
 #ifdef GRAPHDEBUG
 	void printEdges();
@@ -329,6 +366,7 @@ private:
 	int addFifoAtomicEdges();
 	int addNoPreEdges();
 	int addFifoCallbackEdges();
+	int addFifoCallback2Edges();
 	int addFifoNestedEdges();
 	int addNoPrePrefixEdges();
 	int addNoPreSuffixEdges();

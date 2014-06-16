@@ -14,10 +14,9 @@
 #include <debugconfig.h>
 
 int main(int argc, char* argv[]) {
-	if (argc < 3) {
+	if (argc < 2) {
 		cout << "ERROR: Missing input\n";
 		cout << "Input trace-file name as argument 1\n";
-		cout << "Input 1 as argument 2 if you want to use alloc while finding UAF\n";
 		return -1;
 	}
 
@@ -28,6 +27,8 @@ int main(int argc, char* argv[]) {
 
 	TraceParser parser(argv[1], logger);
 	UAFDetector detectorObj;
+
+	return 0;
 
 	if (parser.parse(detectorObj, logger) < 0) {
 		cout << "ERROR while parsing the trace\n";
@@ -44,16 +45,10 @@ int main(int argc, char* argv[]) {
 	}
 
 #ifdef GRAPHDEBUG
-	detectorObj.printEdges();
+//	detectorObj.printEdges();
 #endif
 
-	int flag = atoi(argv[2]);
-	int retfindUAF;
-	if (flag == 1) {
-		retfindUAF = detectorObj.findUAFusingAlloc(logger);
-	} else {
-		retfindUAF = detectorObj.findUAFwithoutAlloc(logger);
-	}
+	int retfindUAF = detectorObj.findUAFwithoutAlloc(logger);
 
 	if (retfindUAF == -1) {
 		cout << "ERROR: While finding UAF\n";
@@ -63,5 +58,16 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
+#ifdef DATARACE
+	int retfindRace = detectorObj.findDataRaces(logger);
+
+	if (retfindRace == -1) {
+		cout << "ERROR: While finding Dataraces\n";
+		return -1;
+	} else if (retfindRace == 0) {
+		cout << "No data races in the trace\n";
+		return 0;
+	}
+#endif
 	return 0;
 }
