@@ -22,6 +22,7 @@
 #include "llvm/Target/TargetLibraryInfo.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/MemoryBuiltins.h"
+#include "llvm/ADT/SmallVector.h"
 #include <stdint.h>
 
 #include "Utils.h"
@@ -30,7 +31,7 @@
 
 using namespace llvm;
 STATISTIC(MissedFrees, "Counts number of free sites untracked");
-STATISTIC(MissedMalloc, "Counts number of malloc sites untracked");
+//STATISTIC(MissedMalloc, "Counts number of malloc sites untracked");
 namespace MemInstrument {
   class AllocFreeInstrument : public ModulePass {
 
@@ -84,7 +85,7 @@ namespace MemInstrument {
     virtual bool runOnModule(Module &M);
     void InstrumentDealloc(BasicBlock::iterator &BI, std::string fName, 
 			   const TargetLibraryInfo *TLI);
-    void InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName, 
+    void InstrumentAlloc(Instruction* Succ, CallInst *Original, std::string fName, 
 			 const TargetLibraryInfo *TLI);
     virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName, 
 				 std::string dirName, const TargetLibraryInfo *TLI);

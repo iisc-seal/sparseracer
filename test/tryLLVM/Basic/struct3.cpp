@@ -28,6 +28,11 @@ int main(){
   delete p->nested.f2;
   free(p);
   printf("%d", sizeof(struct product));
-  closelog();
+  malloc(10);
+  goto end;
+  for(int i = 0; i < 10; i++)
+     printf("ok \n");
+ end:
+   closelog();
   //return 0;
 }
