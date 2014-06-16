@@ -52,6 +52,8 @@ namespace MemInstrument {
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
       std::string fName = F->getName().str();
+      if(fName.compare("moz_xmalloc") == 0)
+	llvm::outs() << "Processing " << fName << "\n";
       std::string dirName = "";
       // Try to abort early based on the directories to be instrumented 
       std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
@@ -83,6 +85,8 @@ namespace MemInstrument {
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+	if(fName.compare("moz_xmalloc") == 0)
+	  llvm::outs() << "Instrumenting " << fName << "\n";
 	AllocFreeInstrument::runOnBasicBlock(BB, fName, dirName, TLI);
       }
     }
@@ -170,24 +174,25 @@ namespace MemInstrument {
   }
 
   // TODO : refactor to remove redundant code
-  Value* AllocFreeInstrument::getMemSize(CallInst* Original, std::string fName, IRBuilder<> IRB){
+  Value* AllocFreeInstrument::getMemSize(CallInst* Original, 
+					 const TargetLibraryInfo *TLI, IRBuilder<> IRB){
     Value* MemSize;
-    if(fName.compare("malloc")==0 || fName.compare("_Znwm") == 0 ||
-       fName.compare("_Znam")==0 || fName.compare("valloc")==0){
+    if(llvm::isOperatorNewLikeFn(Original, TLI) 
+       || llvm::isMallocLikeFn(Original, TLI))
       MemSize = getIntegerValue(Original->getOperand(0));
-    }
-    else if(fName.compare("realloc") == 0){
+    else if(Original->getCalledFunction()->getName().compare("realloc") == 0)
       MemSize = getIntegerValue(Original->getOperand(1));
-    }  
-    else if(fName.compare("calloc") == 0){
+    else if(Original->getCalledFunction()->getName().compare("calloc") == 0){
       Value *size1 = getIntegerValue(Original->getOperand(0));
       Value *size2 = getIntegerValue(Original->getOperand(1));
       Value* totalSize = IRB.CreateMul(size1, size2);
       MemSize = totalSize;
       //MemSize = IRB.CreatePointerCast(totalSize, IntptrTy);
     }
-    else 
+    else {
+      llvm::outs() << Original->getCalledFunction()->getName() << "\n";
       assert("Trying to instrument unsupported allocator!");
+    }
     return MemSize;
   }
 
@@ -224,7 +229,7 @@ namespace MemInstrument {
     Value *AddrLong = IRB.CreatePointerCast(Original, IntptrTy);
     //errs() << "Address " << *AddrLong << "\n";
     // Get the number of bytes allocated
-    Value *MemSize = getMemSize(Original, Original->getCalledFunction()->getName(), IRB);
+    Value *MemSize = getMemSize(Original, TLI, IRB);
     // if(isa<llvm::ConstantInt>(Original->getOperand(0)))
     //   MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
     // else
@@ -288,8 +293,10 @@ namespace MemInstrument {
 	    if (dyn_cast<BitCastInst>(U)) 
 	      NumOfBitCastUses++;
 	  
-	  if(NumOfBitCastUses == 0)
+	  if(NumOfBitCastUses == 0){
 	    ++MissedMalloc;
+	    llvm::outs() << "Missed in " << callerName + dName;
+	  }
 	}
 
 	if (Function * CalledFunc = CI->getCalledFunction()) {
@@ -329,6 +336,9 @@ namespace MemInstrument {
 	      // 	 || callerName.compare("moz_xmalloc") == 0)
 	      // 	continue;
 	      //BI->dump();
+	      if(callerName.compare("moz_xmalloc") == 0)
+		llvm::outs() << "Instrumenting " << name << " in " << " callername \n";
+
 	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, callerName, TLI);
 	      //errs() << "Alloc insert success!" ;
 	      flag = true;
