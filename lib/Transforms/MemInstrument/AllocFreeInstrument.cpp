@@ -189,10 +189,10 @@ namespace MemInstrument {
   }
 
   void AllocFreeInstrument::InstrumentAlloc(Instruction* Succ, CallInst *Original, 
-					    std::string fName, const TargetLibraryInfo *TLI) {
+					    std::string fName, const TargetLibraryInfo *TLI,
+					    IRBuilder<> IRB) {
 
     Type *AllocatedType;
-    IRBuilder<> IRB(Succ);
     
     if(BitCastInst* BCI = dyn_cast<BitCastInst>(Succ))
       AllocatedType = BCI -> getDestTy();
@@ -286,13 +286,21 @@ namespace MemInstrument {
       CallInst * CI = dyn_cast<CallInst>(Interesting[i].first);
       Instruction* Succ = Interesting[i].second;
       assert(Succ);
-      AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI);
-      // Interesting[i].first->print(llvm::outs());
-      // llvm::outs() << "\n";
-      // if(Interesting[i].second){
-      // 	Interesting[i].second->print(llvm::outs());
-      // 	llvm::outs() << "\n";
+      // if(Succ == CI->getParent()->getTerminator()){
+      // 	IRBuilder<> IRB(CI->getParent());
+      // 	llvm::outs() << callerName << "\n";
+      // 	AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
       // }
+      
+      IRBuilder<> IRB(Succ);
+      AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
+
+      Interesting[i].first->print(llvm::outs());
+      llvm::outs() << "\n";
+      if(Interesting[i].second){
+      	Interesting[i].second->print(llvm::outs());
+      	llvm::outs() << "\n";
+      }
     }
 
     //errs() << "========B*B===========\n";

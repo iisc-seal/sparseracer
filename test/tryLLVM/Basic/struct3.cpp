@@ -12,6 +12,10 @@ struct product{
   }nested;
 };
 
+void *foo(int size){
+  return malloc(size);
+}
+
 int main(){
   openlog ("struct3", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
   int *base = (int*)malloc(sizeof(int));
@@ -29,10 +33,11 @@ int main(){
   free(p);
   printf("%d", sizeof(struct product));
   malloc(10);
-  goto end;
+
   for(int i = 0; i < 10; i++)
      printf("ok \n");
- end:
+
    closelog();
+   foo(30);
   //return 0;
 }
