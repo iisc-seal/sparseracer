@@ -1,0 +1,9 @@
+This repository contains the implementation of race-detection algorithm used in FoxRacer.
+
+Compile:
+	cd Debug
+	make clean
+	make
+
+Run:
+	./Debug/foxracer <trace-file>
