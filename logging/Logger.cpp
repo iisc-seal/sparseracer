@@ -16,11 +16,6 @@ Logger::Logger(string fileName) {
 	if (!logFile.is_open()) {
 		cout << "ERROR: Cannot open log file " << logFileName << endl;
 	}
-
-	if (logFile.is_open()) {
-		cout << "Opened log file" << endl;
-		logFile << "Test stringgg";
-	}
 }
 
 Logger::~Logger() {

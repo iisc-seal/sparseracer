@@ -41,13 +41,13 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: firefox-racedetection
+all: foxracer
 
 # Tool invocations
-firefox-racedetection: $(OBJS) $(USER_OBJS)
+foxracer: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -o "foxracer" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -o "fox-racer" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -58,11 +58,13 @@ int UAFDetector::addEdges(Logger &logger) {
 		return -1;
 	}
 
+#ifdef LOCKS
 	// LOCK
 	if (addLockEdges() < 0) {
 		cout << "ERROR: While adding LOCK edges\n";
 		return -1;
 	}
+#endif
 
 	// CALLBACK-ST
 	if (addCallbackSTEdges() < 0) {
@@ -496,6 +498,7 @@ int UAFDetector::addJoinEdges() {
 		return 0;
 }
 
+#ifdef LOCKS
 int UAFDetector::addLockEdges() {
 	// Adding LOCK edges.
 	// Iterate through acquireSet and releaseSet, obtain matching acquire and release.
@@ -635,6 +638,7 @@ int UAFDetector::addLockEdges() {
 	else
 		return 0;
 }
+#endif
 
 int UAFDetector::addCallbackSTEdges() {
 
@@ -1120,7 +1124,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Trans-ST/MT edge from " << alpha_i << " to " << alpha_j << endl;
 						return -1;
 					}
-#ifdef GRAPHDEBUG
+#ifdef GRAPHDEBUGFULL
 					if (addEdgeRetValue == 1)
 						cout << "Trans-ST/MT edge (" << alpha_i << "," << alpha_j << ")" << endl;
 #endif
@@ -1229,7 +1233,42 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 //			return -1;
 			continue;
 		}
+#ifdef ACCESS
+		for (set<long long>::iterator accessIt = freeIt->second.accessOps.begin(); accessIt != freeIt->second.accessOps.end(); accessIt++) {
+			long long accessID = *accessIt;
 
+			if (graph.edgeExists(freeID, accessID) == 1) {
+				cout << "Definite UAF between access op " << accessID << " (access at address " << accessSet[accessID].startingAddress << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				flag = true;
+				continue;
+			}
+
+			if (graph.edgeExists(accessID, freeID) == 0) {
+
+#ifdef ADDITIONS
+				// Even if there is no edge between access and free,
+				// if there is an edge from alloc to access (alloc happens before access), and the alloc is in the same task as the access and the task is atomic, this is a false positive.
+				// This is true only if free is in the same thread as alloc and access.
+				if (graph.edgeExists(allocID, accessID) && opIDMap[allocID].taskID.compare(opIDMap[accessID].taskID) == 0
+					&& atomicTasks.find(opIDMap[allocID].taskID) != atomicTasks.end() && opIDMap[freeID].threadID == opIDMap[accessID].threadID)
+					continue;
+#endif
+
+				cout << "Potential UAF between read op " << accessID << " (access at address " << accessSet[accessID].startingAddress << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				flag = true;
+				continue;
+			}
+		}
+
+#else
 		for (set<long long>::iterator readIt = freeIt->second.readOps.begin(); readIt != freeIt->second.readOps.end(); readIt++) {
 			long long readID = *readIt;
 
@@ -1296,6 +1335,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 		}
+#endif
 	}
 
 	if (flag)
@@ -1304,6 +1344,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 		return 0;
 }
 
+#ifndef ACCESS
 int UAFDetector::findDataRaces(Logger &logger){
 
 	bool flag = false;
@@ -1350,6 +1391,7 @@ int UAFDetector::findDataRaces(Logger &logger){
 	else
 		return 0;
 }
+#endif
 
 #ifdef GRAPHDEBUG
 void UAFDetector::printEdges() {

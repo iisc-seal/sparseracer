@@ -1,3 +1,4 @@
-parser/MultiStack.d: ../parser/MultiStack.cpp ../parser/MultiStack.h
+parser/MultiStack.d: ../parser/MultiStack.cpp \
+ /home/anirudh/firefox/firefox-racedetection/parser/MultiStack.h
 
-../parser/MultiStack.h:
+/home/anirudh/firefox/firefox-racedetection/parser/MultiStack.h:

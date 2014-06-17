@@ -172,6 +172,7 @@ public:
 	// maps the op ID of a join operation to its arguments.
 	map<long long, forkAndJoinOpDetails> joinSet;
 
+#ifdef LOCKS
 	class acquireAndReleaseOpDetails {
 	public:
 		long long currThreadID;
@@ -245,6 +246,7 @@ public:
 	};
 
 	map<string, lockDetails> lockIDMap;
+#endif
 
 	class memoryOpDetails {
 	public:
@@ -262,34 +264,52 @@ public:
 	// maps the op ID of a memory operation to its arguments.
 	map<long long, memoryOpDetails> allocSet;
 	map<long long, memoryOpDetails> freeSet;
+#ifdef ACCESS
+	map<long long, memoryOpDetails> accessSet;
+#else
 	map<long long, memoryOpDetails> readSet;
 	map<long long, memoryOpDetails> writeSet;
+#endif
 	map<long long, memoryOpDetails> incSet;
 	map<long long, memoryOpDetails> decSet;
 
 	class allocOpDetails {
 	public:
+#ifdef ACCESS
+		set<long long> accessOps;
+#else
 		set<long long> readOps;
 		set<long long> writeOps;
+#endif
 		set<long long> freeOps;
 		set<long long> incOps;
 		set<long long> decOps;
 
 		allocOpDetails() {
+#ifdef ACCESS
+			accessOps = set<long long>();
+#else
 			readOps = set<long long>();
 			writeOps = set<long long>();
+#endif
 			freeOps = set<long long>();
 			incOps = set<long long>();
 			decOps = set<long long>();
 		}
 
 		void printDetails() {
+#ifdef ACCESS
+			cout << " access ops: ";
+			for (set<long long>::iterator it = accessOps.begin(); it != accessOps.end(); it++)
+				cout << *it << " ";
+#else
 			cout << " read ops: ";
 			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
 			cout << "\n write ops: ";
 			for (set<long long>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
 				cout << *it << " ";
+#endif
 			cout << "\n free ops: ";
 			for (set<long long>::iterator it = freeOps.begin(); it != freeOps.end(); it++)
 				cout << *it << " ";
@@ -307,27 +327,41 @@ public:
 	class freeOpDetails {
 	public:
 		long long allocOpID;
+#ifdef ACCESS
+		set<long long> accessOps;
+#else
 		set<long long> readOps;
 		set<long long> writeOps;
+#endif
 		set<long long> incOps;
 		set<long long> decOps;
 
 		freeOpDetails() {
 			allocOpID = -1;
+#ifdef ACCESS
+			accessOps = set<long long>();
+#else
 			readOps = set<long long>();
 			writeOps = set<long long>();
+#endif
 			incOps = set<long long>();
 			decOps = set<long long>();
 		}
 
 		void printDetails() {
 			cout << "alloc op: " << allocOpID << endl;
+#ifdef ACCESS
+			cout << " access ops: ";
+			for (set<long long>::iterator it = accessOps.begin(); it != accessOps.end(); it++)
+				cout << *it << " ";
+#else
 			cout << " read ops: ";
 			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
 			cout << "\n write ops: ";
 			for (set<long long>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
 				cout << *it << " ";
+#endif
 			cout << "\n inc ops: ";
 			for (set<long long>::iterator it = incOps.begin(); it != incOps.end(); it++)
 				cout << *it << " ";
@@ -348,7 +382,9 @@ public:
 //	int findUAFusingAlloc(Logger &logger);
 	int findUAFwithoutAlloc(Logger &logger);
 
+#ifndef ACCESS
 	int findDataRaces(Logger &logger);
+#endif
 
 #ifdef GRAPHDEBUG
 	void printEdges();
@@ -361,7 +397,9 @@ private:
 	int addEnqueueSTorMTEdges();
 	int addForkEdges();
 	int addJoinEdges();
+#ifdef LOCKS
 	int addLockEdges();
+#endif
 	int addCallbackSTEdges();
 	int addFifoAtomicEdges();
 	int addNoPreEdges();

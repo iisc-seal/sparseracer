@@ -1,4 +1,4 @@
 racedetector/HBGraph.d: ../racedetector/HBGraph.cpp \
- ../racedetector/HBGraph.h
+ /home/anirudh/firefox/firefox-racedetection/racedetector/HBGraph.h
 
-../racedetector/HBGraph.h:
+/home/anirudh/firefox/firefox-racedetection/racedetector/HBGraph.h:

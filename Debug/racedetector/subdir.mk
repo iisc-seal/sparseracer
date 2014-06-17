@@ -3,6 +3,9 @@
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
+O_SRCS += \
+../racedetector/HBGraph.o 
+
 CPP_SRCS += \
 ../racedetector/HBGraph.cpp \
 ../racedetector/UAFDetector.cpp 
