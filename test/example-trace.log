@@ -1,0 +1,576 @@
+1 threadinit(0)
+2 enq(0,0x1,0,0x0)
+3 enq(0,0x3,0,0x0)
+4 enterloop(0)
+5 deq(0,0x1)
+6 enq(0,0x2,0,0x0)
+7 end(0,0x1)
+8 deq(0,0x3)
+9 fork(0,1)
+10 enq(0,0x4,1,0x0)
+11 end(0,0x3)
+12 threadinit(1)
+13 enterloop(1)
+14 deq(1,0x4)
+15 fork(1,2)
+16 threadinit(2)
+17 enterloop(2)
+18 deq(0,0x2)
+19 alloc(0,0x0,3)
+20 enq(0,0x5,2,0x6)
+21 deq(2,0x5)
+22 end(2,0x5)
+23 exitloop(2)
+24 enq(2,0x6,0,0x0)
+25 threadexit(2)
+26 pause(0,0x2)
+27 deq(0,0x6)
+28 end(0,0x6)
+29 resume(0,0x2)
+30 join(0,2)
+31 read(0,0x1)
+32 end(0,0x2)
+33 enq(1,0x7,0,0x0)
+34 end(1,0x4)
+35 deq(0,0x7)
+36 write(0,0x1)
+37 free(0,0x1,2)
+38 end(0,0x7)
+Finished parsing the file
+Calling detector.initGraph()
+Calling HBGraph constructor
+Start HBGraph constructor
+Before for loop
+After for loop
+False
+After HBGraph constructor
+No of ops: 38
+Op: 1 - details: threadID 0 taskID  opType threadinit
+Op: 2 - details: threadID 0 taskID  opType enq
+Op: 3 - details: threadID 0 taskID  opType enq
+Op: 4 - details: threadID 0 taskID  opType enterloop
+Op: 5 - details: threadID 0 taskID 0x1 opType deq
+Op: 6 - details: threadID 0 taskID 0x1 opType enq
+Op: 7 - details: threadID 0 taskID 0x1 opType end
+Op: 8 - details: threadID 0 taskID 0x3 opType deq
+Op: 9 - details: threadID 0 taskID 0x3 opType fork
+Op: 10 - details: threadID 0 taskID 0x3 opType enq
+Op: 11 - details: threadID 0 taskID 0x3 opType end
+Op: 12 - details: threadID 1 taskID  opType threadinit
+Op: 13 - details: threadID 1 taskID  opType enterloop
+Op: 14 - details: threadID 1 taskID 0x4 opType deq
+Op: 15 - details: threadID 1 taskID 0x4 opType fork
+Op: 16 - details: threadID 2 taskID  opType threadinit
+Op: 17 - details: threadID 2 taskID  opType enterloop
+Op: 18 - details: threadID 0 taskID 0x2 opType deq
+Op: 19 - details: threadID 0 taskID 0x2 opType alloc
+Op: 20 - details: threadID 0 taskID 0x2 opType enq
+Op: 21 - details: threadID 2 taskID 0x5 opType deq
+Op: 22 - details: threadID 2 taskID 0x5 opType end
+Op: 23 - details: threadID 2 taskID  opType exitloop
+Op: 24 - details: threadID 2 taskID  opType enq
+Op: 25 - details: threadID 2 taskID  opType threadexit
+Op: 26 - details: threadID 0 taskID 0x2 opType pause
+Op: 27 - details: threadID 0 taskID 0x6 opType deq
+Op: 28 - details: threadID 0 taskID 0x6 opType end
+Op: 29 - details: threadID 0 taskID 0x2 opType resume
+Op: 30 - details: threadID 0 taskID 0x2 opType join
+Op: 31 - details: threadID 0 taskID 0x2 opType read
+Op: 32 - details: threadID 0 taskID 0x2 opType end
+Op: 33 - details: threadID 1 taskID 0x4 opType enq
+Op: 34 - details: threadID 1 taskID 0x4 opType end
+Op: 35 - details: threadID 0 taskID 0x7 opType deq
+Op: 36 - details: threadID 0 taskID 0x7 opType write
+Op: 37 - details: threadID 0 taskID 0x7 opType free
+Op: 38 - details: threadID 0 taskID 0x7 opType end
+Task ID: 0x1 - details: threadID 0 first-pause -1 last-resume -1 deq 5 end 7 enq 2 callback 0x0 parent task 
+Task ID: 0x2 - details: threadID 0 first-pause 26 last-resume 29 deq 18 end 32 enq 6 callback 0x0 parent task 
+Task ID: 0x3 - details: threadID 0 first-pause -1 last-resume -1 deq 8 end 11 enq 3 callback 0x0 parent task 
+Task ID: 0x4 - details: threadID 1 first-pause -1 last-resume -1 deq 14 end 34 enq 10 callback 0x0 parent task 
+Task ID: 0x5 - details: threadID 2 first-pause -1 last-resume -1 deq 21 end 22 enq 20 callback 0x6 parent task 
+Task ID: 0x6 - details: threadID 0 first-pause -1 last-resume -1 deq 27 end 28 enq 24 callback 0x0 parent task 0x2
+Task ID: 0x7 - details: threadID 0 first-pause -1 last-resume -1 deq 35 end 38 enq 33 callback 0x0 parent task 
+Thread ID: 0 - details:  threadinit 1 threadexit -1 enterloop 4 exitloop -1 fork -1 join -1
+Thread ID: 1 - details:  threadinit 12 threadexit -1 enterloop 13 exitloop -1 fork 9 join -1
+Thread ID: 2 - details:  threadinit 16 threadexit 25 enterloop 17 exitloop 23 fork 15 join 30
+Atomic Task: 0x1
+Atomic Task: 0x3
+Atomic Task: 0x4
+Atomic Task: 0x5
+Atomic Task: 0x6
+Atomic Task: 0x7
+Next-op-in-task map
+Op 1-> 0
+Op 2-> 0
+Op 3-> 0
+Op 4-> 0
+Op 5-> 6
+Op 6-> 7
+Op 7-> 0
+Op 8-> 9
+Op 9-> 10
+Op 10-> 11
+Op 11-> 0
+Op 12-> 0
+Op 13-> 0
+Op 14-> 15
+Op 15-> 33
+Op 16-> 0
+Op 17-> 0
+Op 18-> 19
+Op 19-> 20
+Op 20-> 26
+Op 21-> 22
+Op 22-> 0
+Op 23-> 0
+Op 24-> 0
+Op 25-> 0
+Op 26-> 29
+Op 27-> 28
+Op 28-> 0
+Op 29-> 30
+Op 30-> 31
+Op 31-> 32
+Op 32-> 0
+Op 33-> 34
+Op 34-> 0
+Op 35-> 36
+Op 36-> 37
+Op 37-> 38
+Op 38-> 0
+Next-op-in-thread map
+Op 1-> 2
+Op 2-> 3
+Op 3-> 4
+Op 4-> 5
+Op 5-> 6
+Op 6-> 7
+Op 7-> 8
+Op 8-> 9
+Op 9-> 10
+Op 10-> 11
+Op 11-> 18
+Op 12-> 13
+Op 13-> 14
+Op 14-> 15
+Op 15-> 33
+Op 16-> 17
+Op 17-> 21
+Op 18-> 19
+Op 19-> 20
+Op 20-> 26
+Op 21-> 22
+Op 22-> 23
+Op 23-> 24
+Op 24-> 25
+Op 25-> 0
+Op 26-> 27
+Op 27-> 28
+Op 28-> 29
+Op 29-> 30
+Op 30-> 31
+Op 31-> 32
+Op 32-> 35
+Op 33-> 34
+Op 34-> 0
+Op 35-> 36
+Op 36-> 37
+Op 37-> 38
+Op 38-> 0
+Set - threadinit
+1 12 16 
+Set - threadexit
+25 
+Set - enterloop
+4 13 17 
+Set - exitloop
+23 
+Set - deq
+5 8 14 18 21 27 35 
+Set - end
+7 11 22 28 32 34 38 
+Set - pause
+26 
+Set - resume
+29 
+Set - enq
+Op- 2:
+(0, 0x1, 0, 0x0)
+Op- 3:
+(0, 0x3, 0, 0x0)
+Op- 6:
+(0, 0x2, 0, 0x0)
+Op- 10:
+(0, 0x4, 1, 0x0)
+Op- 20:
+(0, 0x5, 2, 0x6)
+Op- 24:
+(2, 0x6, 0, 0x0)
+Op- 33:
+(1, 0x7, 0, 0x0)
+Set - fork
+Op- 9:
+(0, 1)
+Op- 15:
+(1, 2)
+Set - join
+Op- 30:
+(0, 2)
+Set - alloc
+Op- 19:
+(0, 0x0, 3)
+Set - free
+Op- 37:
+(0, 0x1, 2)
+Set - inc
+Set - dec
+Set - read
+Op- 31:
+(0, 0x1, -1)
+Set - write
+Op- 36:
+(0, 0x1, -1)
+Set - alloc
+Op- 19
+ read ops: 31 
+ write ops: 36 
+ free ops: 37 
+ inc ops: 
+ dec ops: 
+Set - free
+Op- 37
+alloc op: 19
+ read ops: 31 
+ write ops: 36 
+ inc ops: 
+ dec ops: 
+map size: 38
+Loop-PO edge (1,2)
+Loop-PO edge (1,3)
+Loop-PO edge (1,4)
+Loop-PO edge (1,5)
+Loop-PO edge (1,6)
+Loop-PO edge (1,7)
+Loop-PO edge (1,8)
+Loop-PO edge (1,9)
+Loop-PO edge (1,10)
+Loop-PO edge (1,11)
+Loop-PO edge (1,18)
+Loop-PO edge (1,19)
+Loop-PO edge (1,20)
+Loop-PO edge (1,26)
+Loop-PO edge (1,27)
+Loop-PO edge (1,28)
+Loop-PO edge (1,29)
+Loop-PO edge (1,30)
+Loop-PO edge (1,31)
+Loop-PO edge (1,32)
+Loop-PO edge (1,35)
+Loop-PO edge (1,36)
+Loop-PO edge (1,37)
+Loop-PO edge (1,38)
+Loop-PO edge (2,3)
+Loop-PO edge (2,4)
+Loop-PO edge (2,5)
+Loop-PO edge (2,6)
+Loop-PO edge (2,7)
+Loop-PO edge (2,8)
+Loop-PO edge (2,9)
+Loop-PO edge (2,10)
+Loop-PO edge (2,11)
+Loop-PO edge (2,18)
+Loop-PO edge (2,19)
+Loop-PO edge (2,20)
+Loop-PO edge (2,26)
+Loop-PO edge (2,27)
+Loop-PO edge (2,28)
+Loop-PO edge (2,29)
+Loop-PO edge (2,30)
+Loop-PO edge (2,31)
+Loop-PO edge (2,32)
+Loop-PO edge (2,35)
+Loop-PO edge (2,36)
+Loop-PO edge (2,37)
+Loop-PO edge (2,38)
+Loop-PO edge (3,4)
+Loop-PO edge (3,5)
+Loop-PO edge (3,6)
+Loop-PO edge (3,7)
+Loop-PO edge (3,8)
+Loop-PO edge (3,9)
+Loop-PO edge (3,10)
+Loop-PO edge (3,11)
+Loop-PO edge (3,18)
+Loop-PO edge (3,19)
+Loop-PO edge (3,20)
+Loop-PO edge (3,26)
+Loop-PO edge (3,27)
+Loop-PO edge (3,28)
+Loop-PO edge (3,29)
+Loop-PO edge (3,30)
+Loop-PO edge (3,31)
+Loop-PO edge (3,32)
+Loop-PO edge (3,35)
+Loop-PO edge (3,36)
+Loop-PO edge (3,37)
+Loop-PO edge (3,38)
+Loop-PO edge (4,5)
+Loop-PO edge (4,6)
+Loop-PO edge (4,7)
+Loop-PO edge (4,8)
+Loop-PO edge (4,9)
+Loop-PO edge (4,10)
+Loop-PO edge (4,11)
+Loop-PO edge (4,18)
+Loop-PO edge (4,19)
+Loop-PO edge (4,20)
+Loop-PO edge (4,26)
+Loop-PO edge (4,27)
+Loop-PO edge (4,28)
+Loop-PO edge (4,29)
+Loop-PO edge (4,30)
+Loop-PO edge (4,31)
+Loop-PO edge (4,32)
+Loop-PO edge (4,35)
+Loop-PO edge (4,36)
+Loop-PO edge (4,37)
+Loop-PO edge (4,38)
+Loop-PO edge (12,13)
+Loop-PO edge (12,14)
+Loop-PO edge (12,15)
+Loop-PO edge (12,33)
+Loop-PO edge (12,34)
+Loop-PO edge (13,14)
+Loop-PO edge (13,15)
+Loop-PO edge (13,33)
+Loop-PO edge (13,34)
+Loop-PO edge (16,17)
+Loop-PO edge (16,21)
+Loop-PO edge (16,22)
+Loop-PO edge (16,23)
+Loop-PO edge (16,24)
+Loop-PO edge (16,25)
+Loop-PO edge (17,21)
+Loop-PO edge (17,22)
+Loop-PO edge (17,23)
+Loop-PO edge (17,24)
+Loop-PO edge (17,25)
+Loop-PO edge (21,23)
+Loop-PO edge (22,23)
+Loop-PO edge (21,24)
+Loop-PO edge (22,24)
+Loop-PO edge (23,24)
+Loop-PO edge (21,25)
+Loop-PO edge (22,25)
+Loop-PO edge (23,25)
+Loop-PO edge (24,25)
+Task-PO edge (5,6)
+Task-PO edge (5,7)
+Task-PO edge (6,7)
+Task-PO edge (8,9)
+Task-PO edge (8,10)
+Task-PO edge (8,11)
+Task-PO edge (9,10)
+Task-PO edge (9,11)
+Task-PO edge (10,11)
+Task-PO edge (14,15)
+Task-PO edge (14,33)
+Task-PO edge (14,34)
+Task-PO edge (15,33)
+Task-PO edge (15,34)
+Task-PO edge (33,34)
+Task-PO edge (18,19)
+Task-PO edge (18,20)
+Task-PO edge (18,26)
+Task-PO edge (18,29)
+Task-PO edge (18,30)
+Task-PO edge (18,31)
+Task-PO edge (18,32)
+Task-PO edge (19,20)
+Task-PO edge (19,26)
+Task-PO edge (19,29)
+Task-PO edge (19,30)
+Task-PO edge (19,31)
+Task-PO edge (19,32)
+Task-PO edge (20,26)
+Task-PO edge (20,29)
+Task-PO edge (20,30)
+Task-PO edge (20,31)
+Task-PO edge (20,32)
+Task-PO edge (26,29)
+Task-PO edge (26,30)
+Task-PO edge (26,31)
+Task-PO edge (26,32)
+Task-PO edge (29,30)
+Task-PO edge (29,31)
+Task-PO edge (29,32)
+Task-PO edge (30,31)
+Task-PO edge (30,32)
+Task-PO edge (31,32)
+Task-PO edge (21,22)
+Task-PO edge (27,28)
+Task-PO edge (35,36)
+Task-PO edge (35,37)
+Task-PO edge (35,38)
+Task-PO edge (36,37)
+Task-PO edge (36,38)
+Task-PO edge (37,38)
+Enqueue-ST/MT edge (6,18)
+Enqueue-ST/MT edge (10,14)
+Enqueue-ST/MT edge (20,21)
+Enqueue-ST/MT edge (24,27)
+Enqueue-ST/MT edge (33,35)
+Cannot find fork for thread 0
+Fork edge (9,12)
+Fork edge (15,16)
+Cannot find threadexit for thread 0
+Cannot find threadexit for thread 1
+Join edge (25,30)
+Callback-ST edge (28,29)
+
+0: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 1 
+1: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 
+2: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 
+3: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 
+4: 6 5 
+5: 17 6 
+6: 
+7: 10 9 8 
+8: 11 10 9 
+9: 13 10 
+10: 
+11: 33 32 14 13 12 
+12: 33 32 14 13 
+13: 33 32 14 
+14: 15 33 32 
+15: 24 23 22 21 20 16 
+16: 24 23 22 21 20 
+17: 31 30 29 28 25 19 18 
+18: 31 30 29 28 25 19 
+19: 20 31 30 29 28 25 
+20: 21 24 23 22 
+21: 24 23 22 
+22: 24 23 
+23: 26 24 
+24: 29 
+25: 31 30 29 28 
+26: 27 
+27: 28 
+28: 31 30 29 
+29: 31 30 
+30: 31 
+31: 
+32: 34 33 
+33: 
+34: 37 36 35 
+35: 37 36 
+36: 37 
+37: 
+Adding Fifo-Atomic edges
+Fifo-Atomic edge (7,18)
+Fifo-Atomic edge (7,8)
+Fifo-Atomic edge (11,18)
+
+0: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 1 
+1: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 
+2: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 
+3: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 
+4: 6 5 
+5: 17 6 
+6: 7 17 
+7: 10 9 8 
+8: 11 10 9 
+9: 13 10 
+10: 17 
+11: 33 32 14 13 12 
+12: 33 32 14 13 
+13: 33 32 14 
+14: 15 33 32 
+15: 24 23 22 21 20 16 
+16: 24 23 22 21 20 
+17: 31 30 29 28 25 19 18 
+18: 31 30 29 28 25 19 
+19: 20 31 30 29 28 25 
+20: 21 24 23 22 
+21: 24 23 22 
+22: 24 23 
+23: 26 24 
+24: 29 
+25: 31 30 29 28 
+26: 27 
+27: 28 
+28: 31 30 29 
+29: 31 30 
+30: 31 
+31: 
+32: 34 33 
+33: 
+34: 37 36 35 
+35: 37 36 
+36: 37 
+37: 
+Adding No-Pre edges
+Adding Fifo-Callback edges
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x3
+Adding FIFO-Callback 2 edges
+Adding Fifo-Nested edges
+Adding NoPre-Prefix edges
+NoPrePrefix edge (26,27)
+
+0: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 1 
+1: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 
+2: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 
+3: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 
+4: 6 5 
+5: 17 6 
+6: 7 17 
+7: 10 9 8 
+8: 11 10 9 
+9: 13 10 
+10: 17 
+11: 33 32 14 13 12 
+12: 33 32 14 13 
+13: 33 32 14 
+14: 15 33 32 
+15: 24 23 22 21 20 16 
+16: 24 23 22 21 20 
+17: 31 30 29 28 25 19 18 
+18: 31 30 29 28 25 19 
+19: 20 31 30 29 28 25 
+20: 21 24 23 22 
+21: 24 23 22 
+22: 24 23 
+23: 26 24 
+24: 29 
+25: 26 31 30 29 28 
+26: 27 
+27: 28 
+28: 31 30 29 
+29: 31 30 
+30: 31 
+31: 
+32: 34 33 
+33: 
+34: 37 36 35 
+35: 37 36 
+36: 37 
+37: 
+Adding NoPre-Suffix edges
+Adding Trans-ST/MT edges
+Trans-ST/MT edge (1,25)
+Trans-ST/MT edge (1,24)
+Trans-ST/MT edge (1,23)
+Trans-ST/MT edge (1,22)
+Trans-ST/MT edge (1,21)
+Trans-ST/MT edge (1,13)
+Trans-ST/MT edge (1,17)
+Trans-ST/MT edge (1,34)
+Trans-ST/MT edge (1,33)
+Trans-ST/MT edge (1,16)
+Trans-ST/MT edge (1,12)
+ERROR: Adding self-loop edge on 1
+ERROR: While adding Trans-ST/MT edge from 1 to 1
+ERROR: While adding TRANS-ST/MT edges
+ERROR while constructing HB Graph

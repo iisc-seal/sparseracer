@@ -123,6 +123,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 		}
 		else {
 			opCount++;
+			cout << opCount << " " << line << endl;
 			flag = false;
 
 			// temp variable to store operation details.
@@ -402,24 +403,22 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							}
 						} else {
 							MultiStack::stackElementType top = stack3.peek(opdetails.threadID);
-							if (!stack3.isBottom(top)) {
-								if (detector.opToNextOpInThread.find(top.opID) == detector.opToNextOpInThread.end()) {
-									detector.opToNextOpInThread[top.opID] = opCount;
-									stack3.pop(opdetails.threadID);
+							if (stack3.isBottom(top)) {
+								cout << "ERROR: Found stack bottom when computing next op in thread\n";
+							}
+							if (detector.opToNextOpInThread.find(top.opID) == detector.opToNextOpInThread.end()) {
+								detector.opToNextOpInThread[top.opID] = opCount;
+								stack3.pop(opdetails.threadID);
 
-									MultiStack::stackElementType element;
-									element.opID = opCount;
-									element.opType = opdetails.opType;
-									element.taskID = opdetails.taskID;
-									element.threadID = opdetails.threadID;
-									stack3.push(element);
-								} else {
-									cout << "ERROR: Next op already present in the map for op " << top.opID << " " << top.opType
-										 << "(" << top.threadID << ", " << top.taskID << ")\n";
-								}
+								MultiStack::stackElementType element;
+								element.opID = opCount;
+								element.opType = opdetails.opType;
+								element.taskID = opdetails.taskID;
+								element.threadID = opdetails.threadID;
+								stack3.push(element);
 							} else {
-								cout << "ERROR: Found stack bottom when examining threadexit to compute next op in thread\n";
-								return -1;
+								cout << "ERROR: Next op already present in the map for op " << top.opID << " " << top.opType
+									 << "(" << top.threadID << ", " << top.taskID << ")\n";
 							}
 						}
 
@@ -1365,6 +1364,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 			}
 		}
 	}
+	cout << "Finished parsing the file\n";
 
 	// If the first pause and last resume ops are not set for a task, add it to set of atomic tasks.
 	for (map<string, UAFDetector::taskDetails>::iterator it = detector.taskIDMap.begin(); it != detector.taskIDMap.end(); it++) {
@@ -1380,6 +1380,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	}
 
 	// Initialize HB Graph
+	cout << "Calling detector.initGraph()\n";
 	detector.initGraph(opCount);
 
 #ifdef TRACEDEBUG

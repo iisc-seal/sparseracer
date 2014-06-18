@@ -22,7 +22,10 @@ UAFDetector::~UAFDetector() {
 }
 
 void UAFDetector::initGraph(long long countOfNodes) {
+	cout << "Calling HBGraph constructor\n";
 	graph = HBGraph(countOfNodes);
+	cout << "After HBGraph constructor\n";
+	//graph.initGraph();
 }
 
 int UAFDetector::addEdges(Logger &logger) {
@@ -262,9 +265,10 @@ int UAFDetector::addLoopPOEdges() {
 		long long enterloopid = threadIDMap[threadID].enterloopOpID;
 
 		// Until after enterloop is processed, i.e. until alpha_i reaches next of enterloop
-		while (alpha_i != opToNextOpInThread[enterloopid]) {
+		while (alpha_i != opToNextOpInThread[enterloopid] && alpha_i > 0) {
 			alpha_j = opToNextOpInThread[alpha_i];
-			while (alpha_j != 0) {
+			//while (alpha_j != 0) {
+			while (alpha_j > 0) {
 				if (alpha_i < alpha_j) {
 					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 					if (addEdgeRetValue == 1) flag = true; // New edge added
@@ -300,7 +304,8 @@ int UAFDetector::addLoopPOEdges() {
 #endif
 			if (alpha_j == -1)
 				continue;
-			while (alpha_j != 0) {
+			//while (alpha_j != 0) {
+			while (alpha_j > 0) {
 				alpha_i = opToNextOpInThread[enterloopid]; // alpha_i is initialized to next operation after enterloop.
 				// Loop till you reach alpha_j
 				while (alpha_i < alpha_j) {
@@ -348,9 +353,11 @@ int UAFDetector::addTaskPOEdges() {
 		long long alpha_i = *it;
 		long long alpha_j;
 
-		while (alpha_i != 0) {
+		//while (alpha_i != 0) {
+		while (alpha_i > 0) {
 			alpha_j = opToNextOpInTask[alpha_i];
-			while (alpha_j != 0) {
+			//while (alpha_j != 0) {
+			while (alpha_j > 0) {
 				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 				if (addEdgeRetValue == 1) flag = true; // New edge added
 				else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
@@ -654,7 +661,8 @@ int UAFDetector::addCallbackSTEdges() {
 		long long endThreadID = opIDMap[alpha_i].threadID;
 
 		alpha_j = opToNextOpInThread[alpha_i];
-		if (alpha_j != 0) {
+		//if (alpha_j != 0) {
+		if (alpha_j > 0) {
 			if (opIDMap[alpha_j].opType.compare("resume") == 0 && opIDMap[alpha_j].threadID == endThreadID) {
 				int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
 				if (addEdgeRetValue == 1) flag = true;
@@ -758,49 +766,56 @@ int UAFDetector::addNoPreEdges() {
 			continue;
 		}
 
-		for (map<long long, enqOpDetails>::iterator enqIt = enqSet.begin(); enqIt != enqSet.end(); enqIt++) {
-			if (enqIt->second.targetThreadID == threadIDOfAtomicTask && enqIt->second.taskEnqueued.compare(p1) != 0) {
-				string p2 = enqIt->second.taskEnqueued;
+		long long deqOpIDOfp1 = taskIDMap[*atomicIt].deqOpID;
+		if (deqOpIDOfp1 == -1) {
+			cout << "ERROR: Cannot find deq of task " << p1 << endl;
+			continue;
+		}
 
-				long long deqp1 = -1;
-				alpha_j = -1;
-				for (set<long long>::iterator deqIt = deqSet.begin(); deqIt != deqSet.end(); deqIt++) {
-					if (opIDMap[*deqIt].taskID.compare(p2) == 0)
-						alpha_j = *deqIt;
-					if (opIDMap[*deqIt].taskID.compare(p1) == 0)
-						deqp1 = *deqIt;
-					if (deqp1 != -1 && alpha_j != -1)
-						break;
+		long long curr = deqOpIDOfp1;
+		// Till we see end of p1 (alpha_i contains end of p1).
+		while (curr > 0 && curr != alpha_i) {
+			for (HBGraph::adjListNode* currNode = graph.adjList[curr].head; currNode != NULL; currNode = currNode->next) {
+				if (currNode->destination <= 0) {
+					cout << "ERROR: Found invalid edge from " << curr << endl;
+					continue;
+				}
+				if (opIDMap[currNode->destination].opType.compare("enq") != 0) continue;
+
+				string p2 = enqSet[currNode->destination].taskEnqueued;
+				if (p2.compare("") == 0) {
+					cout << "ERROR: Found enq of empty task at " << currNode->destination << endl;
+					continue;
 				}
 
-				if (alpha_j != -1) {
-					// If no edge between alpha_i and alpha_j
-					if (graph.edgeExists(alpha_i, alpha_j) == 0) {
-						long long op = deqp1;
-						while (op != alpha_i) {
-							// Check if edge exists between op and alpha_j, If so ...
-							if (graph.edgeExists(op, alpha_j) == 1) {
-								int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
-								if (addEdgeRetValue == 1) flag = true; // New edge added.
-								else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
-								else if (addEdgeRetValue == -1) {
-									cout << "ERROR: While adding Nopre edge from " << alpha_i << " to " << alpha_j << endl;
-									return -1;
-								} else {
-									cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Nopre edge from " << alpha_i << " to " << alpha_j << endl;
-									return -1;
-								}
-#ifdef GRAPHDEBUG
-								if (addEdgeRetValue == 1)
-									cout << "Nopre edge (" << alpha_i << "," << alpha_j << ")" << endl;
-#endif
-								break;
-							}
-							op = opToNextOpInTask[op];
-						}
+				alpha_j = taskIDMap[p2].deqOpID;
+				long long threadIDOfp2 = taskIDMap[p2].threadID;
+				if (threadIDOfAtomicTask != threadIDOfp2) continue;
+				if (alpha_j == -1) {
+					cout << "ERROR: Cannot find deq of task " << p2 << endl;
+					continue;
+				}
+
+				// If no edge between alpha_i and alpha_j.
+				if (graph.edgeExists(alpha_i, alpha_j) == 0) {
+					int addEdgeRetValue = graph.addSingleEdge(alpha_i, alpha_j);
+					if (addEdgeRetValue == 1) flag = true; // New edge added.
+					else if (addEdgeRetValue == 0) flag = flag || false; // No new edge added.
+					else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding Nopre edge from " << alpha_i << " to " << alpha_j << endl;
+						return -1;
+					} else {
+						cout << "ERROR: Unknown return value from graph.addSingleEdge() while adding Nopre edge from " << alpha_i << " to " << alpha_j << endl;
+						return -1;
 					}
+#ifdef GRAPHDEBUG
+					if (addEdgeRetValue == 1)
+						cout << "Nopre edge (" << alpha_i << "," << alpha_j << ")" << endl;
+#endif
 				}
 			}
+
+			curr = opToNextOpInTask[curr];
 		}
 	}
 
@@ -885,6 +900,12 @@ int UAFDetector::addFifoCallback2Edges() {
 		string parentTask = taskIDMap[*atomicTaskIt].parentTask;
 
 		if (parentTask.compare("") == 0) continue;
+		long long parentTaskThreadID = taskIDMap[parentTask].threadID;
+		long long lastResumeOfParent = taskIDMap[parentTask].lastResumeOpID;
+
+		if (lastResumeOfParent == -1) continue;
+
+		if (opToNextOpInThread[taskIDMap[*atomicTaskIt].endOpID] != lastResumeOfParent) continue;
 
 		if (enqOpofTask == -1) {
 			cout << "ERROR: Cannot find enq of task " << *atomicTaskIt << endl;
@@ -897,10 +918,16 @@ int UAFDetector::addFifoCallback2Edges() {
 			long long enqOpOfTask2 = currNode->destination;
 			string task2 = enqSet[enqOpOfTask2].taskEnqueued;
 
-			long long lastResumeOfParent = taskIDMap[parentTask].lastResumeOpID;
-			if (lastResumeOfParent == -1) continue;
+			if (enqOpOfTask2 == enqOpofTask) {
+				cout << "Something wrong " << enqOpOfTask2 << " " << enqOpofTask << endl;
+			}
+			if (task2.compare(*atomicTaskIt) == 0) continue;
+
+			long long task2ThreadID = taskIDMap[task2].threadID;
 
 			if (graph.edgeExists(currNode->destination, lastResumeOfParent) != 1) continue;
+
+			if (parentTaskThreadID != task2ThreadID) continue;
 
 			long long alpha_i = taskIDMap[parentTask].endOpID;
 			long long alpha_j = taskIDMap[task2].deqOpID;
@@ -1000,7 +1027,8 @@ int UAFDetector::addNoPrePrefixEdges() {
 		}
 
 		long long currOp = deqTask1;
-		while (currOp != 0) {
+		//while (currOp != 0) {
+		while (currOp > 0) {
 			for (HBGraph::adjListNode* currNode = graph.adjList[currOp].head; currNode != NULL; currNode = currNode->next) {
 				// See if there is an edge to enq from currOp
 				long long dest = currNode->destination;
@@ -1108,6 +1136,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 	for (alpha_i = 1; alpha_i <= graph.totalNodes; alpha_i++) {
 		long long threadID_i = opIDMap[alpha_i].threadID;
 
+		// adjList[i-1] is the node for op i.
 		for (HBGraph::adjListNode* currNode = graph.adjList[alpha_i].head; currNode != NULL; currNode = currNode->next) {
 			alpha_k = currNode->destination;
 

@@ -1,6 +1,6 @@
 #define TRACEDEBUG
 #define GRAPHDEBUG
-#define ACCESS
+//#define ACCESS
 #define ADDITIONS
 //#define LOCKS
 //#define GRAPHDEBUGFULL

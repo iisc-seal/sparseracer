@@ -47,7 +47,7 @@ all: foxracer
 foxracer: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++  -o "fox-racer" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++  -o "foxracer" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
