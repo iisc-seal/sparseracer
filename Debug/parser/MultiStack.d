@@ -1,4 +1,4 @@
-parser/MultiStack.d: ../parser/MultiStack.cpp \
- /home/anirudh/research/foxracer/parser/MultiStack.h
+parser/MultiStack.d parser/MultiStack.o: ../parser/MultiStack.cpp \
+ ../parser/MultiStack.h
 
-/home/anirudh/research/foxracer/parser/MultiStack.h:
+../parser/MultiStack.h:

@@ -1,4 +1,4 @@
-racedetector/HBGraph.d: ../racedetector/HBGraph.cpp \
- /home/anirudh/research/foxracer/racedetector/HBGraph.h
+racedetector/HBGraph.d racedetector/HBGraph.o: \
+ ../racedetector/HBGraph.cpp ../racedetector/HBGraph.h
 
-/home/anirudh/research/foxracer/racedetector/HBGraph.h:
+../racedetector/HBGraph.h:

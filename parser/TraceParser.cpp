@@ -1001,10 +1001,16 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 													freedetails.decOps.insert(*decIt);
 												}
 											}
+#ifdef DEBUGLINES
+											cout << "Assigning to freeIDMap " << opCount << endl;
+#endif
 											detector.freeIDMap[opCount] = freedetails;
 										} else {
 											cout << "ERROR: Found duplicate entry for free " << opCount << " in freeIDMap\n";
-//											return -1;
+											detector.freeIDMap[opCount].printDetails();
+											cout << "\n544\n";
+											detector.freeIDMap[544].printDetails();
+											return -1;
 										}
 									}
 								}
@@ -1076,6 +1082,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										existingDetails = detector.freeIDMap.find(it->first)->second;
 										existingDetails.incOps.insert(opCount);
 										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+#ifdef DEBUGLINES
+											cout << "Assigning to freeIDMap " << it->first << endl;
+#endif
 										detector.freeIDMap[it->first] = existingDetails;
 									}
 								}
@@ -1147,6 +1156,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										existingDetails = detector.freeIDMap.find(it->first)->second;
 										existingDetails.decOps.insert(opCount);
 										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+#ifdef DEBUGLINES
+											cout << "Assigning to freeIDMap " << it->first << endl;
+#endif
 										detector.freeIDMap[it->first] = existingDetails;
 									}
 								}
@@ -1218,6 +1230,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										existingDetails = detector.freeIDMap.find(it->first)->second;
 										existingDetails.accessOps.insert(opCount);
 										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+#ifdef DEBUGLINES
+											cout << "Assigning to freeIDMap " << it->first << endl;
+#endif
 										detector.freeIDMap[it->first] = existingDetails;
 									}
 								}
@@ -1288,6 +1303,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										existingDetails = detector.freeIDMap.find(it->first)->second;
 										existingDetails.readOps.insert(opCount);
 										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+#ifdef DEBUGLINES
+											cout << "Assigning to freeIDMap " << it->first << endl;
+#endif
 										detector.freeIDMap[it->first] = existingDetails;
 									}
 								}
@@ -1351,6 +1369,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 										existingDetails = detector.freeIDMap.find(it->first)->second;
 										existingDetails.writeOps.insert(opCount);
 										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+#ifdef DEBUGLINES
+											cout << "Assigning to freeIDMap " << it->first << endl;
+#endif
 										detector.freeIDMap[it->first] = existingDetails;
 									}
 								}
@@ -1362,6 +1383,12 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 					}
 				}
 			}
+		}
+		cout << "freeIDMap size: " << detector.freeIDMap.size() << endl;
+		for (map<long long, UAFDetector::freeOpDetails>::iterator dmit = detector.freeIDMap.begin(); dmit != detector.freeIDMap.end(); dmit++) {
+			cout << dmit->first << endl;
+			dmit->second.printDetails();
+			cout << endl;
 		}
 	}
 	cout << "Finished parsing the file\n";

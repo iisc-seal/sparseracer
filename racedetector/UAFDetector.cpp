@@ -15,7 +15,48 @@ using namespace std;
 
 #define NILCallback "0x0"
 
-UAFDetector::UAFDetector() {
+UAFDetector::UAFDetector()
+	: opIDMap(),
+	  opStringToOpIDMap(),
+	  opToNextOpInTask(),
+	  opToNextOpInThread(),
+	  taskIDMap(),
+	  atomicTasks(),
+	  threadIDMap(),
+	  threadinitSet(),
+	  threadexitSet(),
+	  enterloopSet(),
+	  exitloopSet(),
+	  deqSet(),
+	  endSet(),
+	  resumeSet(),
+	  pauseSet(),
+	  enqSet(),
+	  forkSet(),
+	  joinSet(),
+#ifdef LOCKS
+	  acquireSet(),
+	  releaseSet(),
+	  entermonitorSet(),
+	  exitmonitorSet(),
+	  waitSet(),
+	  notifySet(),
+	  notifyAllSet(),
+	  lockIDMap(),
+#endif
+	  allocSet(),
+	  freeSet(),
+#ifdef ACCESS
+	  accessSet(),
+#else
+	  readSet(),
+	  writeSet(),
+#endif
+	  incSet(),
+	  decSet(),
+	  allocIDMap(),
+	  freeIDMap()
+{
 }
 
 UAFDetector::~UAFDetector() {

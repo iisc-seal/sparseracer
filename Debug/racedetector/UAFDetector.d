@@ -1,12 +1,11 @@
-racedetector/UAFDetector.d: ../racedetector/UAFDetector.cpp \
- ../racedetector/UAFDetector.h ../racedetector/HBGraph.h \
- /home/anirudh/research/foxracer/debugconfig.h \
- /home/anirudh/research/foxracer/logging/Logger.h
+racedetector/UAFDetector.d racedetector/UAFDetector.o: \
+ ../racedetector/UAFDetector.cpp ../racedetector/UAFDetector.h \
+ ../racedetector/HBGraph.h ../debugconfig.h ../logging/Logger.h
 
 ../racedetector/UAFDetector.h:
 
 ../racedetector/HBGraph.h:
 
-/home/anirudh/research/foxracer/debugconfig.h:
+../debugconfig.h:
 
-/home/anirudh/research/foxracer/logging/Logger.h:
+../logging/Logger.h:

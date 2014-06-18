@@ -1,17 +1,16 @@
-parser/TraceParser.d: ../parser/TraceParser.cpp ../parser/TraceParser.h \
- /home/anirudh/research/foxracer/racedetector/UAFDetector.h \
- /home/anirudh/research/foxracer/racedetector/HBGraph.h \
- /home/anirudh/research/foxracer/debugconfig.h \
- /home/anirudh/research/foxracer/logging/Logger.h ../parser/MultiStack.h
+parser/TraceParser.d parser/TraceParser.o: ../parser/TraceParser.cpp \
+ ../parser/TraceParser.h ../racedetector/UAFDetector.h \
+ ../racedetector/HBGraph.h ../debugconfig.h ../logging/Logger.h \
+ ../parser/MultiStack.h
 
 ../parser/TraceParser.h:
 
-/home/anirudh/research/foxracer/racedetector/UAFDetector.h:
+../racedetector/UAFDetector.h:
 
-/home/anirudh/research/foxracer/racedetector/HBGraph.h:
+../racedetector/HBGraph.h:
 
-/home/anirudh/research/foxracer/debugconfig.h:
+../debugconfig.h:
 
-/home/anirudh/research/foxracer/logging/Logger.h:
+../logging/Logger.h:
 
 ../parser/MultiStack.h:

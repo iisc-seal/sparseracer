@@ -1,4 +1,4 @@
-logging/Logger.d: ../logging/Logger.cpp \
- /home/anirudh/research/foxracer/logging/Logger.h
+logging/Logger.d logging/Logger.o: ../logging/Logger.cpp \
+ ../logging/Logger.h
 
-/home/anirudh/research/foxracer/logging/Logger.h:
+../logging/Logger.h:
