@@ -5,4 +5,4 @@
 //#define LOCKS
 //#define GRAPHDEBUGFULL
 //#define HACKS
-#define DEBUGLINES
+//#define DEBUGLINES

@@ -101,6 +101,7 @@ public:
 
 	class threadDetails {
 	public:
+		long long firstOpID;
 		long long threadinitOpID;
 		long long enterloopOpID;
 		long long exitloopOpID;
@@ -110,6 +111,7 @@ public:
 		// list<string> lockOps;
 
 		threadDetails() {
+			firstOpID = -1;
 			threadinitOpID = -1;
 			enterloopOpID = -1;
 			exitloopOpID = -1;
@@ -119,7 +121,7 @@ public:
 		}
 
 		void printThreadDetails() {
-			cout << " threadinit " << threadinitOpID << " threadexit " << threadexitOpID
+			cout << " first-op " << firstOpID << " threadinit " << threadinitOpID << " threadexit " << threadexitOpID
 				 << " enterloop " << enterloopOpID << " exitloop " << exitloopOpID
 				 << " fork " << forkOpID << " join " << joinOpID;
 		}
@@ -409,6 +411,8 @@ private:
 	int addNoPrePrefixEdges();
 	int addNoPreSuffixEdges();
 	int addTransSTOrMTEdges();
+
+	unsigned long long numOfEdges;
 };
 
 #endif /* UAFDETECTOR_H_ */

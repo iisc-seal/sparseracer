@@ -10,10 +10,12 @@
 10 enq(0,0x4,1,0x0)
 11 end(0,0x3)
 12 threadinit(1)
+ERROR: thread 1 already has an entry in threadIDMap
 13 enterloop(1)
 14 deq(1,0x4)
 15 fork(1,2)
 16 threadinit(2)
+ERROR: thread 2 already has an entry in threadIDMap
 17 enterloop(2)
 18 deq(0,0x2)
 19 alloc(0,0x0,3)
@@ -37,13 +39,7 @@
 37 free(0,0x1,2)
 38 end(0,0x7)
 Finished parsing the file
-Calling detector.initGraph()
-Calling HBGraph constructor
-Start HBGraph constructor
-Before for loop
-After for loop
 False
-After HBGraph constructor
 No of ops: 38
 Op: 1 - details: threadID 0 taskID  opType threadinit
 Op: 2 - details: threadID 0 taskID  opType enq
@@ -90,9 +86,9 @@ Task ID: 0x4 - details: threadID 1 first-pause -1 last-resume -1 deq 14 end 34 e
 Task ID: 0x5 - details: threadID 2 first-pause -1 last-resume -1 deq 21 end 22 enq 20 callback 0x6 parent task 
 Task ID: 0x6 - details: threadID 0 first-pause -1 last-resume -1 deq 27 end 28 enq 24 callback 0x0 parent task 0x2
 Task ID: 0x7 - details: threadID 0 first-pause -1 last-resume -1 deq 35 end 38 enq 33 callback 0x0 parent task 
-Thread ID: 0 - details:  threadinit 1 threadexit -1 enterloop 4 exitloop -1 fork -1 join -1
-Thread ID: 1 - details:  threadinit 12 threadexit -1 enterloop 13 exitloop -1 fork 9 join -1
-Thread ID: 2 - details:  threadinit 16 threadexit 25 enterloop 17 exitloop 23 fork 15 join 30
+Thread ID: 0 - details: first-op 1 threadinit 1 threadexit -1 enterloop 4 exitloop -1 fork -1 join -1
+Thread ID: 1 - details: first-op -1 threadinit -1 threadexit -1 enterloop 13 exitloop -1 fork 9 join -1
+Thread ID: 2 - details: first-op -1 threadinit -1 threadexit 25 enterloop 17 exitloop 23 fork 15 join 30
 Atomic Task: 0x1
 Atomic Task: 0x3
 Atomic Task: 0x4
@@ -178,7 +174,7 @@ Op 36-> 37
 Op 37-> 38
 Op 38-> 0
 Set - threadinit
-1 12 16 
+1 
 Set - threadexit
 25 
 Set - enterloop
@@ -245,270 +241,172 @@ alloc op: 19
  inc ops: 
  dec ops: 
 map size: 38
-Loop-PO edge (1,2)
-Loop-PO edge (1,3)
-Loop-PO edge (1,4)
-Loop-PO edge (1,5)
-Loop-PO edge (1,6)
-Loop-PO edge (1,7)
-Loop-PO edge (1,8)
-Loop-PO edge (1,9)
-Loop-PO edge (1,10)
-Loop-PO edge (1,11)
-Loop-PO edge (1,18)
-Loop-PO edge (1,19)
-Loop-PO edge (1,20)
-Loop-PO edge (1,26)
-Loop-PO edge (1,27)
-Loop-PO edge (1,28)
-Loop-PO edge (1,29)
-Loop-PO edge (1,30)
-Loop-PO edge (1,31)
-Loop-PO edge (1,32)
-Loop-PO edge (1,35)
-Loop-PO edge (1,36)
-Loop-PO edge (1,37)
-Loop-PO edge (1,38)
-Loop-PO edge (2,3)
-Loop-PO edge (2,4)
-Loop-PO edge (2,5)
-Loop-PO edge (2,6)
-Loop-PO edge (2,7)
-Loop-PO edge (2,8)
-Loop-PO edge (2,9)
-Loop-PO edge (2,10)
-Loop-PO edge (2,11)
-Loop-PO edge (2,18)
-Loop-PO edge (2,19)
-Loop-PO edge (2,20)
-Loop-PO edge (2,26)
-Loop-PO edge (2,27)
-Loop-PO edge (2,28)
-Loop-PO edge (2,29)
-Loop-PO edge (2,30)
-Loop-PO edge (2,31)
-Loop-PO edge (2,32)
-Loop-PO edge (2,35)
-Loop-PO edge (2,36)
-Loop-PO edge (2,37)
-Loop-PO edge (2,38)
-Loop-PO edge (3,4)
-Loop-PO edge (3,5)
-Loop-PO edge (3,6)
-Loop-PO edge (3,7)
-Loop-PO edge (3,8)
-Loop-PO edge (3,9)
-Loop-PO edge (3,10)
-Loop-PO edge (3,11)
-Loop-PO edge (3,18)
-Loop-PO edge (3,19)
-Loop-PO edge (3,20)
-Loop-PO edge (3,26)
-Loop-PO edge (3,27)
-Loop-PO edge (3,28)
-Loop-PO edge (3,29)
-Loop-PO edge (3,30)
-Loop-PO edge (3,31)
-Loop-PO edge (3,32)
-Loop-PO edge (3,35)
-Loop-PO edge (3,36)
-Loop-PO edge (3,37)
-Loop-PO edge (3,38)
-Loop-PO edge (4,5)
-Loop-PO edge (4,6)
-Loop-PO edge (4,7)
-Loop-PO edge (4,8)
-Loop-PO edge (4,9)
-Loop-PO edge (4,10)
-Loop-PO edge (4,11)
-Loop-PO edge (4,18)
-Loop-PO edge (4,19)
-Loop-PO edge (4,20)
-Loop-PO edge (4,26)
-Loop-PO edge (4,27)
-Loop-PO edge (4,28)
-Loop-PO edge (4,29)
-Loop-PO edge (4,30)
-Loop-PO edge (4,31)
-Loop-PO edge (4,32)
-Loop-PO edge (4,35)
-Loop-PO edge (4,36)
-Loop-PO edge (4,37)
-Loop-PO edge (4,38)
-Loop-PO edge (12,13)
-Loop-PO edge (12,14)
-Loop-PO edge (12,15)
-Loop-PO edge (12,33)
-Loop-PO edge (12,34)
-Loop-PO edge (13,14)
-Loop-PO edge (13,15)
-Loop-PO edge (13,33)
-Loop-PO edge (13,34)
-Loop-PO edge (16,17)
-Loop-PO edge (16,21)
-Loop-PO edge (16,22)
-Loop-PO edge (16,23)
-Loop-PO edge (16,24)
-Loop-PO edge (16,25)
-Loop-PO edge (17,21)
-Loop-PO edge (17,22)
-Loop-PO edge (17,23)
-Loop-PO edge (17,24)
-Loop-PO edge (17,25)
-Loop-PO edge (21,23)
-Loop-PO edge (22,23)
-Loop-PO edge (21,24)
-Loop-PO edge (22,24)
-Loop-PO edge (23,24)
-Loop-PO edge (21,25)
-Loop-PO edge (22,25)
-Loop-PO edge (23,25)
-Loop-PO edge (24,25)
-Task-PO edge (5,6)
-Task-PO edge (5,7)
-Task-PO edge (6,7)
-Task-PO edge (8,9)
-Task-PO edge (8,10)
-Task-PO edge (8,11)
-Task-PO edge (9,10)
-Task-PO edge (9,11)
-Task-PO edge (10,11)
-Task-PO edge (14,15)
-Task-PO edge (14,33)
-Task-PO edge (14,34)
-Task-PO edge (15,33)
-Task-PO edge (15,34)
-Task-PO edge (33,34)
-Task-PO edge (18,19)
-Task-PO edge (18,20)
-Task-PO edge (18,26)
-Task-PO edge (18,29)
-Task-PO edge (18,30)
-Task-PO edge (18,31)
-Task-PO edge (18,32)
-Task-PO edge (19,20)
-Task-PO edge (19,26)
-Task-PO edge (19,29)
-Task-PO edge (19,30)
-Task-PO edge (19,31)
-Task-PO edge (19,32)
-Task-PO edge (20,26)
-Task-PO edge (20,29)
-Task-PO edge (20,30)
-Task-PO edge (20,31)
-Task-PO edge (20,32)
-Task-PO edge (26,29)
-Task-PO edge (26,30)
-Task-PO edge (26,31)
-Task-PO edge (26,32)
-Task-PO edge (29,30)
-Task-PO edge (29,31)
-Task-PO edge (29,32)
-Task-PO edge (30,31)
-Task-PO edge (30,32)
-Task-PO edge (31,32)
-Task-PO edge (21,22)
-Task-PO edge (27,28)
-Task-PO edge (35,36)
-Task-PO edge (35,37)
-Task-PO edge (35,38)
-Task-PO edge (36,37)
-Task-PO edge (36,38)
-Task-PO edge (37,38)
-Enqueue-ST/MT edge (6,18)
-Enqueue-ST/MT edge (10,14)
-Enqueue-ST/MT edge (20,21)
-Enqueue-ST/MT edge (24,27)
-Enqueue-ST/MT edge (33,35)
+Loop-PO edge (1,2) -- 1
+Loop-PO edge (1,3) -- 2
+Loop-PO edge (1,4) -- 3
+Loop-PO edge (1,5) -- 4
+Loop-PO edge (1,6) -- 5
+Loop-PO edge (1,7) -- 6
+Loop-PO edge (1,8) -- 7
+Loop-PO edge (1,9) -- 8
+Loop-PO edge (1,10) -- 9
+Loop-PO edge (1,11) -- 10
+Loop-PO edge (1,18) -- 11
+Loop-PO edge (1,19) -- 12
+Loop-PO edge (1,20) -- 13
+Loop-PO edge (1,26) -- 14
+Loop-PO edge (1,27) -- 15
+Loop-PO edge (1,28) -- 16
+Loop-PO edge (1,29) -- 17
+Loop-PO edge (1,30) -- 18
+Loop-PO edge (1,31) -- 19
+Loop-PO edge (1,32) -- 20
+Loop-PO edge (1,35) -- 21
+Loop-PO edge (1,36) -- 22
+Loop-PO edge (1,37) -- 23
+Loop-PO edge (1,38) -- 24
+Loop-PO edge (2,3) -- 25
+Loop-PO edge (2,4) -- 26
+Loop-PO edge (2,5) -- 27
+Loop-PO edge (2,6) -- 28
+Loop-PO edge (2,7) -- 29
+Loop-PO edge (2,8) -- 30
+Loop-PO edge (2,9) -- 31
+Loop-PO edge (2,10) -- 32
+Loop-PO edge (2,11) -- 33
+Loop-PO edge (2,18) -- 34
+Loop-PO edge (2,19) -- 35
+Loop-PO edge (2,20) -- 36
+Loop-PO edge (2,26) -- 37
+Loop-PO edge (2,27) -- 38
+Loop-PO edge (2,28) -- 39
+Loop-PO edge (2,29) -- 40
+Loop-PO edge (2,30) -- 41
+Loop-PO edge (2,31) -- 42
+Loop-PO edge (2,32) -- 43
+Loop-PO edge (2,35) -- 44
+Loop-PO edge (2,36) -- 45
+Loop-PO edge (2,37) -- 46
+Loop-PO edge (2,38) -- 47
+Loop-PO edge (3,4) -- 48
+Loop-PO edge (3,5) -- 49
+Loop-PO edge (3,6) -- 50
+Loop-PO edge (3,7) -- 51
+Loop-PO edge (3,8) -- 52
+Loop-PO edge (3,9) -- 53
+Loop-PO edge (3,10) -- 54
+Loop-PO edge (3,11) -- 55
+Loop-PO edge (3,18) -- 56
+Loop-PO edge (3,19) -- 57
+Loop-PO edge (3,20) -- 58
+Loop-PO edge (3,26) -- 59
+Loop-PO edge (3,27) -- 60
+Loop-PO edge (3,28) -- 61
+Loop-PO edge (3,29) -- 62
+Loop-PO edge (3,30) -- 63
+Loop-PO edge (3,31) -- 64
+Loop-PO edge (3,32) -- 65
+Loop-PO edge (3,35) -- 66
+Loop-PO edge (3,36) -- 67
+Loop-PO edge (3,37) -- 68
+Loop-PO edge (3,38) -- 69
+Loop-PO edge (4,5) -- 70
+Loop-PO edge (4,6) -- 71
+Loop-PO edge (4,7) -- 72
+Loop-PO edge (4,8) -- 73
+Loop-PO edge (4,9) -- 74
+Loop-PO edge (4,10) -- 75
+Loop-PO edge (4,11) -- 76
+Loop-PO edge (4,18) -- 77
+Loop-PO edge (4,19) -- 78
+Loop-PO edge (4,20) -- 79
+Loop-PO edge (4,26) -- 80
+Loop-PO edge (4,27) -- 81
+Loop-PO edge (4,28) -- 82
+Loop-PO edge (4,29) -- 83
+Loop-PO edge (4,30) -- 84
+Loop-PO edge (4,31) -- 85
+Loop-PO edge (4,32) -- 86
+Loop-PO edge (4,35) -- 87
+Loop-PO edge (4,36) -- 88
+Loop-PO edge (4,37) -- 89
+Loop-PO edge (4,38) -- 90
+Loop-PO edge (21,23) -- 91
+Loop-PO edge (22,23) -- 92
+Loop-PO edge (21,24) -- 93
+Loop-PO edge (22,24) -- 94
+Loop-PO edge (23,24) -- 95
+Loop-PO edge (21,25) -- 96
+Loop-PO edge (22,25) -- 97
+Loop-PO edge (23,25) -- 98
+Loop-PO edge (24,25) -- 99
+Task-PO edge (5,6) -- 100
+Task-PO edge (5,7) -- 101
+Task-PO edge (6,7) -- 102
+Task-PO edge (8,9) -- 103
+Task-PO edge (8,10) -- 104
+Task-PO edge (8,11) -- 105
+Task-PO edge (9,10) -- 106
+Task-PO edge (9,11) -- 107
+Task-PO edge (10,11) -- 108
+Task-PO edge (14,15) -- 109
+Task-PO edge (14,33) -- 110
+Task-PO edge (14,34) -- 111
+Task-PO edge (15,33) -- 112
+Task-PO edge (15,34) -- 113
+Task-PO edge (33,34) -- 114
+Task-PO edge (18,19) -- 115
+Task-PO edge (18,20) -- 116
+Task-PO edge (18,26) -- 117
+Task-PO edge (18,29) -- 118
+Task-PO edge (18,30) -- 119
+Task-PO edge (18,31) -- 120
+Task-PO edge (18,32) -- 121
+Task-PO edge (19,20) -- 122
+Task-PO edge (19,26) -- 123
+Task-PO edge (19,29) -- 124
+Task-PO edge (19,30) -- 125
+Task-PO edge (19,31) -- 126
+Task-PO edge (19,32) -- 127
+Task-PO edge (20,26) -- 128
+Task-PO edge (20,29) -- 129
+Task-PO edge (20,30) -- 130
+Task-PO edge (20,31) -- 131
+Task-PO edge (20,32) -- 132
+Task-PO edge (26,29) -- 133
+Task-PO edge (26,30) -- 134
+Task-PO edge (26,31) -- 135
+Task-PO edge (26,32) -- 136
+Task-PO edge (29,30) -- 137
+Task-PO edge (29,31) -- 138
+Task-PO edge (29,32) -- 139
+Task-PO edge (30,31) -- 140
+Task-PO edge (30,32) -- 141
+Task-PO edge (31,32) -- 142
+Task-PO edge (21,22) -- 143
+Task-PO edge (27,28) -- 144
+Task-PO edge (35,36) -- 145
+Task-PO edge (35,37) -- 146
+Task-PO edge (35,38) -- 147
+Task-PO edge (36,37) -- 148
+Task-PO edge (36,38) -- 149
+Task-PO edge (37,38) -- 150
+Enqueue-ST/MT edge (6,18) -- 151
+Enqueue-ST/MT edge (10,14) -- 152
+Enqueue-ST/MT edge (20,21) -- 153
+Enqueue-ST/MT edge (24,27) -- 154
+Enqueue-ST/MT edge (33,35) -- 155
 Cannot find fork for thread 0
-Fork edge (9,12)
-Fork edge (15,16)
+Cannot find threadinit for thread 1
+Cannot find threadinit for thread 2
 Cannot find threadexit for thread 0
 Cannot find threadexit for thread 1
-Join edge (25,30)
-Callback-ST edge (28,29)
-
-0: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 1 
-1: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 
-2: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 
-3: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 
-4: 6 5 
-5: 17 6 
-6: 
-7: 10 9 8 
-8: 11 10 9 
-9: 13 10 
-10: 
-11: 33 32 14 13 12 
-12: 33 32 14 13 
-13: 33 32 14 
-14: 15 33 32 
-15: 24 23 22 21 20 16 
-16: 24 23 22 21 20 
-17: 31 30 29 28 25 19 18 
-18: 31 30 29 28 25 19 
-19: 20 31 30 29 28 25 
-20: 21 24 23 22 
-21: 24 23 22 
-22: 24 23 
-23: 26 24 
-24: 29 
-25: 31 30 29 28 
-26: 27 
-27: 28 
-28: 31 30 29 
-29: 31 30 
-30: 31 
-31: 
-32: 34 33 
-33: 
-34: 37 36 35 
-35: 37 36 
-36: 37 
-37: 
+Join edge (25,30) -- 156
+Callback-ST edge (28,29) -- 157
 Adding Fifo-Atomic edges
-Fifo-Atomic edge (7,18)
-Fifo-Atomic edge (7,8)
-Fifo-Atomic edge (11,18)
-
-0: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 1 
-1: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 
-2: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 
-3: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 
-4: 6 5 
-5: 17 6 
-6: 7 17 
-7: 10 9 8 
-8: 11 10 9 
-9: 13 10 
-10: 17 
-11: 33 32 14 13 12 
-12: 33 32 14 13 
-13: 33 32 14 
-14: 15 33 32 
-15: 24 23 22 21 20 16 
-16: 24 23 22 21 20 
-17: 31 30 29 28 25 19 18 
-18: 31 30 29 28 25 19 
-19: 20 31 30 29 28 25 
-20: 21 24 23 22 
-21: 24 23 22 
-22: 24 23 
-23: 26 24 
-24: 29 
-25: 31 30 29 28 
-26: 27 
-27: 28 
-28: 31 30 29 
-29: 31 30 
-30: 31 
-31: 
-32: 34 33 
-33: 
-34: 37 36 35 
-35: 37 36 
-36: 37 
-37: 
+Fifo-Atomic edge (7,18) -- 158
+Fifo-Atomic edge (7,8) -- 159
+Fifo-Atomic edge (11,18) -- 160
 Adding No-Pre edges
 Adding Fifo-Callback edges
 ERROR: No parent for task 0x1
@@ -517,60 +415,367 @@ ERROR: No parent for task 0x3
 Adding FIFO-Callback 2 edges
 Adding Fifo-Nested edges
 Adding NoPre-Prefix edges
-NoPrePrefix edge (26,27)
-
-0: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 1 
-1: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 2 
-2: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 3 
-3: 37 36 35 34 31 30 29 28 27 26 25 19 18 17 10 9 8 7 6 5 4 
-4: 6 5 
-5: 17 6 
-6: 7 17 
-7: 10 9 8 
-8: 11 10 9 
-9: 13 10 
-10: 17 
-11: 33 32 14 13 12 
-12: 33 32 14 13 
-13: 33 32 14 
-14: 15 33 32 
-15: 24 23 22 21 20 16 
-16: 24 23 22 21 20 
-17: 31 30 29 28 25 19 18 
-18: 31 30 29 28 25 19 
-19: 20 31 30 29 28 25 
-20: 21 24 23 22 
-21: 24 23 22 
-22: 24 23 
-23: 26 24 
-24: 29 
-25: 26 31 30 29 28 
-26: 27 
-27: 28 
-28: 31 30 29 
-29: 31 30 
-30: 31 
-31: 
-32: 34 33 
-33: 
-34: 37 36 35 
-35: 37 36 
-36: 37 
-37: 
 Adding NoPre-Suffix edges
 Adding Trans-ST/MT edges
-Trans-ST/MT edge (1,25)
-Trans-ST/MT edge (1,24)
-Trans-ST/MT edge (1,23)
-Trans-ST/MT edge (1,22)
-Trans-ST/MT edge (1,21)
-Trans-ST/MT edge (1,13)
-Trans-ST/MT edge (1,17)
-Trans-ST/MT edge (1,34)
-Trans-ST/MT edge (1,33)
-Trans-ST/MT edge (1,16)
-Trans-ST/MT edge (1,12)
-ERROR: Adding self-loop edge on 1
-ERROR: While adding Trans-ST/MT edge from 1 to 1
-ERROR: While adding TRANS-ST/MT edges
-ERROR while constructing HB Graph
+Trans-ST/MT edge (1,21) -- 161
+Trans-ST/MT edge (1,14) -- 162
+Trans-ST/MT edge (2,21) -- 163
+Trans-ST/MT edge (2,14) -- 164
+Trans-ST/MT edge (3,21) -- 165
+Trans-ST/MT edge (3,14) -- 166
+Trans-ST/MT edge (4,21) -- 167
+Trans-ST/MT edge (4,14) -- 168
+Trans-ST/MT edge (5,8) -- 169
+Trans-ST/MT edge (5,18) -- 170
+Trans-ST/MT edge (6,32) -- 171
+Trans-ST/MT edge (6,31) -- 172
+Trans-ST/MT edge (6,30) -- 173
+Trans-ST/MT edge (6,29) -- 174
+Trans-ST/MT edge (6,26) -- 175
+Trans-ST/MT edge (6,20) -- 176
+Trans-ST/MT edge (6,19) -- 177
+Trans-ST/MT edge (6,8) -- 178
+Trans-ST/MT edge (7,11) -- 179
+Trans-ST/MT edge (7,10) -- 180
+Trans-ST/MT edge (7,9) -- 181
+Trans-ST/MT edge (7,32) -- 182
+Trans-ST/MT edge (7,31) -- 183
+Trans-ST/MT edge (7,30) -- 184
+Trans-ST/MT edge (7,29) -- 185
+Trans-ST/MT edge (7,26) -- 186
+Trans-ST/MT edge (7,20) -- 187
+Trans-ST/MT edge (7,19) -- 188
+Trans-ST/MT edge (8,18) -- 189
+Trans-ST/MT edge (8,14) -- 190
+Trans-ST/MT edge (9,18) -- 191
+Trans-ST/MT edge (9,14) -- 192
+Trans-ST/MT edge (10,34) -- 193
+Trans-ST/MT edge (10,33) -- 194
+Trans-ST/MT edge (10,15) -- 195
+Trans-ST/MT edge (10,18) -- 196
+Trans-ST/MT edge (11,32) -- 197
+Trans-ST/MT edge (11,31) -- 198
+Trans-ST/MT edge (11,30) -- 199
+Trans-ST/MT edge (11,29) -- 200
+Trans-ST/MT edge (11,26) -- 201
+Trans-ST/MT edge (11,20) -- 202
+Trans-ST/MT edge (11,19) -- 203
+Trans-ST/MT edge (14,35) -- 204
+Trans-ST/MT edge (15,35) -- 205
+Trans-ST/MT edge (18,21) -- 206
+Trans-ST/MT edge (19,21) -- 207
+Trans-ST/MT edge (20,22) -- 208
+Trans-ST/MT edge (20,25) -- 209
+Trans-ST/MT edge (20,24) -- 210
+Trans-ST/MT edge (20,23) -- 211
+Trans-ST/MT edge (21,30) -- 212
+Trans-ST/MT edge (21,27) -- 213
+Trans-ST/MT edge (22,30) -- 214
+Trans-ST/MT edge (22,27) -- 215
+Trans-ST/MT edge (23,30) -- 216
+Trans-ST/MT edge (23,27) -- 217
+Trans-ST/MT edge (24,28) -- 218
+Trans-ST/MT edge (24,30) -- 219
+Trans-ST/MT edge (25,32) -- 220
+Trans-ST/MT edge (25,31) -- 221
+Trans-ST/MT edge (27,29) -- 222
+Trans-ST/MT edge (28,32) -- 223
+Trans-ST/MT edge (28,31) -- 224
+Trans-ST/MT edge (28,30) -- 225
+Trans-ST/MT edge (33,38) -- 226
+Trans-ST/MT edge (33,37) -- 227
+Trans-ST/MT edge (33,36) -- 228
+Adding Fifo-Atomic edges
+Adding No-Pre edges
+Nopre edge (11,35) -- 229
+Adding Fifo-Callback edges
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x3
+Adding FIFO-Callback 2 edges
+Adding Fifo-Nested edges
+Adding NoPre-Prefix edges
+NoPrePrefix edge (26,27) -- 230
+Adding NoPre-Suffix edges
+Adding Trans-ST/MT edges
+Trans-ST/MT edge (1,34) -- 231
+Trans-ST/MT edge (1,33) -- 232
+Trans-ST/MT edge (1,15) -- 233
+Trans-ST/MT edge (1,22) -- 234
+Trans-ST/MT edge (1,25) -- 235
+Trans-ST/MT edge (1,24) -- 236
+Trans-ST/MT edge (1,23) -- 237
+Trans-ST/MT edge (2,34) -- 238
+Trans-ST/MT edge (2,33) -- 239
+Trans-ST/MT edge (2,15) -- 240
+Trans-ST/MT edge (2,22) -- 241
+Trans-ST/MT edge (2,25) -- 242
+Trans-ST/MT edge (2,24) -- 243
+Trans-ST/MT edge (2,23) -- 244
+Trans-ST/MT edge (3,34) -- 245
+Trans-ST/MT edge (3,33) -- 246
+Trans-ST/MT edge (3,15) -- 247
+Trans-ST/MT edge (3,22) -- 248
+Trans-ST/MT edge (3,25) -- 249
+Trans-ST/MT edge (3,24) -- 250
+Trans-ST/MT edge (3,23) -- 251
+Trans-ST/MT edge (4,34) -- 252
+Trans-ST/MT edge (4,33) -- 253
+Trans-ST/MT edge (4,15) -- 254
+Trans-ST/MT edge (4,22) -- 255
+Trans-ST/MT edge (4,25) -- 256
+Trans-ST/MT edge (4,24) -- 257
+Trans-ST/MT edge (4,23) -- 258
+Trans-ST/MT edge (5,21) -- 259
+Trans-ST/MT edge (5,32) -- 260
+Trans-ST/MT edge (5,31) -- 261
+Trans-ST/MT edge (5,30) -- 262
+Trans-ST/MT edge (5,29) -- 263
+Trans-ST/MT edge (5,26) -- 264
+Trans-ST/MT edge (5,20) -- 265
+Trans-ST/MT edge (5,19) -- 266
+Trans-ST/MT edge (5,14) -- 267
+Trans-ST/MT edge (5,11) -- 268
+Trans-ST/MT edge (5,10) -- 269
+Trans-ST/MT edge (5,9) -- 270
+Trans-ST/MT edge (6,14) -- 271
+Trans-ST/MT edge (6,11) -- 272
+Trans-ST/MT edge (6,10) -- 273
+Trans-ST/MT edge (6,9) -- 274
+Trans-ST/MT edge (6,21) -- 275
+Trans-ST/MT edge (6,23) -- 276
+Trans-ST/MT edge (6,24) -- 277
+Trans-ST/MT edge (6,25) -- 278
+Trans-ST/MT edge (6,22) -- 279
+Trans-ST/MT edge (6,27) -- 280
+Trans-ST/MT edge (7,21) -- 281
+Trans-ST/MT edge (7,23) -- 282
+Trans-ST/MT edge (7,24) -- 283
+Trans-ST/MT edge (7,25) -- 284
+Trans-ST/MT edge (7,22) -- 285
+Trans-ST/MT edge (7,27) -- 286
+Trans-ST/MT edge (7,14) -- 287
+Trans-ST/MT edge (7,15) -- 288
+Trans-ST/MT edge (7,33) -- 289
+Trans-ST/MT edge (7,34) -- 290
+Trans-ST/MT edge (7,35) -- 291
+Trans-ST/MT edge (8,34) -- 292
+Trans-ST/MT edge (8,33) -- 293
+Trans-ST/MT edge (8,15) -- 294
+Trans-ST/MT edge (8,21) -- 295
+Trans-ST/MT edge (8,32) -- 296
+Trans-ST/MT edge (8,31) -- 297
+Trans-ST/MT edge (8,30) -- 298
+Trans-ST/MT edge (8,29) -- 299
+Trans-ST/MT edge (8,26) -- 300
+Trans-ST/MT edge (8,20) -- 301
+Trans-ST/MT edge (8,19) -- 302
+Trans-ST/MT edge (8,35) -- 303
+Trans-ST/MT edge (9,34) -- 304
+Trans-ST/MT edge (9,33) -- 305
+Trans-ST/MT edge (9,15) -- 306
+Trans-ST/MT edge (9,21) -- 307
+Trans-ST/MT edge (9,32) -- 308
+Trans-ST/MT edge (9,31) -- 309
+Trans-ST/MT edge (9,30) -- 310
+Trans-ST/MT edge (9,29) -- 311
+Trans-ST/MT edge (9,26) -- 312
+Trans-ST/MT edge (9,20) -- 313
+Trans-ST/MT edge (9,19) -- 314
+Trans-ST/MT edge (9,35) -- 315
+Trans-ST/MT edge (10,21) -- 316
+Trans-ST/MT edge (10,32) -- 317
+Trans-ST/MT edge (10,31) -- 318
+Trans-ST/MT edge (10,30) -- 319
+Trans-ST/MT edge (10,29) -- 320
+Trans-ST/MT edge (10,26) -- 321
+Trans-ST/MT edge (10,20) -- 322
+Trans-ST/MT edge (10,19) -- 323
+Trans-ST/MT edge (10,35) -- 324
+Trans-ST/MT edge (11,38) -- 325
+Trans-ST/MT edge (11,37) -- 326
+Trans-ST/MT edge (11,36) -- 327
+Trans-ST/MT edge (11,21) -- 328
+Trans-ST/MT edge (11,23) -- 329
+Trans-ST/MT edge (11,24) -- 330
+Trans-ST/MT edge (11,25) -- 331
+Trans-ST/MT edge (11,22) -- 332
+Trans-ST/MT edge (11,27) -- 333
+Trans-ST/MT edge (14,38) -- 334
+Trans-ST/MT edge (14,37) -- 335
+Trans-ST/MT edge (14,36) -- 336
+Trans-ST/MT edge (15,38) -- 337
+Trans-ST/MT edge (15,37) -- 338
+Trans-ST/MT edge (15,36) -- 339
+Trans-ST/MT edge (18,22) -- 340
+Trans-ST/MT edge (18,25) -- 341
+Trans-ST/MT edge (18,24) -- 342
+Trans-ST/MT edge (18,23) -- 343
+Trans-ST/MT edge (18,27) -- 344
+Trans-ST/MT edge (19,22) -- 345
+Trans-ST/MT edge (19,25) -- 346
+Trans-ST/MT edge (19,24) -- 347
+Trans-ST/MT edge (19,23) -- 348
+Trans-ST/MT edge (19,27) -- 349
+Trans-ST/MT edge (20,27) -- 350
+Trans-ST/MT edge (21,29) -- 351
+Trans-ST/MT edge (21,28) -- 352
+Trans-ST/MT edge (21,32) -- 353
+Trans-ST/MT edge (21,31) -- 354
+Trans-ST/MT edge (22,29) -- 355
+Trans-ST/MT edge (22,28) -- 356
+Trans-ST/MT edge (22,32) -- 357
+Trans-ST/MT edge (22,31) -- 358
+Trans-ST/MT edge (23,29) -- 359
+Trans-ST/MT edge (23,28) -- 360
+Trans-ST/MT edge (23,32) -- 361
+Trans-ST/MT edge (23,31) -- 362
+Trans-ST/MT edge (24,32) -- 363
+Trans-ST/MT edge (24,31) -- 364
+Trans-ST/MT edge (24,29) -- 365
+Trans-ST/MT edge (26,28) -- 366
+Trans-ST/MT edge (27,32) -- 367
+Trans-ST/MT edge (27,31) -- 368
+Trans-ST/MT edge (27,30) -- 369
+Adding Fifo-Atomic edges
+Adding No-Pre edges
+Adding Fifo-Callback edges
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x2
+Adding FIFO-Callback 2 edges
+Adding Fifo-Nested edges
+Adding NoPre-Prefix edges
+Adding NoPre-Suffix edges
+Adding Trans-ST/MT edges
+Trans-ST/MT edge (5,35) -- 370
+Trans-ST/MT edge (5,15) -- 371
+Trans-ST/MT edge (5,33) -- 372
+Trans-ST/MT edge (5,34) -- 373
+Trans-ST/MT edge (5,27) -- 374
+Trans-ST/MT edge (5,22) -- 375
+Trans-ST/MT edge (5,25) -- 376
+Trans-ST/MT edge (5,24) -- 377
+Trans-ST/MT edge (5,23) -- 378
+Trans-ST/MT edge (5,36) -- 379
+Trans-ST/MT edge (5,37) -- 380
+Trans-ST/MT edge (5,38) -- 381
+Trans-ST/MT edge (5,28) -- 382
+Trans-ST/MT edge (6,28) -- 383
+Trans-ST/MT edge (6,35) -- 384
+Trans-ST/MT edge (6,15) -- 385
+Trans-ST/MT edge (6,33) -- 386
+Trans-ST/MT edge (6,34) -- 387
+Trans-ST/MT edge (6,36) -- 388
+Trans-ST/MT edge (6,37) -- 389
+Trans-ST/MT edge (6,38) -- 390
+Trans-ST/MT edge (7,38) -- 391
+Trans-ST/MT edge (7,37) -- 392
+Trans-ST/MT edge (7,36) -- 393
+Trans-ST/MT edge (7,28) -- 394
+Trans-ST/MT edge (8,38) -- 395
+Trans-ST/MT edge (8,37) -- 396
+Trans-ST/MT edge (8,36) -- 397
+Trans-ST/MT edge (8,27) -- 398
+Trans-ST/MT edge (8,23) -- 399
+Trans-ST/MT edge (8,24) -- 400
+Trans-ST/MT edge (8,25) -- 401
+Trans-ST/MT edge (8,22) -- 402
+Trans-ST/MT edge (8,28) -- 403
+Trans-ST/MT edge (9,38) -- 404
+Trans-ST/MT edge (9,37) -- 405
+Trans-ST/MT edge (9,36) -- 406
+Trans-ST/MT edge (9,27) -- 407
+Trans-ST/MT edge (9,23) -- 408
+Trans-ST/MT edge (9,24) -- 409
+Trans-ST/MT edge (9,25) -- 410
+Trans-ST/MT edge (9,22) -- 411
+Trans-ST/MT edge (9,28) -- 412
+Trans-ST/MT edge (10,38) -- 413
+Trans-ST/MT edge (10,37) -- 414
+Trans-ST/MT edge (10,36) -- 415
+Trans-ST/MT edge (10,27) -- 416
+Trans-ST/MT edge (10,23) -- 417
+Trans-ST/MT edge (10,24) -- 418
+Trans-ST/MT edge (10,25) -- 419
+Trans-ST/MT edge (10,22) -- 420
+Trans-ST/MT edge (10,28) -- 421
+Trans-ST/MT edge (11,28) -- 422
+Trans-ST/MT edge (18,28) -- 423
+Trans-ST/MT edge (19,28) -- 424
+Trans-ST/MT edge (20,28) -- 425
+Adding Fifo-Atomic edges
+Adding No-Pre edges
+Adding Fifo-Callback edges
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x2
+ERROR: No parent for task 0x2
+Adding FIFO-Callback 2 edges
+Adding Fifo-Nested edges
+Fifo-Nested edge (26,35) -- 426
+Adding NoPre-Prefix edges
+Adding NoPre-Suffix edges
+Adding Trans-ST/MT edges
+Trans-ST/MT edge (18,35) -- 427
+Trans-ST/MT edge (19,35) -- 428
+Trans-ST/MT edge (20,35) -- 429
+Trans-ST/MT edge (26,38) -- 430
+Trans-ST/MT edge (26,37) -- 431
+Trans-ST/MT edge (26,36) -- 432
+Adding Fifo-Atomic edges
+Adding No-Pre edges
+Adding Fifo-Callback edges
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x2
+ERROR: No parent for task 0x2
+Adding FIFO-Callback 2 edges
+Adding Fifo-Nested edges
+Adding NoPre-Prefix edges
+Adding NoPre-Suffix edges
+Adding Trans-ST/MT edges
+Trans-ST/MT edge (18,38) -- 433
+Trans-ST/MT edge (18,37) -- 434
+Trans-ST/MT edge (18,36) -- 435
+Trans-ST/MT edge (19,38) -- 436
+Trans-ST/MT edge (19,37) -- 437
+Trans-ST/MT edge (19,36) -- 438
+Trans-ST/MT edge (20,38) -- 439
+Trans-ST/MT edge (20,37) -- 440
+Trans-ST/MT edge (20,36) -- 441
+Adding Fifo-Atomic edges
+Adding No-Pre edges
+Adding Fifo-Callback edges
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x1
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x3
+ERROR: No parent for task 0x2
+ERROR: No parent for task 0x2
+Adding FIFO-Callback 2 edges
+Adding Fifo-Nested edges
+Adding NoPre-Prefix edges
+Adding NoPre-Suffix edges
+Adding Trans-ST/MT edges
+Total edges = 441
+Potential UAF between read op 31 (read at address 0x1)  and free op 37 (freed 2 bytes from address 0x1)
+Memory originally allocated at 19 (allocated 3 bytes from address 0x0)

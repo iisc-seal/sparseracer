@@ -114,6 +114,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	MultiStack stack2;	// keeps track of last op in each thread - to obtain next op ID in the same task.
 	MultiStack stack3;  // keeps track of last op in each thread - to obtain next op ID for every operation in the thread.
 	MultiStack stack4;  // keeps track of last deq, pause - to obtain task nesting.
+	MultiStack stack5;  // get first op of each thread
 
 	while (getline(traceFile, line)) {
 		// Check whether the line is a valid line according to finalRegEx
@@ -422,51 +423,94 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							}
 						}
 
+						MultiStack::stackElementType top = stack5.peek(opdetails.threadID);
+						if (stack5.isBottom(top)) {
+							MultiStack::stackElementType element;
+							element.opID = opCount;
+							element.opType = opdetails.opType;
+							element.taskID = opdetails.taskID;
+							element.threadID = opdetails.threadID;
+							stack5.push(element);
+
+							UAFDetector::threadDetails threaddetails;
+							threaddetails.firstOpID = opCount;
+							if (detector.threadIDMap.find(opdetails.threadID) == detector.threadIDMap.end())
+								detector.threadIDMap[opdetails.threadID] = threaddetails;
+							else {
+								cout << "ERROR: thread " << opdetails.threadID << " already has an entry in threadIDMap\n";
+								continue;
+							}
+						}
+
 						// Obtaining sets of each kind of operations in the trace.
 						if (match.compare("threadinit") == 0) {
 							detector.threadinitSet.insert(opCount);
 
 							long long threadID = opdetails.threadID;
 							if (detector.threadIDMap.find(threadID) == detector.threadIDMap.end()) {
-								detector.threadIDMap[threadID].threadinitOpID = opCount;
+								UAFDetector::threadDetails threaddetails;
+								threaddetails.threadinitOpID = opCount;
+								detector.threadIDMap[threadID] = threaddetails;
 							} else if (detector.threadIDMap[threadID].threadinitOpID != -1 && detector.threadIDMap[threadID].threadinitOpID != opCount) {
 								cout << "ERROR: threadinit already seen for thread " << threadID << " at op " << detector.threadIDMap[threadID].threadinitOpID << endl;
 								return -1;
-							} else
-								detector.threadIDMap[threadID].threadinitOpID = opCount;
+							} else {
+								UAFDetector::threadDetails threaddetails = detector.threadIDMap.find(threadID)->second;
+								threaddetails.threadinitOpID = opCount;
+								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
+								detector.threadIDMap[threadID] = threaddetails;
+							}
 						} else if (match.compare("threadexit") == 0) {
 							detector.threadexitSet.insert(opCount);
 
 							long long threadID = opdetails.threadID;
 							if (detector.threadIDMap.find(threadID) == detector.threadIDMap.end()) {
-								detector.threadIDMap[threadID].threadexitOpID = opCount;
+								UAFDetector::threadDetails threaddetails;
+								threaddetails.threadexitOpID = opCount;
+								detector.threadIDMap[threadID] = threaddetails;
 							} else if (detector.threadIDMap[threadID].threadexitOpID != -1 && detector.threadIDMap[threadID].threadexitOpID != opCount) {
 								cout << "ERROR: threadexit already seen for thread " << threadID << " at op " << detector.threadIDMap[threadID].threadexitOpID << endl;
 								return -1;
-							} else
-								detector.threadIDMap[threadID].threadexitOpID = opCount;
+							} else {
+								UAFDetector::threadDetails threaddetails = detector.threadIDMap.find(threadID)->second;
+								threaddetails.threadexitOpID = opCount;
+								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
+								detector.threadIDMap[threadID] = threaddetails;
+							}
 						} else if (match.compare("enterloop") == 0) {
 							detector.enterloopSet.insert(opCount);
 
 							long long threadID = opdetails.threadID;
 							if (detector.threadIDMap.find(threadID) == detector.threadIDMap.end()) {
-								detector.threadIDMap[threadID].enterloopOpID = opCount;
+								UAFDetector::threadDetails threaddetails;
+								threaddetails.enterloopOpID = opCount;
+								detector.threadIDMap[threadID] = threaddetails;
 							} else if (detector.threadIDMap[threadID].enterloopOpID != -1 && detector.threadIDMap[threadID].enterloopOpID != opCount) {
 								cout << "ERROR: enterloop already seen for thread " << threadID << " at op " << detector.threadIDMap[threadID].enterloopOpID << endl;
 								return -1;
-							} else
-								detector.threadIDMap[threadID].enterloopOpID = opCount;
+							} else {
+								UAFDetector::threadDetails threaddetails = detector.threadIDMap.find(threadID)->second;
+								threaddetails.enterloopOpID = opCount;
+								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
+								detector.threadIDMap[threadID] = threaddetails;
+							}
 						} else if (match.compare("exitloop") == 0) {
 							detector.exitloopSet.insert(opCount);
 
 							long long threadID = opdetails.threadID;
 							if (detector.threadIDMap.find(threadID) == detector.threadIDMap.end()) {
-								detector.threadIDMap[threadID].exitloopOpID = opCount;
+								UAFDetector::threadDetails threaddetails;
+								threaddetails.exitloopOpID = opCount;
+								detector.threadIDMap[threadID] = threaddetails;
 							} else if (detector.threadIDMap[threadID].exitloopOpID != -1 && detector.threadIDMap[threadID].exitloopOpID != opCount) {
 								cout << "ERROR: exitloop already seen for thread " << threadID << " at op " << detector.threadIDMap[threadID].exitloopOpID << endl;
 								return -1;
-							} else
-								detector.threadIDMap[threadID].exitloopOpID = opCount;
+							} else {
+								UAFDetector::threadDetails threaddetails = detector.threadIDMap.find(threadID)->second;
+								threaddetails.exitloopOpID = opCount;
+								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
+								detector.threadIDMap[threadID] = threaddetails;
+							}
 						} else if (match.compare("pause") == 0) {
 							detector.pauseSet.insert(opCount);
 						} else if (match.compare("resume") == 0) {
@@ -581,12 +625,18 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 
 							long long targetThread = forkopdetails.targetThreadID;
 							if (detector.threadIDMap.find(targetThread) == detector.threadIDMap.end()) {
-								detector.threadIDMap[targetThread].forkOpID = opCount;
+								UAFDetector::threadDetails threaddetails;
+								threaddetails.forkOpID = opCount;
+								detector.threadIDMap[targetThread] = threaddetails;
 							} else if (detector.threadIDMap[targetThread].forkOpID != -1 && detector.threadIDMap[targetThread].forkOpID != opCount) {
 								cout << "ERROR: fork already seen for thread " << targetThread << " at op " << detector.threadIDMap[targetThread].forkOpID << endl;
 								return -1;
-							} else
-								detector.threadIDMap[targetThread].forkOpID = opCount;
+							} else {
+								UAFDetector::threadDetails threaddetails = detector.threadIDMap.find(targetThread)->second;
+								threaddetails.forkOpID = opCount;
+								detector.threadIDMap.erase(detector.threadIDMap.find(targetThread));
+								detector.threadIDMap[targetThread] = threaddetails;
+							}
 
 						} else if (match.compare("join") == 0) {
 							// Obtain two arguments of join.
@@ -612,12 +662,18 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 
 							long long targetThread = joinopdetails.targetThreadID;
 							if (detector.threadIDMap.find(targetThread) == detector.threadIDMap.end()) {
-								detector.threadIDMap[targetThread].joinOpID = opCount;
+								UAFDetector::threadDetails threaddetails;
+								threaddetails.joinOpID = opCount;
+								detector.threadIDMap[targetThread] = threaddetails;
 							} else if (detector.threadIDMap[targetThread].joinOpID != -1 && detector.threadIDMap[targetThread].joinOpID != opCount) {
 								cout << "ERROR: join already seen for thread " << targetThread << " at op " << detector.threadIDMap[targetThread].joinOpID << endl;
 								return -1;
-							} else
-								detector.threadIDMap[targetThread].joinOpID = opCount;
+							} else {
+								UAFDetector::threadDetails threaddetails = detector.threadIDMap.find(targetThread)->second;
+								threaddetails.joinOpID = opCount;
+								detector.threadIDMap.erase(detector.threadIDMap.find(targetThread));
+								detector.threadIDMap[targetThread] = threaddetails;
+							}
 #ifdef LOCKS
 						} else if (match.compare("acquire") == 0) {
 							// Obtain two arguments of acquire.
@@ -1007,9 +1063,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 											detector.freeIDMap[opCount] = freedetails;
 										} else {
 											cout << "ERROR: Found duplicate entry for free " << opCount << " in freeIDMap\n";
-											detector.freeIDMap[opCount].printDetails();
-											cout << "\n544\n";
-											detector.freeIDMap[544].printDetails();
 											return -1;
 										}
 									}
@@ -1384,12 +1437,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 				}
 			}
 		}
-		cout << "freeIDMap size: " << detector.freeIDMap.size() << endl;
-		for (map<long long, UAFDetector::freeOpDetails>::iterator dmit = detector.freeIDMap.begin(); dmit != detector.freeIDMap.end(); dmit++) {
-			cout << dmit->first << endl;
-			dmit->second.printDetails();
-			cout << endl;
-		}
 	}
 	cout << "Finished parsing the file\n";
 
@@ -1407,7 +1454,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	}
 
 	// Initialize HB Graph
-	cout << "Calling detector.initGraph()\n";
 	detector.initGraph(opCount);
 
 #ifdef TRACEDEBUG
@@ -1423,7 +1469,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 		cout << endl;
 	}
 	for (map<long long, UAFDetector::threadDetails>::iterator it = detector.threadIDMap.begin(); it != detector.threadIDMap.end(); it++) {
-		cout << "Thread ID: " << it->first << " - details: ";
+		cout << "Thread ID: " << it->first << " - details:";
 		it->second.printThreadDetails();
 		cout << endl;
 	}
