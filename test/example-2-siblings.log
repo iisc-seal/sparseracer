@@ -1,0 +1,222 @@
+1 threadinit(1)
+Pushing op 1 in block 1
+2 enq(1,0x11,1,0x0)
+Pushing op 2 in block 1
+3 enterloop(1)
+Pushing op 3 in block 1
+4 deq(1,0x11)
+Popping op in block 1
+Popping op in block 1
+Popping op in block 1
+Popping op in block -1
+5 alloc(1,0x10,9)
+Pushing op 5 in block 2
+6 fork(1,2)
+Pushing op 6 in block 2
+7 threadinit(2)
+Pushing op 7 in block 3
+8 enq(2,0x3,2,0x0)
+Pushing op 8 in block 3
+9 enq(2,0x2,1,0x0)
+Pushing op 9 in block 3
+10 enterloop(2)
+Pushing op 10 in block 3
+11 deq(2,0x3)
+Popping op in block 3
+Popping op in block 3
+Popping op in block 3
+Popping op in block 3
+Popping op in block -1
+12 read(2,0x10)
+Pushing op 12 in block 4
+13 end(2,0x3)
+Pushing op 13 in block 4
+14 write(1,0x10)
+Pushing op 14 in block 2
+15 end(1,0x11)
+Pushing op 15 in block 2
+16 deq(1,0x2)
+Popping op in block 2
+Popping op in block 2
+Popping op in block 2
+Popping op in block 2
+Popping op in block 2
+Popping op in block -1
+17 read(1,0x11)
+Pushing op 17 in block 5
+18 free(1,0x10,9)
+Pushing op 18 in block 5
+19 end(1,0x2)
+Pushing op 19 in block 5
+20 exitloop(1)
+Popping op in block 5
+Popping op in block 5
+Popping op in block 5
+Popping op in block 5
+Popping op in block -1
+21 threadexit(1)
+Pushing op 21 in block 6
+Finished parsing the file
+False
+No of ops: 21
+No of blocks: 6
+No of tasks: 3
+No of atomic tasks: 3
+No of threads: 2
+Op: 1 - details: threadID 1 taskID  opType threadinit
+Op: 2 - details: threadID 1 taskID  opType enq
+Op: 3 - details: threadID 1 taskID  opType enterloop
+Op: 4 - details: threadID 1 taskID 0x11 opType deq
+Op: 5 - details: threadID 1 taskID 0x11 opType alloc
+Op: 6 - details: threadID 1 taskID 0x11 opType fork
+Op: 7 - details: threadID 2 taskID  opType threadinit
+Op: 8 - details: threadID 2 taskID  opType enq
+Op: 9 - details: threadID 2 taskID  opType enq
+Op: 10 - details: threadID 2 taskID  opType enterloop
+Op: 11 - details: threadID 2 taskID 0x3 opType deq
+Op: 12 - details: threadID 2 taskID 0x3 opType read
+Op: 13 - details: threadID 2 taskID 0x3 opType end
+Op: 14 - details: threadID 1 taskID 0x11 opType write
+Op: 15 - details: threadID 1 taskID 0x11 opType end
+Op: 16 - details: threadID 1 taskID 0x2 opType deq
+Op: 17 - details: threadID 1 taskID 0x2 opType read
+Op: 18 - details: threadID 1 taskID 0x2 opType free
+Op: 19 - details: threadID 1 taskID 0x2 opType end
+Op: 20 - details: threadID 1 taskID  opType exitloop
+Op: 21 - details: threadID 1 taskID  opType threadexit
+Task ID: 0x11 - details: threadID 1 first-pause -1 last-resume -1 deq 4 end 15 enq 2 callback 0x0 parent task 
+Task ID: 0x2 - details: threadID 1 first-pause -1 last-resume -1 deq 16 end 19 enq 9 callback 0x0 parent task 
+Task ID: 0x3 - details: threadID 2 first-pause -1 last-resume -1 deq 11 end 13 enq 8 callback 0x0 parent task 
+Thread ID: 1 - details: first-op 1 threadinit 1 threadexit 21 enterloop 3 exitloop 20 fork -1 join -1
+Thread ID: 2 - details: first-op -1 threadinit 7 threadexit -1 enterloop 10 exitloop -1 fork 6 join -1
+Block ID: 1 - details
+1 
+2 
+3 
+Block ID: 2 - details
+4 
+5 
+6 
+14 
+15 
+Block ID: 3 - details
+7 
+8 
+9 
+10 
+Block ID: 4 - details
+11 
+12 
+13 
+Block ID: 5 - details
+16 
+17 
+18 
+19 
+Block ID: 6 - details
+20 
+21 
+Atomic Task: 0x11
+Atomic Task: 0x2
+Atomic Task: 0x3
+Next-op-in-task map
+Op 1-> 0
+Op 2-> 0
+Op 3-> 0
+Op 4-> 5
+Op 5-> 6
+Op 6-> 14
+Op 7-> 0
+Op 8-> 0
+Op 9-> 0
+Op 10-> 0
+Op 11-> 12
+Op 12-> 13
+Op 13-> 0
+Op 14-> 15
+Op 15-> 0
+Op 16-> 17
+Op 17-> 18
+Op 18-> 19
+Op 19-> 0
+Op 20-> 0
+Op 21-> 0
+Next-op-in-thread map
+Op 1-> 2
+Op 2-> 3
+Op 3-> 4
+Op 4-> 5
+Op 5-> 6
+Op 6-> 14
+Op 7-> 8
+Op 8-> 9
+Op 9-> 10
+Op 10-> 11
+Op 11-> 12
+Op 12-> 13
+Op 13-> 0
+Op 14-> 15
+Op 15-> 16
+Op 16-> 17
+Op 17-> 18
+Op 18-> 19
+Op 19-> 20
+Op 20-> 21
+Op 21-> 0
+Set - threadinit
+1 7 
+Set - threadexit
+21 
+Set - enterloop
+3 10 
+Set - exitloop
+20 
+Set - deq
+4 11 16 
+Set - end
+13 15 19 
+Set - pause
+
+Set - resume
+
+Set - enq
+Op- 2:
+(1, 0x11, 1, 0x0)
+Op- 8:
+(2, 0x3, 2, 0x0)
+Op- 9:
+(2, 0x2, 1, 0x0)
+Set - fork
+Op- 6:
+(1, 2)
+Set - join
+Set - alloc
+Op- 5:
+(1, 0x10, 9)
+Set - free
+Op- 18:
+(1, 0x10, 9)
+Set - inc
+Set - dec
+Set - read
+Op- 12:
+(2, 0x10, -1)
+Op- 17:
+(1, 0x11, -1)
+Set - write
+Op- 14:
+(1, 0x10, -1)
+Set - alloc
+Op- 5
+ read ops: 12 17 
+ write ops: 14 
+ free ops: 18 
+ inc ops: 
+ dec ops: 
+Set - free
+Op- 18
+alloc op: 5
+ read ops: 12 17 
+ write ops: 14 
+ inc ops: 
+ dec ops: 

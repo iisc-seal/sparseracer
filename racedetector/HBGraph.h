@@ -19,7 +19,9 @@ using namespace std;
 class HBGraph {
 public:
 	struct adjListNode {
-		long long destination;
+		long long sourceOp;
+		long long destinationOp;
+		long long destinationBlock;
 		struct adjListNode* next;
 	};
 
@@ -28,51 +30,51 @@ private:
 		struct adjListNode* head;
 	};
 
-	struct adjListNode* createNewNode(long long destination) {
+	struct adjListNode* createNewNode(long long sourceOp, long long destinationOp, long long destinationBlock) {
 		struct adjListNode* newNode = new adjListNode;
-		newNode->destination = destination;
+		newNode->sourceOp = sourceOp;
+		newNode->destinationOp = destinationOp;
+		newNode->destinationBlock = destinationBlock;
 		newNode->next = NULL;
 		return newNode;
 	}
 
 public:
 	HBGraph();
-	HBGraph(long long countOfNodes);
+	HBGraph(long long countOfOps, long long countOfNodes);
 	virtual ~HBGraph();
 
 	long long totalNodes;
-//	bool* adjMatrix;
+	long long totalOps;
 	bool** adjMatrix;
-	//bitset<1>** adjMatrix;
 	struct adjListType* adjList;
 
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
-	int addSingleEdge(long long source, long long destination);
+	int addSingleEdge(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp);
 
 	// Return 1 if edge exists, 0 if not, -1 if adjMatrix and adjList are out of sync.
-	int edgeExists(long long source, long long destination);
+	int blockEdgeExists(long long source, long long destination);
+	int opEdgeExists(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp);
 
 	void printGraph(bool flag);
 
-#if 0
-	bool matrixElement(long long i, long long j) {
-		assert(0 <= i && i < totalNodes && 0 <= j && j < totalNodes);
-		return adjMatrix[totalNodes*i + j];
-	}
-
-	void assignMatrixElement(long long i, long long j, bool value) {
-		assert(0 <= i && i < totalNodes && 0 <= j && j < totalNodes);
-		assert(adjMatrix+(totalNodes*i)+j != NULL);
-		adjMatrix[totalNodes*i + j] = value;
-	}
-#endif
-
 private:
-	bool edgeExistsinList(long long source, long long destination) {
+	bool blockEdgeExistsinList(long long source, long long destination) {
 		struct adjListNode* currNode;
 		currNode = adjList[source].head;
 		while (currNode != NULL) {
-			if (currNode->destination == destination)
+			if (currNode->destinationBlock == destination)
+				return true;
+			currNode = currNode->next;
+		}
+		return false;
+	}
+
+	bool opEdgeExistsinList(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp) {
+		struct adjListNode* currNode;
+		currNode = adjList[sourceBlock].head;
+		while (currNode != NULL) {
+			if (currNode->sourceOp == sourceOp && currNode->destinationOp == destinationOp)
 				return true;
 			currNode = currNode->next;
 		}

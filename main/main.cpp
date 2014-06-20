@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	return 0;
 #ifdef TRACEDEBUG
 	cout << "map size: " << detectorObj.opIDMap.size() << endl;
 #endif

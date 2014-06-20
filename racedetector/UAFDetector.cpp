@@ -16,7 +16,8 @@ using namespace std;
 #define NILCallback "0x0"
 
 UAFDetector::UAFDetector()
-	: opIDMap(),
+	: blockIDMap(),
+	  opIDMap(),
 	  opStringToOpIDMap(),
 	  opToNextOpInTask(),
 	  opToNextOpInThread(),
@@ -63,10 +64,11 @@ UAFDetector::UAFDetector()
 UAFDetector::~UAFDetector() {
 }
 
-void UAFDetector::initGraph(long long countOfNodes) {
-	graph = HBGraph(countOfNodes);
+void UAFDetector::initGraph(long long countOfOps, long long countOfNodes) {
+	graph = HBGraph(countOfOps, countOfNodes);
 }
 
+#if 0
 int UAFDetector::addEdges(Logger &logger) {
 	assert (graph.totalNodes != 0);
 
@@ -182,6 +184,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			graph.printGraph(false);
 #endif
 
+#ifdef FIFOCALLBACK2
 #ifdef GRAPHDEBUG
 		cout << "Adding FIFO-Callback 2 edges\n";
 #endif
@@ -197,6 +200,7 @@ int UAFDetector::addEdges(Logger &logger) {
 			cout << "ERROR: Unknown return value from addFifoCallbackEdges()\n";
 			return -1;
 		}
+#endif
 
 #ifdef GRAPHDEBUG
 		cout << "Adding Fifo-Nested edges\n";
@@ -981,6 +985,7 @@ int UAFDetector::addFifoCallbackEdges() {
 		return 0;
 }
 
+#ifdef FIFOCallback2
 int UAFDetector::addFifoCallback2Edges() {
 	bool flag = false;
 
@@ -1045,6 +1050,7 @@ int UAFDetector::addFifoCallback2Edges() {
 	else
 		return 0;
 }
+#endif
 
 int UAFDetector::addFifoNestedEdges() {
 	// Adding FIFO-NESTED
@@ -1543,3 +1549,5 @@ void UAFDetector::printEdges() {
 	}
 }
 #endif
+#endif
+

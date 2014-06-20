@@ -15,7 +15,8 @@ HBGraph::HBGraph(){
 	totalNodes = 0;
 }
 
-HBGraph::HBGraph(long long countOfNodes) {
+HBGraph::HBGraph(long long countOfOps, long long countOfNodes) {
+	totalOps = countOfOps;
 	totalNodes = countOfNodes;
 
 	adjMatrix = (bool**) malloc(sizeof(bool*) * (totalNodes+1));
@@ -43,54 +44,49 @@ HBGraph::HBGraph(long long countOfNodes) {
 HBGraph::~HBGraph() {
 }
 
-int HBGraph::addSingleEdge(long long source, long long destination) {
+int HBGraph::addSingleEdge(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp) {
 
-	if (source >= 1 && source <= totalNodes && destination >=1 && destination <= totalNodes) {
-		if (edgeExists(destination, source) == 1) {
-			cout << "ERROR: Edge exists from " << destination << " to " << source << " and we are edding edge from " << source << " to "
-				 << destination << endl;
-			return -1;
-		}
-		if (source == destination) {
-			cout << "ERROR: Adding self-loop edge on " << source << endl;
-			return -1;
-		}
-		int retValue = edgeExists(source, destination);
-		if (retValue == 0) {
-			adjMatrix[source][destination] = true;
-//			assignMatrixElement(source-1, destination-1, true);
-			
-			struct adjListNode* destNode = createNewNode(destination);
-			destNode->next = adjList[source].head;
-			adjList[source].head = destNode;
-			return 1;
-		} else if (retValue == 1)
-			return 0;
-		else
-			return -1;
-	} else  {
-		cout << "ERROR: Invalid source/destination for adding edge - source " << source << " destination " << destination << endl;
+	assert(sourceBlock >= 1 && sourceBlock <= totalNodes);
+	assert(destinationBlock >= 1 && destinationBlock <= totalNodes);
+	assert(sourceOp >= 1 && sourceOp <= totalOps);
+	assert(destinationOp >= 1 && destinationOp <= totalOps);
+
+	if (opEdgeExists(destinationBlock, sourceBlock, destinationOp, sourceOp) == 1) {
+		cout << "ERROR: Edge exists from block " << destinationBlock << " op " << destinationOp << " to block " << sourceBlock << " op " << sourceOp << endl;
+		cout << "We are trying to edge from block " << sourceBlock << " op " << sourceOp << " to block " << destinationBlock << " op " << destinationOp << endl;
 		return -1;
 	}
+	if (sourceBlock == destinationBlock && sourceOp == destinationOp) {
+		cout << "ERROR: Adding self-loop edge on " << sourceOp << endl;
+		return -1;
+	}
+	int retValue = opEdgeExists(sourceBlock, destinationBlock, sourceOp, destinationOp);
+	if (retValue == 0) {
+		adjMatrix[sourceBlock][destinationBlock] = true;
+			
+		struct adjListNode* destNode = createNewNode(destinationBlock, sourceOp, destinationOp);
+		destNode->next = adjList[sourceBlock].head;
+		adjList[sourceBlock].head = destNode;
+		return 1;
+	} else if (retValue == 1)
+		return 0;
+	else
+		return -1;
 
 	return 0;
 }
 
-int HBGraph::edgeExists(long long source, long long destination) {
+int HBGraph::opEdgeExists(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp) {
 
-	assert(adjMatrix[source][destination] == true || adjMatrix[source][destination] == false);
+	assert(adjMatrix[sourceBlock][destinationBlock] == true || adjMatrix[sourceBlock][destinationBlock] == false);
 	// Checking if adjMatrix and adjList are in sync.
-//	if (matrixElement(source-1, destination-1) == false && !edgeExistsinList(source, destination))
-	if (!adjMatrix[source][destination] && !edgeExistsinList(source, destination))
-	//if (!adjMatrix[source][destination].test(0) && !edgeExistsinList(source, destination))
+	if (!adjMatrix[sourceBlock][destinationBlock] && !opEdgeExistsinList(sourceBlock, destinationBlock, sourceOp, destinationOp))
 		return 0;
-//	else if (matrixElement(source-1, destination-1) == false) {
-	else if (!adjMatrix[source][destination]) {
-	//else if (!adjMatrix[source][destination].test(0)) {
-		cout << "ERROR: Edge exists in adjList, not in adjMatrix: " << source << " -> " << destination << endl;
+	else if (!adjMatrix[sourceBlock][destinationBlock]) {
+		cout << "ERROR: Edge exists in adjList, not in adjMatrix: " << sourceBlock << " -> " << destinationBlock << endl;
 		return -1;
-	} else if (!edgeExistsinList(source, destination)) {
-		cout << "ERROR: Edge exists in adjMatrix, not in adjList: " << source << " -> " << destination << endl;
+	} else if (!opEdgeExistsinList(sourceBlock, destinationBlock, sourceOp, destinationOp)) {
+		cout << "ERROR: Edge exists in adjMatrix, not in adjList: " << sourceOp << " -> " << destinationOp << endl;
 		return -1;
 	} else
 		return 1;
@@ -115,7 +111,7 @@ void HBGraph::printGraph(bool flag) {
 		cout << endl << i << ": ";
 		struct adjListNode* currNode = adjList[i].head;
 		while (currNode != NULL) {
-			cout << currNode->destination << " ";
+			cout << currNode->sourceOp << "->" << currNode->destinationOp << "   ";
 			currNode = currNode->next;
 		}
 	}

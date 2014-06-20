@@ -26,17 +26,22 @@ public:
 		cout << error << endl;
 	}
 
+	// Maps blockID to the vector of ops contained in the block.
+	map<long long, vector<long long> > blockIDMap;
+
 	// Stores threadID, taskID and opType of an operation.
 	class opDetails {
 	public:
 		long long threadID;
 		string taskID;
 		string opType;
+		long long blockID;
 
 		opDetails() {
 			threadID = -1;
 			taskID = "";
 			opType = "";
+			blockID = -1;
 		}
 
 		void printOpDetails() {
@@ -56,6 +61,8 @@ public:
 	// Maps opID to next op's ID in the same thread.
 	map<long long, long long> opToNextOpInThread;
 
+	// Maps blockID to next block's ID in the same thread.
+	map<long long, long long> blockToNextBlockInThread;
 
 	// Stores threadID, first pause operation's ID and last resume operation's ID
 	class taskDetails {
@@ -377,7 +384,7 @@ public:
 
 	HBGraph graph;
 
-	void initGraph(long long countOfNodes);
+	void initGraph(long long countOfOps, long long countOfNodes);
 
 	int addEdges(Logger &logger);
 

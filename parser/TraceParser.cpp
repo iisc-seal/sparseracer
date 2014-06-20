@@ -8,6 +8,7 @@
 #include "TraceParser.h"
 #include <iostream>
 #include <cstring>
+#include <cassert>
 #include <boost/regex.hpp>
 #include "MultiStack.h"
 
@@ -34,6 +35,7 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 	}
 
 	opCount = 0;
+	blockCount = 0;
 	// The prefix regular expression
 //	prefixRegEx = "[0-9]+ *: *";
 	prefixRegEx = " *";
@@ -115,6 +117,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	MultiStack stack3;  // keeps track of last op in each thread - to obtain next op ID for every operation in the thread.
 	MultiStack stack4;  // keeps track of last deq, pause - to obtain task nesting.
 	MultiStack stack5;  // get first op of each thread
+	MultiStack stack6;	// keeps track of last op in each block
 
 	while (getline(traceFile, line)) {
 		// Check whether the line is a valid line according to finalRegEx
@@ -432,13 +435,14 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							element.threadID = opdetails.threadID;
 							stack5.push(element);
 
-							UAFDetector::threadDetails threaddetails;
-							threaddetails.firstOpID = opCount;
-							if (detector.threadIDMap.find(opdetails.threadID) == detector.threadIDMap.end())
-								detector.threadIDMap[opdetails.threadID] = threaddetails;
-							else {
-								cout << "ERROR: thread " << opdetails.threadID << " already has an entry in threadIDMap\n";
-								continue;
+							if (match.compare("threadinit") != 0) {
+								UAFDetector::threadDetails threaddetails;
+								threaddetails.firstOpID = opCount;
+								if (detector.threadIDMap.find(opdetails.threadID) == detector.threadIDMap.end())
+									detector.threadIDMap[opdetails.threadID] = threaddetails;
+								else {
+									cout << "ERROR: thread " << opdetails.threadID << " already has an entry in threadIDMap\n";
+								}
 							}
 						}
 
@@ -450,6 +454,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							if (detector.threadIDMap.find(threadID) == detector.threadIDMap.end()) {
 								UAFDetector::threadDetails threaddetails;
 								threaddetails.threadinitOpID = opCount;
+								threaddetails.firstOpID = opCount;
 								detector.threadIDMap[threadID] = threaddetails;
 							} else if (detector.threadIDMap[threadID].threadinitOpID != -1 && detector.threadIDMap[threadID].threadinitOpID != opCount) {
 								cout << "ERROR: threadinit already seen for thread " << threadID << " at op " << detector.threadIDMap[threadID].threadinitOpID << endl;
@@ -1432,6 +1437,128 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 #endif
 						}
 
+						if (match.compare("threadinit") == 0 || match.compare("deq") == 0 ||
+								match.compare("resume") == 0 || match.compare("exitloop") == 0) {
+							blockCount++;
+
+							if (detector.opIDMap.find(opCount) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find opIDMap entry for op " << opCount << endl;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingDetails = detector.opIDMap.find(opCount)->second;
+								existingDetails.blockID = blockCount;
+								detector.opIDMap.erase(detector.opIDMap.find(opCount));
+								detector.opIDMap[opCount] = existingDetails;
+							}
+
+							MultiStack::stackElementType element;
+							element.opID = blockCount; // opID really stores the block ID in this case.
+							element.threadID = opdetails.threadID;
+							if (stack6.isBottom(stack6.peek(opdetails.threadID))) {
+								stack6.push(element);
+								cout << "Pushing op " << opCount << " in block " << blockCount << endl;
+							} else {
+								MultiStack::stackElementType top = stack6.peek(opdetails.threadID);
+								long long prevBlockID = top.opID;
+								while (!stack6.isBottom(top)) {
+									top = stack6.pop(opdetails.threadID);
+									cout << "Popping op in block " << top.opID << endl;
+								}
+								stack6.push(element);
+								if (detector.blockToNextBlockInThread.find(prevBlockID) == detector.blockToNextBlockInThread.end()) {
+									detector.blockToNextBlockInThread[prevBlockID] = blockCount;
+								} else {
+									cout << "ERROR: Next block already exists for block " << prevBlockID << endl;
+									cout << "Existing entry " << detector.blockToNextBlockInThread[prevBlockID] << endl;
+									return -1;
+								}
+							}
+
+							std::vector<long long> ops(1, opCount);
+							if (detector.blockIDMap.find(blockCount) == detector.blockIDMap.end()) {
+								detector.blockIDMap[blockCount] = ops;
+							} else {
+								cout << "ERROR: Found duplicate entry for block " << blockCount << " in blockIDMap\n";
+								return -1;
+							}
+						} else if (match.compare("enterloop") == 0 || match.compare("end") == 0 ||
+								   match.compare("pause") == 0 || match.compare("threadexit") == 0) {
+							MultiStack::stackElementType top = stack6.peek(opdetails.threadID);
+							if (stack6.isBottom(top)) {
+								cout << "ERROR: No operations before op " << opCount << " in the current block\n";
+							}
+							if (detector.opIDMap.find(opCount) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find opIDMap entry for op " << opCount << endl;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingDetails = detector.opIDMap.find(opCount)->second;
+								existingDetails.blockID = top.opID;
+								detector.opIDMap.erase(detector.opIDMap.find(opCount));
+								detector.opIDMap[opCount] = existingDetails;
+							}
+
+							MultiStack::stackElementType element;
+							element.opID = top.opID; // opID really stores the block ID in this case.
+							element.threadID = opdetails.threadID;
+							stack6.push(element);
+							cout << "Pushing op " << opCount << " in block " << top.opID << endl;
+
+							if (detector.blockIDMap.find(top.opID) == detector.blockIDMap.end()) {
+								cout << "ERROR: Cannot find entry for block " << top.opID << " in blockIDMap\n";
+								return -1;
+							} else {
+								std::vector<long long> existingOps = detector.blockIDMap.find(top.opID)->second;
+								existingOps.push_back(opCount);
+								detector.blockIDMap.erase(detector.blockIDMap.find(top.opID));
+								detector.blockIDMap[top.opID] = existingOps;
+							}
+						} else {
+							bool newBlock = false;
+							long long currBlock;
+							if (stack6.isBottom(stack6.peek(opdetails.threadID))) {
+								if (blockCount == 0) {
+									newBlock = true;
+									blockCount++;
+									currBlock = blockCount;
+								} else {
+									cout << "ERROR: blockCount not zero with bottom of stack while obtaining block information\n";
+									return -1;
+								}
+							} else {
+								MultiStack::stackElementType top = stack6.peek(opdetails.threadID);
+								currBlock = top.opID;
+							}
+							assert (currBlock > 0);
+							if (detector.opIDMap.find(opCount) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find opIDMap entry for op " << opCount << endl;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingDetails = detector.opIDMap.find(opCount)->second;
+								existingDetails.blockID = currBlock;
+								detector.opIDMap.erase(detector.opIDMap.find(opCount));
+								detector.opIDMap[opCount] = existingDetails;
+							}
+
+
+							MultiStack::stackElementType element;
+							element.opID = currBlock; // opID really stores the block ID in this case.
+							element.threadID = opdetails.threadID;
+							stack6.push(element);
+							cout << "Pushing op " << opCount << " in block " << currBlock << endl;
+
+							if (detector.blockIDMap.find(currBlock) == detector.blockIDMap.end()) {
+								cout << "ERROR: Cannot find entry for block " << currBlock << " in blockIDMap\n";
+								//return -1;
+								std::vector<long long> ops(1, opCount);
+								detector.blockIDMap[currBlock] = ops;
+							} else {
+								std::vector<long long> existingOps = detector.blockIDMap.find(currBlock)->second;
+								existingOps.push_back(opCount);
+								detector.blockIDMap.erase(detector.blockIDMap.find(currBlock));
+								detector.blockIDMap[currBlock] = existingOps;
+							}
+						}
+
 						break;
 					}
 				}
@@ -1454,10 +1581,14 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	}
 
 	// Initialize HB Graph
-	detector.initGraph(opCount);
+	detector.initGraph(opCount, blockCount);
 
 #ifdef TRACEDEBUG
 	cout << "No of ops: " << opCount << endl;
+	cout << "No of blocks: " << detector.blockIDMap.size() << endl;
+	cout << "No of tasks: " << detector.taskIDMap.size() << endl;
+	cout << "No of atomic tasks: " << detector.atomicTasks.size() << endl;
+	cout << "No of threads: " << detector.threadIDMap.size() << endl;
 	for (map<long long, UAFDetector::opDetails>::iterator it = detector.opIDMap.begin(); it != detector.opIDMap.end(); it++) {
 		cout << "Op: " << it->first << " - details: ";
 		it->second.printOpDetails();
@@ -1472,6 +1603,12 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 		cout << "Thread ID: " << it->first << " - details:";
 		it->second.printThreadDetails();
 		cout << endl;
+	}
+	for (map<long long, vector<long long> >::iterator it = detector.blockIDMap.begin(); it != detector.blockIDMap.end(); it++) {
+		cout << "Block ID: " << it->first << " - details\n";
+		for (vector<long long>::iterator itt = it->second.begin(); itt != it->second.end(); itt++) {
+			cout << *itt << " \n";
+		}
 	}
 	for (set<string>::iterator it = detector.atomicTasks.begin(); it != detector.atomicTasks.end(); it++) {
 		cout << "Atomic Task: " << *it << endl;
