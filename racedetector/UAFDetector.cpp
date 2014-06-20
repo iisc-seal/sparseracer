@@ -68,7 +68,6 @@ void UAFDetector::initGraph(long long countOfOps, long long countOfNodes) {
 	graph = HBGraph(countOfOps, countOfNodes);
 }
 
-#if 0
 int UAFDetector::addEdges(Logger &logger) {
 	assert (graph.totalNodes != 0);
 
@@ -78,6 +77,7 @@ int UAFDetector::addEdges(Logger &logger) {
 		return -1;
 	}
 
+#if 0
 	// TASK-PO
 	if (addTaskPOEdges() < 0) {
 		cout << "ERROR: While adding TASK-PO edges\n";
@@ -276,14 +276,13 @@ int UAFDetector::addEdges(Logger &logger) {
 			cout << "ERROR: Unknown return value from addTransSTOrMTEdges()\n";
 			return -1;
 		}
-#if 0
-#endif
 
 		if (!edgeAdded) // If no edges were added in this iteration, stop.
 			break;
 		else
 			edgeAdded = false;
 	}
+#endif
 
 #ifdef GRAPHDEBUGFULL
 	graph.printGraph(false);
@@ -304,13 +303,17 @@ int UAFDetector::addLoopPOEdges() {
 		// Start from threadinit. For each op1 \in {threadinit, ... enterloop} add edge(op1, all-ops-after-op1).
 		// First part of the rule - enterloop \notin {\alpha_1, ..., \alpha_i -1}
 
-		long long alpha_i = it->second.firstOpID;
-		long long alpha_j;
-		//long long threadID = opIDMap[alpha_i].threadID;
+		long long alpha_i, alpha_j;
+		long long firstop = it->second.firstOpID;
+		if (firstop <= 0) {
+			cout << "ERROR: Cannot find first op in thread\n";
+			continue;
+		}
+		long long firstblock = opIDMap[firstop].blockID;
 		long long threadID = it->first;
-		long long enterloopid = threadIDMap[threadID].enterloopOpID;
+		long long enterloopid = it->second.enterloopOpID;
 
-		if (enterloopid == -1) {
+		if (enterloopid <= 0) {
 			cout << "ERROR: Cannot find enterloop for thread " << threadID << endl;
 			continue;
 		}
@@ -399,6 +402,7 @@ int UAFDetector::addLoopPOEdges() {
 		return 0;
 }
 
+#if 0
 int UAFDetector::addTaskPOEdges() {
 	// Adding TASK-PO edges
 	// Start at each deq, add edge to each op in the current task. This is done by
@@ -1548,6 +1552,5 @@ void UAFDetector::printEdges() {
 		}
 	}
 }
-#endif
 #endif
 

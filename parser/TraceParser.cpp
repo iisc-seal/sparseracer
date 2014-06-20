@@ -1456,13 +1456,11 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							element.threadID = opdetails.threadID;
 							if (stack6.isBottom(stack6.peek(opdetails.threadID))) {
 								stack6.push(element);
-								cout << "Pushing op " << opCount << " in block " << blockCount << endl;
 							} else {
 								MultiStack::stackElementType top = stack6.peek(opdetails.threadID);
 								long long prevBlockID = top.opID;
 								while (!stack6.isBottom(top)) {
 									top = stack6.pop(opdetails.threadID);
-									cout << "Popping op in block " << top.opID << endl;
 								}
 								stack6.push(element);
 								if (detector.blockToNextBlockInThread.find(prevBlockID) == detector.blockToNextBlockInThread.end()) {
@@ -1501,7 +1499,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							element.opID = top.opID; // opID really stores the block ID in this case.
 							element.threadID = opdetails.threadID;
 							stack6.push(element);
-							cout << "Pushing op " << opCount << " in block " << top.opID << endl;
 
 							if (detector.blockIDMap.find(top.opID) == detector.blockIDMap.end()) {
 								cout << "ERROR: Cannot find entry for block " << top.opID << " in blockIDMap\n";
@@ -1544,7 +1541,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							element.opID = currBlock; // opID really stores the block ID in this case.
 							element.threadID = opdetails.threadID;
 							stack6.push(element);
-							cout << "Pushing op " << opCount << " in block " << currBlock << endl;
 
 							if (detector.blockIDMap.find(currBlock) == detector.blockIDMap.end()) {
 								cout << "ERROR: Cannot find entry for block " << currBlock << " in blockIDMap\n";

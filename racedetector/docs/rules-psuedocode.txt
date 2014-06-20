@@ -1,0 +1,39 @@
+This file lists the psuedo-code for each rule.
+
+
+1. LOOP-PO
+
+for each thread t in the trace:
+    # Add edge from ops/blocks before enterloop to all ops/blocks subsequent to
+    # them.
+    block-i = first block in t
+    block-enterloop = block containing enterloop of t
+    last-block-in-t = last block in thread t
+    for each block b in {block-i, ... block-enterloop}:
+        block-j = next block after b in t
+	for each block b' in {block-j, ... last-block-in-t}:
+	    add-block-edge(b, b')
+	    op-i = last op of b
+	    op-j = first op of b'
+	    add-op-edge(op-i, op-j)
+
+    # Add edge from ops/blocks after enterloop to all ops/blocks after exitloop
+    block-i = block after block-enterloop
+    block-exitloop = block containing exitloop of t
+    for each block b in {block-exitloop, ... last-block-in-t}:
+	block-j = block before b;
+	for each block b' in {block-i, ... block-j}:
+	    add-block-edge(b, b')
+	    op-i = last op of b
+	    op-j = first op of b'
+	    add-op-edge(op-i, op-j)
+
+
+2. TASK-PO
+
+for each task p in the trace:
+	# Add edge from op/block-1 to op/block-2 if op/block-1 is observed
+	# before op/block-2 in p
+	block-i = first block in p
+	block-last = last block in p
+	for each block b in {block-i, ... block-last}:

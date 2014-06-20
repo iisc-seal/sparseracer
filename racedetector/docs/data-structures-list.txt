@@ -1,0 +1,20 @@
+Sets
+====
+1. Set of all threads
+2. Set of all tasks
+
+Maps
+====
+1. threadID -->
+	first-block-in-thread
+	last-block-in-thread
+	block-with-enterloop
+	block-with-exitloop
+2. blockID -->
+	next-block-in-thread
+	prev-block-in-thread
+	first-op-in-block
+	last-op-in-block
+3. taskID -->
+	first-block-in-task
+	last-block-in-task
