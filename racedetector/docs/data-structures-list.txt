@@ -2,6 +2,7 @@ Sets
 ====
 1. Set of all threads
 2. Set of all tasks
+3. Set of all blocks
 
 Maps
 ====
@@ -10,11 +11,44 @@ Maps
 	last-block-in-thread
 	block-with-enterloop
 	block-with-exitloop
+	threadinit-op-id
+	threadexit-op-id
+	fork-op-id
+	join-op-id
 2. blockID -->
 	next-block-in-thread
 	prev-block-in-thread
+	next-block-in-task
 	first-op-in-block
 	last-op-in-block
+	thread-containing-block
+	set of all enqs in the block
 3. taskID -->
 	first-block-in-task
 	last-block-in-task
+	enq-op-id
+	deq-op-id
+	end-op-id
+	first-pause-op-id
+	last-resume-op-id
+	atomic-or-not-flag
+	parent-task-id
+4. opID -->
+	block-containing-op
+	task-containing-op
+	thread-containing-op
+	next-op-in-thread
+	next-op-in-task
+	next-op-in-block
+	prev-op-in-block
+	opType
+
+5. enq-opID -->
+	task-enqueued
+6. pause/resume/reset-opID -->
+	shared-variable
+
+Graph
+=====
+opMatrix, blockMatrix
+opList, blockList

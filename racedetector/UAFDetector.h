@@ -11,6 +11,7 @@
 #include <iostream>
 #include "HBGraph.h"
 
+#include <config.h>
 #include <debugconfig.h>
 #include <logging/Logger.h>
 using namespace std;
@@ -26,374 +27,245 @@ public:
 		cout << error << endl;
 	}
 
-	// Maps blockID to the vector of ops contained in the block.
-	map<long long, vector<long long> > blockIDMap;
-
 	// Stores threadID, taskID and opType of an operation.
 	class opDetails {
 	public:
-		long long threadID;
+		IDType threadID;
 		string taskID;
 		string opType;
-		long long blockID;
+		IDType blockID;
+
+		IDType nextOpInThread;
+		IDType nextOpInTask;
+		IDType nextOpInBlock;
+		IDType prevOpInBlock;
 
 		opDetails() {
 			threadID = -1;
 			taskID = "";
 			opType = "";
 			blockID = -1;
+			nextOpInThread = -1;
+			nextOpInTask = -1;
+			nextOpInBlock = -1;
+			prevOpInBlock = -1;
 		}
 
 		void printOpDetails() {
-			cout << "threadID " << threadID << " taskID " << taskID << " opType " << opType;
+			cout << "threadID " << threadID << " taskID " << taskID
+				 << " blockID " << blockID << " opType " << opType << endl;
+			cout << "next-op-in-thread " << nextOpInThread << " next-op-in-task "
+				 << nextOpInTask << " next-op-in-block " << nextOpInBlock;
 		}
 	};
 
 	// Maps operationID to its threadID, taskID and type.
-	map<long long, opDetails> opIDMap;
+	map<IDType, opDetails> opIDMap;
 
-	// Maps operation (as the string) to its ID.
-	map<string, long long> opStringToOpIDMap;
-
-	// Maps opID to next op's ID in the same task.
-	map<long long, long long> opToNextOpInTask;
-
-	// Maps opID to next op's ID in the same thread.
-	map<long long, long long> opToNextOpInThread;
-
-	// Maps blockID to next block's ID in the same thread.
-	map<long long, long long> blockToNextBlockInThread;
-
-	// Stores threadID, first pause operation's ID and last resume operation's ID
+	// Stores (1) enq, deq, first-pause, last-resume and end op IDs,
+	//		  (2) parent task ID, (3) flag denoting whether the task is atomic,
+	//		  (4) the first block and the last block IDs of a task.
 	class taskDetails {
 	public:
-		long long threadID;
-		long long firstPauseOpID;
-		long long lastResumeOpID;
-		// list<pair<long long, long long> > pauseResumepairs;
-
-		long long deqOpID;
-		long long endOpID;
-		long long enqOpID;
-		string callback;
+		IDType firstPauseOpID;
+		IDType lastResumeOpID;
+		IDType deqOpID;
+		IDType endOpID;
+		IDType enqOpID;
 
 		string parentTask; // ID of immediate parent task
+		bool atomic;
+
+		IDType firstBlockID; // ID of the first block in task
+		IDType lastBlockID;  // ID of the last block in task
 
 		taskDetails() {
-			threadID = -1;
 			firstPauseOpID = -1;
 			lastResumeOpID = -1;
-
 			deqOpID = -1;
 			endOpID = -1;
 			enqOpID = -1;
-			callback = "";
 
 			parentTask = "";
+			atomic = true;
+
+			firstBlockID = -1;
+			lastBlockID = -1;
 		}
 
 		void printTaskDetails() {
-			cout << "threadID " << threadID << " first-pause " << firstPauseOpID
+			cout << "first-pause " << firstPauseOpID
 				 << " last-resume " << lastResumeOpID << " deq " << deqOpID
-				 << " end " << endOpID << " enq " << enqOpID << " callback " << callback
-				 << " parent task " << parentTask;
+				 << " end " << endOpID << " enq " << enqOpID
+				 << " parent task " << parentTask << " atomic " << atomic
+				 << " first-block " << firstBlockID << " last-block " << lastBlockID;
 		}
 	};
 
-	// Maps task ID to its threadID, first pause and last resume.
+	// Maps task ID to its enq-op, deq-op, etc.
 	map<string, taskDetails> taskIDMap;
-
-	// Set of atomic tasks in the trace.
-	set<string> atomicTasks;
 
 	class threadDetails {
 	public:
-		long long firstOpID;
-		long long threadinitOpID;
-		long long enterloopOpID;
-		long long exitloopOpID;
-		long long threadexitOpID;
-		long long forkOpID; // op that forked this thread
-		long long joinOpID; // op that joined this thread
-		// list<string> lockOps;
+		IDType firstOpID;
+		IDType threadinitOpID;
+		IDType threadexitOpID;
+		IDType forkOpID; // op that forked this thread
+		IDType joinOpID; // op that joined this thread
+
+		IDType firstBlockID;
+		IDType lastBlockID;
+		IDType enterloopBlockID;
+		IDType exitloopBlockID;
 
 		threadDetails() {
 			firstOpID = -1;
 			threadinitOpID = -1;
-			enterloopOpID = -1;
-			exitloopOpID = -1;
 			threadexitOpID = -1;
 			forkOpID = -1;
 			joinOpID = -1;
+
+			firstBlockID = -1;
+			lastBlockID = -1;
+			enterloopBlockID = -1;
+			exitloopBlockID = -1;
 		}
 
 		void printThreadDetails() {
 			cout << " first-op " << firstOpID << " threadinit " << threadinitOpID << " threadexit " << threadexitOpID
-				 << " enterloop " << enterloopOpID << " exitloop " << exitloopOpID
+				 << " enterloop " << enterloopBlockID << " exitloop " << exitloopBlockID
+				 << " first-block " << firstBlockID << " last-block " << lastBlockID
 				 << " fork " << forkOpID << " join " << joinOpID;
 		}
 	};
 
-	map<long long, threadDetails> threadIDMap;
+	map<IDType, threadDetails> threadIDMap;
 
-	set<long long> threadinitSet;
-	set<long long> threadexitSet;
-	set<long long> enterloopSet;
-	set<long long> exitloopSet;
-	set<long long> deqSet;
-	set<long long> endSet;
-	set<long long> resumeSet;
-	set<long long> pauseSet;
-
-	// Class to store 4 arguments of an enq operation.
-	class enqOpDetails{
+	class blockDetails {
 	public:
-		long long currThreadID;
-		string taskEnqueued;
-		long long targetThreadID;
-		string callback;
+		IDType threadID;
+		string taskID;
 
-		enqOpDetails() {
-			currThreadID = -1;
-			taskEnqueued = "";
-			targetThreadID = -1;
-			callback = "";
+		IDType firstOpInBlock;
+		IDType lastOpInBlock;
+
+		IDType nextBlockInTask;
+		IDType nextBlockInThread;
+		IDType prevBlockInThread;
+
+		set<IDType> enqSet; // Set of enqs in the block
+
+		blockDetails() {
+			threadID = -1;
+			taskID = "";
+
+			firstOpInBlock = -1;
+			lastOpInBlock = -1;
+
+			nextBlockInTask = -1;
+			nextBlockInThread = -1;
+			prevBlockInThread = -1;
+
+			enqSet = set<IDType>();
+		}
+
+		void printBlockDetails() {
+			cout << "ThreadID " << threadID << " Task ID " << taskID
+				 << " First-op " << firstOpInBlock << " Last-op " << lastOpInBlock
+				 << " next-block-in-task " << nextBlockInTask
+				 << " next-block-in-thread " << nextBlockInThread
+				 << " prev-block-in-thread " << prevBlockInThread;
+
+			cout << "\nEnqs: ";
+			for (set<IDType>::iterator it = enqSet.begin(); it != enqSet.end(); it++) {
+				cout << *it << " ";
+			}
 		}
 	};
 
-	// Maps the op ID of an enq operation to its arguments.
-	map<long long, enqOpDetails> enqSet;
+	map<IDType, blockDetails> blockIDMap;
 
-	class forkAndJoinOpDetails {
-	public:
-		long long currThreadID;
-		long long targetThreadID;
-
-		forkAndJoinOpDetails() {
-			currThreadID = -1;
-			targetThreadID = -1;
-		}
-	};
-
-	// Maps the op ID of a fork operation to its arguments.
-	map<long long, forkAndJoinOpDetails> forkSet;
-
-	// maps the op ID of a join operation to its arguments.
-	map<long long, forkAndJoinOpDetails> joinSet;
-
-#ifdef LOCKS
-	class acquireAndReleaseOpDetails {
-	public:
-		long long currThreadID;
-		string lockID;
-
-		acquireAndReleaseOpDetails() {
-			currThreadID = -1;
-			lockID = "";
-		}
-	};
-
-	// maps the op ID of an acquire operation to its arguments.
-	map<long long, acquireAndReleaseOpDetails> acquireSet;
-
-	// maps the op ID of a release operation to its arguments.
-	map<long long, acquireAndReleaseOpDetails> releaseSet;
-
-	// maps the op ID of an entermonitor operation to its arguments.
-	map<long long, acquireAndReleaseOpDetails> entermonitorSet;
-
-	// maps the op ID of an exitmonitor operation to its arguments.
-	map<long long, acquireAndReleaseOpDetails> exitmonitorSet;
-
-	map<long long, acquireAndReleaseOpDetails> waitSet;
-	map<long long, acquireAndReleaseOpDetails> notifySet;
-	map<long long, acquireAndReleaseOpDetails> notifyAllSet;
-
-	class lockDetails {
-	public:
-		set<long long> acquireOps;
-		set<long long> releaseOps;
-		set<long long> entermonitorOps;
-		set<long long> exitmonitorOps;
-		set<long long> waitOps;
-		set<long long> notifyOps;
-		set<long long> notifyAllOps;
-
-		lockDetails() {
-			acquireOps = set<long long>();
-			releaseOps = set<long long>();
-			entermonitorOps = set<long long>();
-			exitmonitorOps = set<long long>();
-			waitOps = set<long long>();
-			notifyOps = set<long long>();
-			notifyAllOps = set<long long>();
-		}
-
-		void printDetails() {
-			cout << "acquire ops: ";
-			for (set<long long>::iterator it = acquireOps.begin(); it != acquireOps.end(); it++)
-				cout << *it << " ";
-			cout << "\nrelease ops: ";
-			for (set<long long>::iterator it = releaseOps.begin(); it != releaseOps.end(); it++)
-				cout << *it << " ";
-			cout << "\nentermonitor ops: ";
-			for (set<long long>::iterator it = entermonitorOps.begin(); it != entermonitorOps.end(); it++)
-				cout << *it << " ";
-			cout << "\nexitmonitor ops: ";
-			for (set<long long>::iterator it = exitmonitorOps.begin(); it != exitmonitorOps.end(); it++)
-				cout << *it << " ";
-			cout << "\nwait ops: ";
-			for (set<long long>::iterator it = waitOps.begin(); it != waitOps.end(); it++)
-				cout << *it << " ";
-			cout << "\nnotify ops: ";
-			for (set<long long>::iterator it = notifyOps.begin(); it != notifyOps.end(); it++)
-				cout << *it << " ";
-			cout << "\nnotifyAll ops: ";
-			for (set<long long>::iterator it = notifyAllOps.begin(); it != notifyAllOps.end(); it++)
-				cout << *it << " ";
-		}
-	};
-
-	map<string, lockDetails> lockIDMap;
-#endif
+	// Maps the op ID of an enq operation to the task that is being enqueued.
+	map<IDType, string> enqToTaskEnqueued;
 
 	class memoryOpDetails {
 	public:
-		long long threadID;
 		string startingAddress;
-		long long range;
+		IDType range;
 
 		memoryOpDetails() {
-			threadID = -1;
 			startingAddress = "";
 			range = -1;
 		}
 	};
 
-	// maps the op ID of a memory operation to its arguments.
-	map<long long, memoryOpDetails> allocSet;
-	map<long long, memoryOpDetails> freeSet;
-#ifdef ACCESS
-	map<long long, memoryOpDetails> accessSet;
-#else
-	map<long long, memoryOpDetails> readSet;
-	map<long long, memoryOpDetails> writeSet;
-#endif
-	map<long long, memoryOpDetails> incSet;
-	map<long long, memoryOpDetails> decSet;
+	// maps the op ID of a memory operation to the starting address and range of memory block involved.
+	map<IDType, memoryOpDetails> allocSet;
+	map<IDType, memoryOpDetails> freeSet;
+	map<IDType, memoryOpDetails> readSet;
+	map<IDType, memoryOpDetails> writeSet;
 
 	class allocOpDetails {
 	public:
-#ifdef ACCESS
-		set<long long> accessOps;
-#else
-		set<long long> readOps;
-		set<long long> writeOps;
-#endif
-		set<long long> freeOps;
-		set<long long> incOps;
-		set<long long> decOps;
+		set<IDType> readOps;
+		set<IDType> writeOps;
+		set<IDType> freeOps;
 
 		allocOpDetails() {
-#ifdef ACCESS
-			accessOps = set<long long>();
-#else
-			readOps = set<long long>();
-			writeOps = set<long long>();
-#endif
-			freeOps = set<long long>();
-			incOps = set<long long>();
-			decOps = set<long long>();
+			readOps = set<IDType>();
+			writeOps = set<IDType>();
+			freeOps = set<IDType>();
 		}
 
 		void printDetails() {
-#ifdef ACCESS
-			cout << " access ops: ";
-			for (set<long long>::iterator it = accessOps.begin(); it != accessOps.end(); it++)
-				cout << *it << " ";
-#else
 			cout << " read ops: ";
-			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
+			for (set<IDType>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
 			cout << "\n write ops: ";
-			for (set<long long>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
+			for (set<IDType>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
 				cout << *it << " ";
-#endif
 			cout << "\n free ops: ";
-			for (set<long long>::iterator it = freeOps.begin(); it != freeOps.end(); it++)
-				cout << *it << " ";
-			cout << "\n inc ops: ";
-			for (set<long long>::iterator it = incOps.begin(); it != incOps.end(); it++)
-				cout << *it << " ";
-			cout << "\n dec ops: ";
-			for (set<long long>::iterator it = decOps.begin(); it != decOps.end(); it++)
+			for (set<IDType>::iterator it = freeOps.begin(); it != freeOps.end(); it++)
 				cout << *it << " ";
 		}
 	};
 
-	map<long long, allocOpDetails> allocIDMap;
+	map<IDType, allocOpDetails> allocIDMap;
 
 	class freeOpDetails {
 	public:
-		long long allocOpID;
-#ifdef ACCESS
-		set<long long> accessOps;
-#else
-		set<long long> readOps;
-		set<long long> writeOps;
-#endif
-		set<long long> incOps;
-		set<long long> decOps;
+		IDType allocOpID;
+		set<IDType> readOps;
+		set<IDType> writeOps;
 
 		freeOpDetails() {
 			allocOpID = -1;
-#ifdef ACCESS
-			accessOps = set<long long>();
-#else
-			readOps = set<long long>();
-			writeOps = set<long long>();
-#endif
-			incOps = set<long long>();
-			decOps = set<long long>();
+			readOps = set<IDType>();
+			writeOps = set<IDType>();
 		}
 
 		void printDetails() {
 			cout << "alloc op: " << allocOpID << endl;
-#ifdef ACCESS
-			cout << " access ops: ";
-			for (set<long long>::iterator it = accessOps.begin(); it != accessOps.end(); it++)
-				cout << *it << " ";
-#else
 			cout << " read ops: ";
-			for (set<long long>::iterator it = readOps.begin(); it != readOps.end(); it++)
+			for (set<IDType>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
 			cout << "\n write ops: ";
-			for (set<long long>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
-				cout << *it << " ";
-#endif
-			cout << "\n inc ops: ";
-			for (set<long long>::iterator it = incOps.begin(); it != incOps.end(); it++)
-				cout << *it << " ";
-			cout << "\n dec ops: ";
-			for (set<long long>::iterator it = decOps.begin(); it != decOps.end(); it++)
+			for (set<IDType>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
 				cout << *it << " ";
 		}
 	};
 
-	map<long long, freeOpDetails> freeIDMap;
+	map<IDType, freeOpDetails> freeIDMap;
 
 	HBGraph graph;
 
-	void initGraph(long long countOfOps, long long countOfNodes);
+	void initGraph(IDType countOfOps, IDType countOfNodes);
 
 	int addEdges(Logger &logger);
 
-//	int findUAFusingAlloc(Logger &logger);
 	int findUAFwithoutAlloc(Logger &logger);
 
-#ifndef ACCESS
 	int findDataRaces(Logger &logger);
-#endif
 
 #ifdef GRAPHDEBUG
 	void printEdges();
@@ -406,9 +278,6 @@ private:
 	int addEnqueueSTorMTEdges();
 	int addForkEdges();
 	int addJoinEdges();
-#ifdef LOCKS
-	int addLockEdges();
-#endif
 	int addCallbackSTEdges();
 	int addFifoAtomicEdges();
 	int addNoPreEdges();

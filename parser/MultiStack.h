@@ -8,6 +8,8 @@
 #include <list>
 #include <string>
 
+#include <config.h>
+
 using namespace std;
 
 #ifndef MULTISTACK_H_
@@ -20,8 +22,9 @@ public:
 
 	struct stackElementType {
 		string opType;
-		long long opID;
-		long long threadID;
+		IDType opID;
+		IDType blockID;
+		IDType threadID;
 		string taskID;
 	};
 
@@ -29,13 +32,13 @@ public:
 	void push(stackElementType element);
 
 	// peek the top most element of thread t
-	stackElementType peek(long long t);
+	stackElementType peek(IDType t);
 
 	// pop top most element of thread t
-	stackElementType pop(long long t);
+	stackElementType pop(IDType t);
 
 	// pop top most element of thread t and task tt
-	stackElementType pop(long long t, string tt);
+	stackElementType pop(IDType t, string tt);
 
 	bool isBottom(stackElementType element);
 

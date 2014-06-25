@@ -1,8 +1,37 @@
 This file lists the psuedo-code for each rule.
 
+Function addEdge(op-i, op-j)
+    i = next op in block after op-i
+    while (i <= last-op-of-block-containing-op-i)
+	j = first-op-of-block-containing-op-j
+	while (j < op-j)
+	    if (there exists edge(i,j))
+		# Required edge already implied transitively
+		return 0
 
-1. LOOP-PO
+    add-block-edge(block(op-i), block(op-j))
+    add-op-edge(op-i, op-j)
+    return 1
 
+Function opEdgeExists(op-i, op-j)
+    if (opGraph[op-i][op-j] == true)
+	return true
+    if (blockGraph[block(op-i)][block(op-j)] == false)
+	return false
+    if (blockGraph[block(op-i)][block(op-j)] == true)
+	i = last-op-of-block(op-i)
+	while (i >= op-i)
+	    j = first-op-of-block(op-j)
+	    while (j <= op-j)
+		if (opGraph[i][j] == true)
+		    return true
+		j = next-op-in-block(op-j)
+	    i = prev-op-in-block(op-i)
+
+
+1. LOOP-PO/FORK/JOIN
+
+#LOOP-PO
 for each thread t in the trace:
     # Add edge from ops/blocks before enterloop to all ops/blocks subsequent to
     # them.
@@ -18,7 +47,7 @@ for each thread t in the trace:
 	    add-op-edge(op-i, op-j)
 
     # Add edge from ops/blocks after enterloop to all ops/blocks after exitloop
-    block-i = block after block-enterloop
+    block-i = block after block-enterloop in t
     block-exitloop = block containing exitloop of t
     for each block b in {block-exitloop, ... last-block-in-t}:
 	block-j = block before b;
@@ -29,11 +58,137 @@ for each thread t in the trace:
 	    add-op-edge(op-i, op-j)
 
 
-2. TASK-PO
+    #FORK
+    i = fork-op-of-t
+    j = threadinit-op-of-t
+    if (edgeExists(i, j) == false)
+    	addEdge(i,j)
 
+    #JOIN
+    i = threadexit-op-of-t
+    j = join-op-of-t
+    if (edgeExists(i, j) == false)
+    	addEdge(i,j)
+
+
+2. TASK-PO/ENQUEUE-ST
+
+#TASK-PO
 for each task p in the trace:
-	# Add edge from op/block-1 to op/block-2 if op/block-1 is observed
-	# before op/block-2 in p
-	block-i = first block in p
-	block-last = last block in p
+    # Add edge from op/block-1 to op/block-2 if op/block-1 is observed
+    # before op/block-2 in p
+    block-i = first block in p
+    block-last = last block in p
 	for each block b in {block-i, ... block-last}:
+	    block-next = next block after b in p
+	    for each block b' in {block-next, ... block-last}:
+		add-block-edge(b, b')
+		op-i = last op of b
+		op-j = first op of b'
+		add-op-edge(op-i, op-j)
+
+    #ENQUEUE-ST
+    enq-op = op that enqueues p
+    deq-op = op that dequeues p
+
+    if (edgeExists(enq-op, deq-op) == false)
+    	addEdge(enq-op, deq-op)
+
+
+    #CALLBACK-ST
+    i = end-op-of-p
+    j = next op of i in thread
+    if (j is resume op in the same thread as i)
+	if (edgeExists(i, j) == false)
+	    addEdge(i,j)
+
+
+3. TRANS-ST/MT
+
+# Originally, we add transitive edge i to j if there exists edge(i,k) and
+# edge(k,j) and ((thread(i) = thread(k) = thread(j)) || (thread(i) != thread(j)))
+
+for each block b in the trace:
+    for each block b' such that there exists edge(b,b'):
+	for each block b'' such that there exists edge(b',b''):
+	    if (!((thread(b) == thread(b') == thread(b'')) || (thread(b) !=
+thread(b''))))
+		continue
+	    if (there exists edge(last-op-of-b, first-op-of-b''))
+		continue
+
+	    i = last-op-of-b
+	    while (i >= first-op-of-b)
+		set-k = {op in b': there exists edge(i, op)}
+		j = -1;
+		for each op in set-k:
+		    for each op' in b'' such that there exists edge(op, op'):
+			if (j == -1)
+			    j = op'
+			else if (op' < j)
+			    j = op'
+		add-block-edge(b,b'')
+		add-op-edge(i,j)
+		if (i == last-op-of-b and j == first-op-of-b'')
+		    break
+		i = prev op of b
+
+Combine 4 and 5
+4. FIFO-ATOMIC/NOPRE
+
+#FIFO-ATOMIC
+for each atomic task p:
+    enq-op-p = enq op of p
+    enq-block-p = enq block of p
+    op-i = end op of p
+    for each block b such that there exists edge(enq-block-p, b):
+	for each enq e in b:
+	    if (opEdgeExists(enq-op-b, e) == true)
+		op-j = deq op of task enqueued in e
+		if (opEdgeExists(op-i, op-j) == false)
+		    addEdge(op-i,op-j)
+
+    #NOPRE
+    i = deq op of p
+    while (i <= op-i)
+        for each block b such that there exists edge(block(i), b):
+	    for each enq e in b:
+	        if (opEdgeExists(i, e) == true)
+		    op-j = deq op of task enqueued in e
+		    if (opEdgeExists(op-i, op-j) == false)
+		        addEdge(op-i,op-j)
+	i = next op after i in task
+
+5. FIFO-NESTED/NOPRE-PREFIX
+
+#FIFO-NESTED
+for each task p that is not atomic:
+    op-i = first pause op of p
+    enq-op-p = enq op of p
+    enq-block-p = enq block of p
+    for each block b such that there exists edge(enq-block-p, b):
+	for each enq e in b:
+	    if (opEdgeExists(enq-op-b, e) == true)
+		op-j = deq op of task enqueued in e
+		if (opEdgeExists(op-i, op-j) == false)
+		    addEdge(op-i,op-j)
+
+    #NOPRE-PREFIX
+    i = deq op of p
+    while (i <= op-i)
+	for each block b such that there exists edge(block(i), b):
+	    for each enq e in b:
+		if (opEdgeExists(i,e) == true)
+		    op-j = deq op of task enqueued in e
+		    if (opEdgeExists(op-i,op-j) == false)
+			addEdge(op-i,op-j)
+	i = next op after i in task
+
+6. FIFO-CALLBACK/NOPRE-SUFFIX
+
+#FIFO-CALLBACK
+for each task p:
+    parent-task-p = parent task of p
+    enq-parent = enq op of parent-task-p
+    for each block b such that there exists edge(block(enq-parent),b):
+	

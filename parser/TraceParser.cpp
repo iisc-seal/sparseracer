@@ -51,15 +51,20 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 			  " *(enterloop) *\\( *("  + intRegEx + ") *\\) *" + "|" +
 			  " *(exitloop) *\\( *("   + intRegEx + ") *\\) *" + "|" +
 			  " *(enq) *\\( *("        + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
-			  	  	  	  	  	  	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  	  	  	  	  	  	   + intRegEx + ") *\\) *" + "|" +
 			  " *(deq) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(end) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(pause) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(resume) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(pause) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
+			  " *(resume) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
+			  " *(reset) *\\( *("	   + intRegEx + ") *, *("      + hexRegEx + ") *, *("
+			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
 			  " *(acquire) *\\( *("    + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(release) *\\( *("    + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(entermonitor) *\\( *("    + intRegEx + ") *, *(" + hexRegEx + ") *\\) *" + "|" +
 #ifdef HACKS
+			  // A 3rd argument to entermonitor and exitmonitor
 			  " *(entermonitor) *\\( *("    + intRegEx + ") *, *(" + hexRegEx +
 			  	  	  	  	  	  	  	  	 	 	   + ") *, *(" + intRegEx + ") *\\) *" + "|" +
 			  " *(exitmonitor) *\\( *("    + intRegEx + ") *, *(" + hexRegEx +
@@ -124,7 +129,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 		if (!boost::regex_match(line.c_str(), matches, reg)) {
 			cout << "ERROR: Line in trace file is not valid\n";
 			cout << line << endl;
+			return -1;
 		}
+#if 0
 		else {
 			opCount++;
 			cout << opCount << " " << line << endl;
@@ -138,7 +145,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 			// matches[1] is the complete operation (without prefix or suffix), for e.g., threadinit(0)
 			// Map operation string to opID.
 			string OpString(matches[1].first, matches[1].second);
-			detector.opStringToOpIDMap[OpString] = opCount;
 
 			for (unsigned i=2; i < matches.size(); i++) {
 				string match(matches[i].first, matches[i].second);
@@ -1560,7 +1566,10 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 				}
 			}
 		}
+#endif
 	}
+
+#if 0
 	cout << "Finished parsing the file\n";
 
 	// If the first pause and last resume ops are not set for a task, add it to set of atomic tasks.
@@ -1752,6 +1761,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 		it->second.printDetails();
 		cout << endl;
 	}
+#endif
 #endif
 
 	return 0;

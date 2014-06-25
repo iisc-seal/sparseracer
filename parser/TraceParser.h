@@ -8,6 +8,9 @@
 #include <fstream>
 #include <racedetector/UAFDetector.h>
 #include <logging/Logger.h>
+
+#include <config.h>
+
 using namespace std;
 
 #ifndef TRACEPARSER_H_

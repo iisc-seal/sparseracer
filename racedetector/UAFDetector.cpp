@@ -16,45 +16,16 @@ using namespace std;
 #define NILCallback "0x0"
 
 UAFDetector::UAFDetector()
-	: blockIDMap(),
+	:
 	  opIDMap(),
-	  opStringToOpIDMap(),
-	  opToNextOpInTask(),
-	  opToNextOpInThread(),
 	  taskIDMap(),
-	  atomicTasks(),
 	  threadIDMap(),
-	  threadinitSet(),
-	  threadexitSet(),
-	  enterloopSet(),
-	  exitloopSet(),
-	  deqSet(),
-	  endSet(),
-	  resumeSet(),
-	  pauseSet(),
-	  enqSet(),
-	  forkSet(),
-	  joinSet(),
-#ifdef LOCKS
-	  acquireSet(),
-	  releaseSet(),
-	  entermonitorSet(),
-	  exitmonitorSet(),
-	  waitSet(),
-	  notifySet(),
-	  notifyAllSet(),
-	  lockIDMap(),
-#endif
+	  blockIDMap(),
+	  enqToTaskEnqueued(),
 	  allocSet(),
 	  freeSet(),
-#ifdef ACCESS
-	  accessSet(),
-#else
 	  readSet(),
 	  writeSet(),
-#endif
-	  incSet(),
-	  decSet(),
 	  allocIDMap(),
 	  freeIDMap()
 {
@@ -64,20 +35,20 @@ UAFDetector::UAFDetector()
 UAFDetector::~UAFDetector() {
 }
 
-void UAFDetector::initGraph(long long countOfOps, long long countOfNodes) {
+void UAFDetector::initGraph(IDType countOfOps, IDType countOfNodes) {
 	graph = HBGraph(countOfOps, countOfNodes);
 }
 
 int UAFDetector::addEdges(Logger &logger) {
 	assert (graph.totalNodes != 0);
 
+#if 0
 	// LOOP-PO
 	if (addLoopPOEdges() < 0) {
 		cout << "ERROR: While adding LOOP-PO edges\n";
 		return -1;
 	}
 
-#if 0
 	// TASK-PO
 	if (addTaskPOEdges() < 0) {
 		cout << "ERROR: While adding TASK-PO edges\n";
@@ -292,6 +263,7 @@ int UAFDetector::addEdges(Logger &logger) {
 	return 0;
 }
 
+#if 0
 int UAFDetector::addLoopPOEdges() {
 	// Adding LOOP-PO edges
 
@@ -402,7 +374,6 @@ int UAFDetector::addLoopPOEdges() {
 		return 0;
 }
 
-#if 0
 int UAFDetector::addTaskPOEdges() {
 	// Adding TASK-PO edges
 	// Start at each deq, add edge to each op in the current task. This is done by
@@ -1552,5 +1523,6 @@ void UAFDetector::printEdges() {
 		}
 	}
 }
+#endif
 #endif
 

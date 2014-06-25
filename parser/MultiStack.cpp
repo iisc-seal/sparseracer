@@ -11,6 +11,7 @@ MultiStack::MultiStack() {
 	bottom.opID = -1;
 	bottom.opType = "";
 	bottom.taskID = "";
+	bottom.blockID = -1;
 	bottom.threadID = -1;
 
 	stack.push_back(bottom);
@@ -23,7 +24,7 @@ void MultiStack::push(stackElementType element) {
 	stack.push_back(element);
 }
 
-MultiStack::stackElementType MultiStack::peek(long long thread) {
+MultiStack::stackElementType MultiStack::peek(IDType thread) {
 	for (list<stackElementType>::iterator it = stack.end(); it != stack.begin(); it--) {
 		if (it->threadID == thread)
 			return *it;
@@ -31,7 +32,7 @@ MultiStack::stackElementType MultiStack::peek(long long thread) {
 	return bottom;
 }
 
-MultiStack::stackElementType MultiStack::pop(long long thread) {
+MultiStack::stackElementType MultiStack::pop(IDType thread) {
 	for (list<stackElementType>::iterator it = stack.end(); it != stack.begin(); it--) {
 		if (it->threadID == thread) {
 			stackElementType temp = *it;
@@ -42,7 +43,7 @@ MultiStack::stackElementType MultiStack::pop(long long thread) {
 	return bottom;
 }
 
-MultiStack::stackElementType MultiStack::pop(long long thread, string task) {
+MultiStack::stackElementType MultiStack::pop(IDType thread, string task) {
 	for (list<stackElementType>::iterator it = stack.end(); it != stack.begin(); it--) {
 		if (it->threadID == thread && (it->taskID).compare(task) == 0) {
 			stackElementType temp = *it;

@@ -13,9 +13,10 @@
 
 HBGraph::HBGraph(){
 	totalNodes = 0;
+	totalOps = 0;
 }
 
-HBGraph::HBGraph(long long countOfOps, long long countOfNodes) {
+HBGraph::HBGraph(IDType countOfOps, IDType countOfNodes) {
 	totalOps = countOfOps;
 	totalNodes = countOfNodes;
 

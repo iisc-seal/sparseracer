@@ -11,6 +11,8 @@
 #include <stddef.h>
 #include <cassert>
 
+#include <config.h>
+
 using namespace std;
 
 #ifndef HBGRAPH_H_
@@ -41,7 +43,7 @@ private:
 
 public:
 	HBGraph();
-	HBGraph(long long countOfOps, long long countOfNodes);
+	HBGraph(IDType countOfOps, IDType countOfNodes);
 	virtual ~HBGraph();
 
 	long long totalNodes;
