@@ -104,9 +104,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	MultiStack stack5;  // get first op of each thread
 	MultiStack stack6;	// keeps track of last op in each block
 
-	MultiStack stackForThreadOrder;
+	MultiStack stackForThreadAndBlockOrder;
 	MultiStack stackForTaskOrder;
-	MultiStack stackForBlockOrder;
+//	MultiStack stackForBlockOrder;
 	MultiStack stackForNestingOrder;
 
 	while (getline(traceFile, line)) {
@@ -166,11 +166,13 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						blockCount++;
 						opdetails.blockID = blockCount;
 
+#ifdef SANITYCHECK
 						// Sanity check: stack should be empty for threadID
-						assert(stackForThreadOrder.isEmpty(threadID));
+						assert(stackForThreadAndBlockOrder.isEmpty(threadID));
 						assert(stackForTaskOrder.isEmpty(threadID));
-						assert(stackForBlockOrder.isEmpty(threadID));
+//						assert(stackForBlockOrder.isEmpty(threadID));
 						assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 						// Obtain details of current thread
 						threaddetails.firstOpID = opCount;
@@ -198,19 +200,21 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 
 						// Populate blockID of stack entry
 						stackElement.blockID = blockCount;
-						stackForThreadOrder.push(stackElement);
-						stackForBlockOrder.push(stackElement);
+						stackForThreadAndBlockOrder.push(stackElement);
+//						stackForBlockOrder.push(stackElement);
 
 					} else if (match.compare("threadexit") == 0) {
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for threadexit " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 							// This means this is the first op in the thread (and the first block)
 							blockCount++;
@@ -244,31 +248,33 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								return -1;
 							}
 							stackElement.blockID = blockCount;
-							stackForBlockOrder.push(stackElement);
+//							stackForBlockOrder.push(stackElement);
 
 							// Pop all operations on threadID. Not required since threadexit is the first op in thread
 							//stackForThreadOrder.pop(threadID);
 
 						} else {
-							MultiStack::stackElementType top = stackForThreadOrder.peek(threadID);
-							opdetails.blockID = top.blockID;
-							opdetails.prevOpInBlock = top.opID;
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
 
 							// Set current op as next-op for the stack top
-							if (detector.opIDMap.find(top.opID) == detector.opIDMap.end()) {
-								cout << "ERROR: Cannot find entry for " << top.opID << " in opIDMap\n";
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for " << previousOpInThread.opID << " in opIDMap\n";
 								return -1;
 							} else {
-								UAFDetector::opDetails existingEntry = detector.opIDMap[top.opID];
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
 
+#ifdef SANITYCHECK
 								// Sanity check: prev op has same threadID in stack and opIDMap
-								assert(top.threadID == threadID);
+								assert(previousOpInThread.threadID == threadID);
 								assert(existingEntry.threadID == threadID);
+#endif
 
 								existingEntry.nextOpInBlock = opCount;
 								existingEntry.nextOpInThread = opCount;
-								detector.opIDMap.erase(detector.opIDMap.find(top.opID));
-								detector.opIDMap[top.opID] = existingEntry;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
 
 							// Update threadexit-opID and lastblock-ID for the current thread
@@ -278,38 +284,40 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							} else {
 								UAFDetector::threadDetails existingEntry = detector.threadIDMap[threadID];
 								existingEntry.threadexitOpID = opCount;
-								existingEntry.lastBlockID = top.blockID;
+								existingEntry.lastBlockID = previousOpInThread.blockID;
 								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
 								detector.threadIDMap[threadID] = existingEntry;
 							}
 
 							// Update lastOpInBlock for current block
-							if (detector.blockIDMap.find(top.blockID) == detector.blockIDMap.end()) {
-								cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+							if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+								cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 								return -1;
 							} else {
-								UAFDetector::blockDetails existingEntry = detector.blockIDMap[top.blockID];
+								UAFDetector::blockDetails existingEntry = detector.blockIDMap[previousOpInThread.blockID];
 
 								// Sanity check: prev op has same threadID as current op in blockIDMap
 								assert(existingEntry.threadID == threadID);
 
 								existingEntry.lastOpInBlock = opCount;
-								detector.blockIDMap.erase(detector.blockIDMap.find(top.blockID));
-								detector.blockIDMap[top.blockID] = existingEntry;
+								detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+								detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
 							}
 
-							stackElement.blockID = top.blockID;
+							stackElement.blockID = previousOpInThread.blockID;
 						}
 					} else if (match.compare("enterloop") == 0) {
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for enterloop " << opCount
 								 << " on stack\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 							// This means this is the first op in the thread
 							blockCount++;
@@ -344,25 +352,27 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackElement.blockID = blockCount;
 
 						} else {
-							MultiStack::stackElementType top = stack.peek(threadID);
-							opdetails.blockID = top.blockID;
-							opdetails.prevOpInBlock = top.opID;
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
 
 							// Set current op as next-op for the stack top
-							if (detector.opIDMap.find(top.opID) == detector.opIDMap.end()) {
-								cout << "ERROR: Cannot find entry for " << top.opID << " in opIDMap\n";
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for " << previousOpInThread.opID << " in opIDMap\n";
 								return -1;
 							} else {
-								UAFDetector::opDetails existingEntry = detector.opIDMap[top.opID];
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
 
+#ifdef SANITYCHECK
 								// Sanity check: prev-op has same threadID as current op in stack and opIDMap
-								assert(top.threadID == threadID);
+								assert(previousOpInThread.threadID == threadID);
 								assert(existingEntry.threadID == threadID);
+#endif
 
 								existingEntry.nextOpInBlock = opCount;
 								existingEntry.nextOpInThread = opCount;
-								detector.opIDMap.erase(detector.opIDMap.find(top.opID));
-								detector.opIDMap[top.opID] = existingEntry;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
 
 							// Set enterloopBlockID for the current thread
@@ -371,38 +381,42 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								return -1;
 							} else {
 								UAFDetector::threadDetails existingEntry = detector.threadIDMap[threadID];
-								existingEntry.enterloopBlockID = top.blockID;
+								existingEntry.enterloopBlockID = previousOpInThread.blockID;
 								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
 								detector.threadIDMap[threadID] = existingEntry;
 							}
 
-							if (detector.blockIDMap.find(top.blockID) == detector.threadIDMap.end()) {
-								cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+							if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.threadIDMap.end()) {
+								cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 								return -1;
 							} else {
-								UAFDetector::blockDetails existingEntry = detector.blockIDMap[top.blockID];
+								UAFDetector::blockDetails existingEntry = detector.blockIDMap[previousOpInThread.blockID];
 
+#ifdef SANITYCHECK
 								// Sanity check: block(top op) has same threadID as current op
 								assert(existingEntry.threadID == threadID);
+#endif
 
 								// enterloop is the end of a block
 								existingEntry.lastOpInBlock = opCount;
-								detector.blockIDMap.erase(detector.blockIDMap.find(top.blockID));
-								detector.blockIDMap[top.blockID] = existingEntry;
+								detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+								detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
 							}
 
-							stackElement.blockID = top.blockID;
+							stackElement.blockID = previousOpInThread.blockID;
 						}
 					} else if (match.compare("exitloop") == 0) {
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for exitloop " << opCount
 								 << " on stack\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 							// This means this is the first op in the thread
 							blockCount++;
@@ -435,27 +449,30 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackElement.blockID = blockCount;
 
 						} else {
-							MultiStack::stackElementType top = stack.peek(threadID);
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
 
 							// exitloop is the beginning of a block
 							blockCount++;
 							opdetails.blockID = blockCount;
 
 							// Set current op as next-op for stack top
-							if (detector.opIDMap.find(top.opID) == detector.opIDMap.end()) {
-								cout << "ERROR: Cannot find entry for op " << top.opID << " in opIDMap\n";
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
 								return -1;
 							} else {
-								UAFDetector::opDetails existingEntry = detector.opIDMap[top.opID];
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
 
+#ifdef SANITYCHECK
 								// Sanity check: prev-op has same thread as current op in stack and opIDMap
-								assert(top.threadID == threadID);
+								assert(previousOpInThread.threadID == threadID);
 								assert(existingEntry.threadID == threadID);
 								assert(existingEntry.blockID != blockCount);
+								assert(previousOpInThread.blockID != blockCount);
+#endif
 
 								existingEntry.nextOpInThread = opCount;
-								detector.opIDMap.erase(detector.opIDMap.find(top.opID));
-								detector.opIDMap[top.opID] = existingEntry;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
 
 							// Set exitloopblock for current thread
@@ -474,20 +491,22 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								blockdetails.firstOpInBlock = opCount;
 
 								// Get block entry for prev op (i.e. stack top)
-								if (detector.blockIDMap.find(top.blockID) == detector.blockIDMap.end()) {
-									cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+								if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+									cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 									return -1;
 								} else {
-									UAFDetector::blockDetails existingEntry = detector.blockIDMap[top.blockID];
+									UAFDetector::blockDetails existingEntry = detector.blockIDMap[previousOpInThread.blockID];
 
+#ifdef SANITYCHECK
 									// Sanity check: block(top-op) has same threadID as current op
 									assert(existingEntry.threadID == threadID);
+#endif
 
-									existingEntry.lastOpInBlock = top.opID;
+									existingEntry.lastOpInBlock = previousOpInThread.opID;
 									existingEntry.nextBlockInThread = blockCount;
-									blockdetails.prevBlockInThread = top.blockID;
-									detector.blockIDMap.erase(detector.blockIDMap.find(top.blockID));
-									detector.blockIDMap[top.blockID] = existingEntry;
+									blockdetails.prevBlockInThread = previousOpInThread.blockID;
+									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+									detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
 								}
 								detector.blockIDMap[blockCount] = blockdetails;
 							} else {
@@ -502,14 +521,16 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						}
 					} else if (match.compare("enq") == 0) {
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for enq " << opCount
 								 << " on stack\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 							// This means this is the first op in the thread
 							blockCount++;
@@ -543,50 +564,56 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackElement.blockID = blockCount;
 
 						} else {
-							MultiStack::stackElementType top = stack.peek(threadID);
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of an enq operation, the previous op in the thread is in the same task as enq.
+							// So no need to look separately in the task stack for this.
 
-							opdetails.blockID = top.blockID;
-							opdetails.taskID = top.taskID;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.taskID = previousOpInThread.taskID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
 
 							// Set current op as next-op for stack top
-							if (detector.opIDMap.find(top.opID) == detector.opIDMap.end()) {
-								cout << "ERROR: Cannot find entry for op " << top.opID << " in opIDMap\n";
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
 								return -1;
 							} else {
-								UAFDetector::opDetails existingEntry = detector.opIDMap[top.opID];
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
 
+#ifdef SANITYCHECK
 								// Sanity check: prev-op has same thread as current op in stack and opIDMap
-								assert(top.threadID == threadID);
+								assert(previousOpInThread.threadID == threadID);
 								assert(existingEntry.threadID == threadID);
+#endif
 
 								existingEntry.nextOpInThread = opCount;
-								existingEntry.nextOpInBlock = opCount;
 								existingEntry.nextOpInTask = opCount;
-								detector.opIDMap.erase(detector.opIDMap.find(top.opID));
-								detector.opIDMap[top.opID] = existingEntry;
-
-								opdetails.prevOpInBlock = top.opID;
+								existingEntry.nextOpInBlock = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
+
 
 							// Add enq to the enqSet for current block
 							if (detector.blockIDMap.find(blockCount) == detector.blockIDMap.end()) {
-								cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+								cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 								return -1;
 							} else {
 								// Get block entry for prev op (i.e. stack top)
-								if (detector.blockIDMap.find(top.blockID) == detector.blockIDMap.end()) {
-									cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+								if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+									cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 									return -1;
 								} else {
-									UAFDetector::blockDetails existingEntry = detector.blockIDMap[top.blockID];
+									UAFDetector::blockDetails existingEntry = detector.blockIDMap[previousOpInThread.blockID];
 
+#ifdef SANITYCHECK
 									// Sanity check: block(top-op) has same threadID as current op
 									assert(existingEntry.threadID == threadID);
-									assert(existingEntry.taskID.compare(top.taskID) == 0);
+									assert(existingEntry.taskID.compare(previousOpInThread.taskID) == 0);
+#endif
 
 									existingEntry.enqSet.insert(opCount);
-									detector.blockIDMap.erase(detector.blockIDMap.find(top.blockID));
-									detector.blockIDMap[top.blockID] = existingEntry;
+									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+									detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
 								}
 								detector.blockIDMap[blockCount] = blockdetails;
 							}
@@ -634,8 +661,8 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								return -1;
 							}
 
-							stackElement.blockID = top.blockID;
-							stackElement.taskID = top.taskID;
+							stackElement.blockID = previousOpInThread.blockID;
+							stackElement.taskID = previousOpInThread.taskID;
 
 						}
 					} else if (match.compare("deq") == 0) {
@@ -650,14 +677,16 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							}
 						}
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for deq " << opCount
 								 << " on stack\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 							// This means this is the first op in the thread
 							blockCount++;
@@ -703,7 +732,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackForNestedTasks.push(stackElement);
 
 						} else {
-							MultiStack::stackElementType top = stack.peek(threadID);
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
 
 							// deq is the beginning of a block
 							blockCount++;
@@ -711,39 +740,44 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							opdetails.taskID = taskDequeued;
 
 							// Set current op as next-op for stack top
-							if (detector.opIDMap.find(top.opID) == detector.opIDMap.end()) {
-								cout << "ERROR: Cannot find entry for op " << top.opID << " in opIDMap\n";
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
 								return -1;
 							} else {
-								UAFDetector::opDetails existingEntry = detector.opIDMap[top.opID];
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
 
+#ifdef SANITYCHECK
 								// Sanity check: prev-op has same thread as current op in stack and opIDMap
-								assert(top.threadID == threadID);
+								assert(previousOpInThread.threadID == threadID);
 								assert(existingEntry.threadID == threadID);
-								assert(top.blockID != blockCount);
+								assert(previousOpInThread.blockID != blockCount);
 								assert(existingEntry.blockID != blockCount);
-								assert(top.taskID.compare(taskDequeued) != 0);
+								assert(previousOpInThread.taskID.compare(taskDequeued) != 0);
+								assert(existingEntry.taskID.compare(taskDequeued) != 0);
+#endif
 
 								existingEntry.nextOpInThread = opCount;
-								detector.opIDMap.erase(detector.opIDMap.find(top.opID));
-								detector.opIDMap[top.opID] = existingEntry;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
 
 							// Update taskID, first-op-in-block, prev-block-in-thread for current block
 							if (detector.blockIDMap.find(blockCount) == detector.blockIDMap.end()) {
-								if (detector.blockIDMap.find(top.blockID) == detector.blockIDMap.end()) {
-									cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+								if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+									cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 									cout << "While examining op " << opCount << endl;
 									return -1;
 								} else {
-									UAFDetector::blockDetails existingEntry = detector.blockIDMap[top.blockID];
+									UAFDetector::blockDetails existingEntry = detector.blockIDMap[previousOpInThread.blockID];
 
+#ifdef SANITYCHECK
 									// Sanity check: prev-block has same thread as current block
 									assert(existingEntry.threadID == threadID);
-									assert(top.threadID == threadID);
+									assert(previousOpInThread.threadID == threadID);
+#endif
 
 									existingEntry.nextBlockInThread = blockCount;
-									blockdetails.prevBlockInThread = top.blockID;
+									blockdetails.prevBlockInThread = previousOpInThread.blockID;
 									blockdetails.taskID = taskDequeued;
 									blockdetails.firstOpInBlock = opCount;
 									detector.blockIDMap[blockCount] = blockdetails;
@@ -784,7 +818,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								detector.taskIDMap[taskDequeued] = existingEntry;
 							}
 
-							stackElement.blockID = top.blockID;
+							stackElement.blockID = previousOpInThread.blockID;
 							stackElement.taskID = taskDequeued;
 							stackForNestedTasks.push(stackElement);
 						}
@@ -818,14 +852,16 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for pause " << opCount
 								 << " on stack\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 							// This means this is the first op in the thread
 							blockCount++;
@@ -877,32 +913,44 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackForNestedTasks.push(stackElement);
 
 						} else {
-							MultiStack::stackElementType top = stack.peek(threadID);
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of pause, the previous op in thread is in the same task as pause.
+							// So no need to look separately in the task stack.
+
 							opdetails.taskID = task;
-							opdetails.blockID = top.blockID;
-							opdetails.prevOpInBlock = top.opID;
-							if (detector.opIDMap.find(top.opID) == detector.opIDMap.end()) {
-								cout << "ERROR: Cannot find entry for op " << top.opID << " in opIDMap\n";
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
 								cout << "While examining op " << opCount;
 								return -1;
 							} else {
-								UAFDetector::opDetails existingEntry = detector.opIDMap[top.opID];
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+								assert(previousOpInThread.taskID.compare(task) == 0);
+								assert(existingEntry.taskID.compare(task) == 0);
+#endif
+
 								existingEntry.nextOpInBlock = opCount;
 								existingEntry.nextOpInTask = opCount;
 								existingEntry.nextOpInThread = opCount;
-								detector.opIDMap.erase(detector.opIDMap.find(top.opID));
-								detector.opIDMap[top.opID] = existingEntry;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
 
-							if (detector.blockIDMap.find(top.blockID) == detector.blockIDMap.end()) {
-								cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+							if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+								cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 								cout << "While examining op " << opCount;
 								return -1;
 							} else {
-								UAFDetector::blockDetails existingEntry = detector.blockIDMap[top.blockID];
+								UAFDetector::blockDetails existingEntry = detector.blockIDMap[previousOpInThread.blockID];
 								existingEntry.lastOpInBlock = opCount;
-								detector.blockIDMap.erase(detector.blockIDMap.find(top.blockID));
-								detector.blockIDMap[top.blockID] = existingEntry;
+								detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+								detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
 							}
 
 							if (detector.taskIDMap.find(task) == detector.taskIDMap.end()) {
@@ -931,7 +979,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								return -1;
 							}
 
-							stackElement.blockID = top.blockID;
+							stackElement.blockID = previousOpInThread.blockID;
 							stackElement.taskID = task;
 							stackForNestedTasks.push(stackElement);
 						}
@@ -965,14 +1013,16 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for reset " << opCount
 								 << " on stack\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
 
 							// This means this is the first op in the thread
 							blockCount++;
@@ -1021,36 +1071,49 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackForNestedTasks.push(stackElement);
 
 						} else {
-							MultiStack::stackElementType top = stack.peek(threadID);
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of reset, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
 							opdetails.taskID = task;
-							opdetails.blockID = top.blockID;
-							opdetails.prevOpInBlock = top.opID;
-							if (detector.opIDMap.find(top.opID) == detector.opIDMap.end()) {
-								cout << "ERROR: Cannot find entry for op " << top.opID << " in opIDMap\n";
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
 								cout << "While examining op " << opCount;
 								return -1;
 							} else {
-								UAFDetector::opDetails existingEntry = detector.opIDMap[top.opID];
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+								assert(previousOpInThread.taskID.compare(task) == 0);
+								assert(existingEntry.taskID.compare(task) == 0);
+#endif
 								existingEntry.nextOpInBlock = opCount;
 								existingEntry.nextOpInTask = opCount;
 								existingEntry.nextOpInThread = opCount;
-								detector.opIDMap.erase(detector.opIDMap.find(top.opID));
-								detector.opIDMap[top.opID] = existingEntry;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
 
-							if (detector.blockIDMap.find(top.blockID) == detector.blockIDMap.end()) {
-								cout << "ERROR: Cannot find entry for block " << top.blockID << " in blockIDMap\n";
+							if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+								cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
 								cout << "While examining op " << opCount;
 								return -1;
 							} else {
-								UAFDetector::blockDetails existingEntry = detector.blockIDMap[top.blockID];
+								UAFDetector::blockDetails existingEntry = detector.blockIDMap[previousOpInThread.blockID];
 								existingEntry.lastOpInBlock = opCount;
 
+#ifdef SANITYCHECK
 								// Sanity check: the current block has same task ID as current op
 								assert(existingEntry.taskID.compare(task) == 0);
+#endif
 
-								detector.blockIDMap.erase(detector.blockIDMap.find(top.blockID));
-								detector.blockIDMap[top.blockID] = existingEntry;
+								detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+								detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
 							}
 
 							if (detector.taskIDMap.find(task) == detector.taskIDMap.end()) {
@@ -1072,7 +1135,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								return -1;
 							}
 
-							stackElement.blockID = top.blockID;
+							stackElement.blockID = previousOpInThread.blockID;
 							stackElement.taskID = task;
 						}
 					} else if (match.compare("resume") == 0) {
@@ -1105,14 +1168,75 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for reset " << opCount
 								 << " on stack\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+							opdetails.taskID = task;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of resume, the previous op in thread is not the previous op in the task.
+							// So, get top of task stack to obtain prev op in task.
+							MultiStack::stackElementType previousOpInTask = stackForTaskOrder.peek(threadID);
+
+							// resume is the beginning of a block
+							blockCount++;
+							opdetails.taskID = task;
+							opdetails.blockID = blockCount;
+
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+								assert(previousOpInThread.blockID != blockCount);
+								assert(existingEntry.blockID != blockCount);
+#endif
+
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
+
+							if (detector.opIDMap.find(previousOpInTask.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInTask.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount << endl;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInTask.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op in task has same threadID and taskID as resume
+								assert(previousOpInTask.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+								assert(previousOpInTask.taskID.compare(task) == 0);
+								assert(existingEntry.taskID.compare(task) == 0);
+								assert(previousOpInTask.blockID != blockCount);
+								assert(existingEntry.blockID != blockCount);
+#endif
+
+								existingEntry.nextOpInTask = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInTask.opID));
+								detector.opIDMap[previousOpInTask.opID] = existingEntry;
+							}
+
 						}
 					} else if (match.compare("end") == 0) {
 						// Obtain 2nd argument (i.e., current task) of end
@@ -1127,89 +1251,416 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for end " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+							opdetails.taskID = task;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of end, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
+							opdetails.taskID = task;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+								assert(previousOpInThread.taskID.compare(task) == 0);
+								assert(existingEntry.taskID.compare(task) == 0);
+#endif
+
+								existingEntry.nextOpInBlock = opCount;
+								existingEntry.nextOpInTask = opCount;
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
+
 						}
 					} else if (match.compare("fork") == 0) {
+						// Obtain 2nd argument (i.e., target thread) of fork
+						IDType targetThread;
+						for (unsigned j=threadPos+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								targetThread = atoi(m1.c_str());
+								break;
+							}
+						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for fork " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of fork, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
+							opdetails.taskID = previousOpInThread.taskID;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+#endif
+
+								existingEntry.nextOpInBlock = opCount;
+								existingEntry.nextOpInTask = opCount;
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
 						}
 					} else if (match.compare("join") == 0) {
+						// Obtain 2nd argument (i.e., target thread) of join
+						IDType targetThread;
+						for (unsigned j=threadPos+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								targetThread = atoi(m1.c_str());
+								break;
+							}
+						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for join " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of join, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
+							opdetails.taskID = previousOpInThread.taskID;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+#endif
+
+								existingEntry.nextOpInBlock = opCount;
+								existingEntry.nextOpInTask = opCount;
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
+
 						}
 					} else if (match.compare("alloc") == 0) {
+						// Obtain 2nd & 3rd argument (i.e., starting address & num of bytes) of alloc
+						string baseAddress;
+						IDType size;
+						unsigned j;
+						for (j=threadPos+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								baseAddress = m1;
+								break;
+							}
+						}
+						for (j=j+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								size = atoi(m1.c_str());
+								break;
+							}
+						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for alloc " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of alloc, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
+							opdetails.taskID = previousOpInThread.taskID;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+#endif
+
+								existingEntry.nextOpInBlock = opCount;
+								existingEntry.nextOpInTask = opCount;
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
+
 						}
 
 					} else if (match.compare("free") == 0) {
+						// Obtain 2nd & 3rd argument (i.e., starting address & num of bytes) of free
+						string baseAddress;
+						IDType size;
+						unsigned j;
+						for (j=threadPos+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								baseAddress = m1;
+								break;
+							}
+						}
+						for (j=j+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								size = atoi(m1.c_str());
+								break;
+							}
+						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for free " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of free, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
+							opdetails.taskID = previousOpInThread.taskID;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+#endif
+
+								existingEntry.nextOpInBlock = opCount;
+								existingEntry.nextOpInTask = opCount;
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
+
 						}
 
 					} else if (match.compare("read") == 0) {
+						// Obtain 2nd argument (i.e., address) of read
+						string address;
+						for (unsigned j=threadPos+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								address = m1;
+								break;
+							}
+						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for read " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of read, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
+							opdetails.taskID = previousOpInThread.taskID;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+#endif
+
+								existingEntry.nextOpInBlock = opCount;
+								existingEntry.nextOpInTask = opCount;
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
+
 						}
 
 					} else if (match.compare("write") == 0) {
+						// Obtain 2nd argument (i.e., address) of write
+						string address;
+						for (unsigned j=threadPos+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							// find the next non-empty matches[i] after threadID of operation.
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								address = m1;
+								break;
+							}
+						}
 
 						// Obtain the stack top to obtain the previous op in thread.
-						if (stackForThreadOrder.isEmpty(threadID)){
+						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for write " << opCount
 								 << " on stackForThreadOrder\n";
 
+#ifdef SANITYCHECK
 							// Sanity check: all stacks need to be empty if this is the first op
 							assert(stackForTaskOrder.isEmpty(threadID));
-							assert(stackForBlockOrder.isEmpty(threadID));
+//							assert(stackForBlockOrder.isEmpty(threadID));
 							assert(stackForNestingOrder.isEmpty(threadID));
+#endif
+
+							// This means this is the first op in the thread
+							blockCount++;
+							opdetails.blockID = blockCount;
+
+						} else {
+							MultiStack::stackElementType previousOpInThread = stackForThreadAndBlockOrder.peek(threadID);
+							// In the case of fork, the previous op in thread is the previous op in task.
+							// So no need to look separately in task stack.
+
+							opdetails.taskID = previousOpInThread.taskID;
+							opdetails.blockID = previousOpInThread.blockID;
+							opdetails.prevOpInBlock = previousOpInThread.opID;
+							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
+								cout << "ERROR: Cannot find entry for op " << previousOpInThread.opID << " in opIDMap\n";
+								cout << "While examining op " << opCount;
+								return -1;
+							} else {
+								UAFDetector::opDetails existingEntry = detector.opIDMap[previousOpInThread.opID];
+
+#ifdef SANITYCHECK
+								// Sanity check: prev op has same threadID and taskID as current op
+								assert(previousOpInThread.threadID == threadID);
+								assert(existingEntry.threadID == threadID);
+#endif
+
+								existingEntry.nextOpInBlock = opCount;
+								existingEntry.nextOpInTask = opCount;
+								existingEntry.nextOpInThread = opCount;
+								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
+								detector.opIDMap[previousOpInThread.opID] = existingEntry;
+							}
+
 						}
 
 					}

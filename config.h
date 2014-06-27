@@ -7,6 +7,9 @@
 // To process locks in the trace
 // #define LOCKS
 
+// To enable sanity checks
+ #define SANITYCHECK
+
 // To set the datatype used for thread-id, op-id and block-id
 // To use int datatype
  #define SMALL
