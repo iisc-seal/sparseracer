@@ -61,3 +61,11 @@ bool MultiStack::isBottom(MultiStack::stackElementType element) {
 	else
 		return false;
 }
+
+bool MultiStack::isEmpty(IDType thread) {
+	// If the top of the stack is bottom, stack is empty
+	if (isBottom(peek(thread)))
+		return true;
+	else
+		return false;
+}

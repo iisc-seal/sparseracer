@@ -42,6 +42,9 @@ public:
 
 	bool isBottom(stackElementType element);
 
+	// Check if stack is empty for thread t
+	bool isEmpty(IDType t);
+
 private:
 	// Stack - each element is a pair of threadID and taskID.
 	list<stackElementType> stack;

@@ -79,6 +79,11 @@ public:
 		IDType firstBlockID; // ID of the first block in task
 		IDType lastBlockID;  // ID of the last block in task
 
+		// Set of pause/reset/resume ops of the task
+		set<IDType> pauseSet;
+		set<IDType> resetSet;
+		set<IDType> resumeSet;
+
 		taskDetails() {
 			firstPauseOpID = -1;
 			lastResumeOpID = -1;
@@ -91,6 +96,10 @@ public:
 
 			firstBlockID = -1;
 			lastBlockID = -1;
+
+			pauseSet = set<IDType>();
+			resetSet = set<IDType>();
+			resumeSet = set<IDType>();
 		}
 
 		void printTaskDetails() {
@@ -99,6 +108,15 @@ public:
 				 << " end " << endOpID << " enq " << enqOpID
 				 << " parent task " << parentTask << " atomic " << atomic
 				 << " first-block " << firstBlockID << " last-block " << lastBlockID;
+			cout << "\n Pause ops: ";
+			for (set<IDType>::iterator it = pauseSet.begin(); it != pauseSet.end(); it++)
+				cout << *it << " ";
+			cout << "\n Reset ops: ";
+			for (set<IDType>::iterator it = resetSet.begin(); it != resetSet.end(); it++)
+				cout << *it << " ";
+			cout << "\n Resume ops: ";
+			for (set<IDType>::iterator it = resumeSet.begin(); it != resumeSet.end(); it++)
+				cout << *it << " ";
 		}
 	};
 
@@ -185,8 +203,25 @@ public:
 
 	map<IDType, blockDetails> blockIDMap;
 
-	// Maps the op ID of an enq operation to the task that is being enqueued.
-	map<IDType, string> enqToTaskEnqueued;
+	class enqOpDetails {
+	public:
+		string taskEnqueued;
+		IDType targetThread;
+
+		enqOpDetails() {
+			taskEnqueued = "";
+			targetThread = -1;
+		}
+
+		void printEnqDetails() {
+			cout << "Task enqueued " << taskEnqueued << " to target thread " << targetThread;
+		}
+	};
+	// Maps the op ID of an enq operation to its arguments
+	map<IDType, enqOpDetails> enqToTaskEnqueued;
+
+	// Maps the op ID of pause/resume/reset ops to the shared variable
+	map<IDType, string> pauseResumeResetOps;
 
 	class memoryOpDetails {
 	public:
