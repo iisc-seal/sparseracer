@@ -7,23 +7,21 @@
 
 #include <vector>
 #include <set>
-#include <bitset>
 #include <stddef.h>
 #include <cassert>
-
-#include <config.h>
+#include <map>
 
 using namespace std;
 
 #ifndef HBGRAPH_H_
 #define HBGRAPH_H_
 
+#include <config.h>
+
 class HBGraph {
 public:
 	struct adjListNode {
-		long long sourceOp;
-		long long destinationOp;
-		long long destinationBlock;
+		long long destination;
 		struct adjListNode* next;
 	};
 
@@ -32,51 +30,58 @@ private:
 		struct adjListNode* head;
 	};
 
-	struct adjListNode* createNewNode(long long sourceOp, long long destinationOp, long long destinationBlock) {
+	struct adjListNode* createNewNode(long long destination) {
 		struct adjListNode* newNode = new adjListNode;
-		newNode->sourceOp = sourceOp;
-		newNode->destinationOp = destinationOp;
-		newNode->destinationBlock = destinationBlock;
+		newNode->destination = destination;
 		newNode->next = NULL;
 		return newNode;
 	}
 
 public:
 	HBGraph();
-	HBGraph(IDType countOfOps, IDType countOfNodes);
+	HBGraph(IDType countOfOps, IDType countOfBlocks, map<IDType, UAFDetector::opDetails> opMap, map<IDType, UAFDetector::blockDetails> blockMap);
 	virtual ~HBGraph();
 
-	long long totalNodes;
+	long long totalBlocks;
 	long long totalOps;
-	bool** adjMatrix;
-	struct adjListType* adjList;
+	bool** opAdjMatrix;
+	bool** blockAdjMatrix;
+	struct adjListType* opAdjList;
+	struct adjListType* blockAdjList;
+
+	unsigned long long numOfOpEdges;
+	unsigned long long numOfBlockEdges;
 
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
-	int addSingleEdge(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp);
+	int addOpEdge(long long sourceOp, long long destinationOp);
+	int addBlockEdge(long long sourceBlock, long long destinationBlock);
 
 	// Return 1 if edge exists, 0 if not, -1 if adjMatrix and adjList are out of sync.
-	int blockEdgeExists(long long source, long long destination);
-	int opEdgeExists(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp);
+	int blockEdgeExists(long long sourceBlock, long long destinationBlock);
+	int opEdgeExists(long long sourceOp, long long destinationOp);
 
-	void printGraph(bool flag);
+	void printGraph();
 
 private:
+	map<IDType, UAFDetector::opDetails> opIDMap;
+	map<IDType, UAFDetector::blockDetails> blockIDMap;
+
 	bool blockEdgeExistsinList(long long source, long long destination) {
 		struct adjListNode* currNode;
-		currNode = adjList[source].head;
+		currNode = blockAdjList[source].head;
 		while (currNode != NULL) {
-			if (currNode->destinationBlock == destination)
+			if (currNode->destination == destination)
 				return true;
 			currNode = currNode->next;
 		}
 		return false;
 	}
 
-	bool opEdgeExistsinList(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp) {
+	bool opEdgeExistsinList(long long sourceOp, long long destinationOp) {
 		struct adjListNode* currNode;
-		currNode = adjList[sourceBlock].head;
+		currNode = opAdjList[sourceOp].head;
 		while (currNode != NULL) {
-			if (currNode->sourceOp == sourceOp && currNode->destinationOp == destinationOp)
+			if (currNode->destination == destinationOp)
 				return true;
 			currNode = currNode->next;
 		}

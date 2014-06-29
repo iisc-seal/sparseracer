@@ -11,8 +11,6 @@
 
 #include <config.h>
 
-using namespace std;
-
 #ifndef TRACEPARSER_H_
 #define TRACEPARSER_H_
 
@@ -32,7 +30,7 @@ public:
 private:
 	ifstream traceFile;
 
-	string opRegEx,		// regex for all valid operations
+	std::string opRegEx,		// regex for all valid operations
 		   intRegEx, 	// regex for integers (used as threadIDs)
 		   hexRegEx,	// regex for hexadecimal numbers (used as taskID, memory address, etc)
 		   prefixRegEx, // regex for prefix (if any) of each line in the trace file

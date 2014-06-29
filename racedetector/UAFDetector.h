@@ -9,21 +9,21 @@
 #include <string>
 #include <set>
 #include <iostream>
-#include "HBGraph.h"
 
 #include <config.h>
 #include <debugconfig.h>
 #include <logging/Logger.h>
-using namespace std;
 
 #ifndef UAFDETECTOR_H_
 #define UAFDETECTOR_H_
+
+class HBGraph;
 
 class UAFDetector {
 public:
 	UAFDetector();
 	virtual ~UAFDetector();
-	void ERRLOG(string error) {
+	void ERRLOG(std::string error) {
 		cout << error << endl;
 	}
 
@@ -31,8 +31,8 @@ public:
 	class opDetails {
 	public:
 		IDType threadID;
-		string taskID;
-		string opType;
+		std::string taskID;
+		std::string opType;
 		IDType blockID;
 
 		IDType nextOpInThread;
@@ -73,16 +73,11 @@ public:
 		IDType endOpID;
 		IDType enqOpID;
 
-		string parentTask; // ID of immediate parent task
+		std::string parentTask; // ID of immediate parent task
 		bool atomic;
 
 		IDType firstBlockID; // ID of the first block in task
 		IDType lastBlockID;  // ID of the last block in task
-
-		// Set of pause/reset/resume ops of the task
-		set<IDType> pauseSet;
-		set<IDType> resetSet;
-		set<IDType> resumeSet;
 
 		taskDetails() {
 			firstPauseOpID = -1;
@@ -96,32 +91,42 @@ public:
 
 			firstBlockID = -1;
 			lastBlockID = -1;
-
-			pauseSet = set<IDType>();
-			resetSet = set<IDType>();
-			resumeSet = set<IDType>();
 		}
 
 		void printTaskDetails() {
 			cout << "first-pause " << firstPauseOpID
 				 << " last-resume " << lastResumeOpID << " deq " << deqOpID
 				 << " end " << endOpID << " enq " << enqOpID
-				 << " parent task " << parentTask << " atomic " << atomic
+				 << " parent task " << parentTask << " atomic " << (atomic? "true": "false")
 				 << " first-block " << firstBlockID << " last-block " << lastBlockID;
-			cout << "\n Pause ops: ";
-			for (set<IDType>::iterator it = pauseSet.begin(); it != pauseSet.end(); it++)
-				cout << *it << " ";
-			cout << "\n Reset ops: ";
-			for (set<IDType>::iterator it = resetSet.begin(); it != resetSet.end(); it++)
-				cout << *it << " ";
-			cout << "\n Resume ops: ";
-			for (set<IDType>::iterator it = resumeSet.begin(); it != resumeSet.end(); it++)
-				cout << *it << " ";
 		}
 	};
 
 	// Maps task ID to its enq-op, deq-op, etc.
-	map<string, taskDetails> taskIDMap;
+	map<std::string, taskDetails> taskIDMap;
+
+	class nestingLoopDetails {
+	public:
+		IDType pauseOpID;
+		IDType resumeOpID;
+		set<IDType> resetSet;
+
+		nestingLoopDetails() {
+			pauseOpID = -1;
+			resumeOpID = -1;
+			resetSet = set<IDType>();
+		}
+
+		void printNestingLoopDetails() {
+			cout << "Pause " << pauseOpID << " Resume " << resumeOpID << endl;
+			cout << "Reset ops: ";
+			for (set<IDType>::iterator it = resetSet.begin(); it != resetSet.end(); it++)
+				cout << *it << " ";
+		}
+	};
+
+	// Maps address of a shared variable to the corresponding pause/resume/reset ops.
+	map<std::string, nestingLoopDetails> nestingLoopMap;
 
 	class threadDetails {
 	public:
@@ -162,7 +167,7 @@ public:
 	class blockDetails {
 	public:
 		IDType threadID;
-		string taskID;
+		std::string taskID;
 
 		IDType firstOpInBlock;
 		IDType lastOpInBlock;
@@ -205,7 +210,7 @@ public:
 
 	class enqOpDetails {
 	public:
-		string taskEnqueued;
+		std::string taskEnqueued;
 		IDType targetThread;
 
 		enqOpDetails() {
@@ -221,16 +226,20 @@ public:
 	map<IDType, enqOpDetails> enqToTaskEnqueued;
 
 	// Maps the op ID of pause/resume/reset ops to the shared variable
-	map<IDType, string> pauseResumeResetOps;
+	map<IDType, std::string> pauseResumeResetOps;
 
 	class memoryOpDetails {
 	public:
-		string startingAddress;
+		std::string startingAddress;
 		IDType range;
 
 		memoryOpDetails() {
 			startingAddress = "";
 			range = -1;
+		}
+
+		void printMemOpDetails() {
+			cout << "starting address: " << startingAddress << " range: " << range;
 		}
 	};
 
@@ -253,13 +262,13 @@ public:
 		}
 
 		void printDetails() {
-			cout << " read ops: ";
+			cout << "read ops: ";
 			for (set<IDType>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
-			cout << "\n write ops: ";
+			cout << "\nwrite ops: ";
 			for (set<IDType>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
 				cout << *it << " ";
-			cout << "\n free ops: ";
+			cout << "\nfree ops: ";
 			for (set<IDType>::iterator it = freeOps.begin(); it != freeOps.end(); it++)
 				cout << *it << " ";
 		}
@@ -281,10 +290,10 @@ public:
 
 		void printDetails() {
 			cout << "alloc op: " << allocOpID << endl;
-			cout << " read ops: ";
+			cout << "read ops: ";
 			for (set<IDType>::iterator it = readOps.begin(); it != readOps.end(); it++)
 				cout << *it << " ";
-			cout << "\n write ops: ";
+			cout << "\nwrite ops: ";
 			for (set<IDType>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
 				cout << *it << " ";
 		}
@@ -292,7 +301,7 @@ public:
 
 	map<IDType, freeOpDetails> freeIDMap;
 
-	HBGraph graph;
+	HBGraph* graph;
 
 	void initGraph(IDType countOfOps, IDType countOfNodes);
 
@@ -308,12 +317,8 @@ public:
 
 private:
 	// All the following functions: Return -1 if some error, 1 if atleast one edge is added, 0 if no edges are added.
-	int addLoopPOEdges();
-	int addTaskPOEdges();
-	int addEnqueueSTorMTEdges();
-	int addForkEdges();
-	int addJoinEdges();
-	int addCallbackSTEdges();
+	int add_LoopPO_Fork_Join_Edges();
+	int add_TaskPO_EnqueueSTOrMT_Edges();
 	int addFifoAtomicEdges();
 	int addNoPreEdges();
 	int addFifoCallbackEdges();
@@ -322,8 +327,77 @@ private:
 	int addNoPrePrefixEdges();
 	int addNoPreSuffixEdges();
 	int addTransSTOrMTEdges();
+};
 
-	unsigned long long numOfEdges;
+class HBGraph {
+public:
+	struct adjListNode {
+		long long destination;
+		struct adjListNode* next;
+	};
+
+private:
+	struct adjListType {
+		struct adjListNode* head;
+	};
+
+	struct adjListNode* createNewNode(long long destination) {
+		struct adjListNode* newNode = new adjListNode;
+		newNode->destination = destination;
+		newNode->next = NULL;
+		return newNode;
+	}
+
+public:
+	HBGraph();
+	HBGraph(IDType countOfOps, IDType countOfBlocks, map<IDType, UAFDetector::opDetails> opMap, map<IDType, UAFDetector::blockDetails> blockMap);
+	virtual ~HBGraph();
+
+	long long totalBlocks;
+	long long totalOps;
+	bool** opAdjMatrix;
+	bool** blockAdjMatrix;
+	struct adjListType* opAdjList;
+	struct adjListType* blockAdjList;
+
+	unsigned long long numOfOpEdges;
+	unsigned long long numOfBlockEdges;
+
+	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
+	int addOpEdge(long long sourceOp, long long destinationOp);
+	int addBlockEdge(long long sourceBlock, long long destinationBlock);
+
+	// Return 1 if edge exists, 0 if not, -1 if adjMatrix and adjList are out of sync.
+	int blockEdgeExists(long long sourceBlock, long long destinationBlock);
+	int opEdgeExists(long long sourceOp, long long destinationOp);
+
+	void printGraph();
+
+private:
+	map<IDType, UAFDetector::opDetails> opIDMap;
+	map<IDType, UAFDetector::blockDetails> blockIDMap;
+
+	bool blockEdgeExistsinList(long long source, long long destination) {
+		struct adjListNode* currNode;
+		currNode = blockAdjList[source].head;
+		while (currNode != NULL) {
+			if (currNode->destination == destination)
+				return true;
+			currNode = currNode->next;
+		}
+		return false;
+	}
+
+	bool opEdgeExistsinList(long long sourceOp, long long destinationOp) {
+		struct adjListNode* currNode;
+		currNode = opAdjList[sourceOp].head;
+		while (currNode != NULL) {
+			if (currNode->destination == destinationOp)
+				return true;
+			currNode = currNode->next;
+		}
+		return false;
+	}
 };
 
 #endif /* UAFDETECTOR_H_ */

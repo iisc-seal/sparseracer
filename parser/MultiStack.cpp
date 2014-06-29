@@ -43,6 +43,12 @@ MultiStack::stackElementType MultiStack::pop(IDType thread) {
 	return bottom;
 }
 
+void MultiStack::stackClear(IDType thread) {
+	while (!isEmpty(thread)) {
+		pop(thread);
+	}
+}
+
 MultiStack::stackElementType MultiStack::pop(IDType thread, string task) {
 	for (list<stackElementType>::iterator it = stack.end(); it != stack.begin(); it--) {
 		if (it->threadID == thread && (it->taskID).compare(task) == 0) {
@@ -52,6 +58,16 @@ MultiStack::stackElementType MultiStack::pop(IDType thread, string task) {
 		}
 	}
 	return bottom;
+}
+
+void MultiStack::stackClear(IDType thread, string task) {
+	if (!isEmpty(thread)) {
+		while (true) {
+			MultiStack::stackElementType top = pop(thread, task);
+			if (isBottom(top))
+				break;
+		}
+	}
 }
 
 bool MultiStack::isBottom(MultiStack::stackElementType element) {

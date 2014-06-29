@@ -52,9 +52,9 @@ for each thread t in the trace:
     for each block b in {block-exitloop, ... last-block-in-t}:
 	block-j = block before b;
 	for each block b' in {block-i, ... block-j}:
-	    add-block-edge(b, b')
-	    op-i = last op of b
-	    op-j = first op of b'
+	    add-block-edge(b', b)
+	    op-i = last op of b'
+	    op-j = first op of b
 	    add-op-edge(op-i, op-j)
 
 

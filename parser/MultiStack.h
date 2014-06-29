@@ -10,8 +10,6 @@
 
 #include <config.h>
 
-using namespace std;
-
 #ifndef MULTISTACK_H_
 #define MULTISTACK_H_
 
@@ -21,11 +19,11 @@ public:
 	virtual ~MultiStack();
 
 	struct stackElementType {
-		string opType;
+		std::string opType;
 		IDType opID;
 		IDType blockID;
 		IDType threadID;
-		string taskID;
+		std::string taskID;
 	};
 
 	// normal push operation
@@ -37,8 +35,14 @@ public:
 	// pop top most element of thread t
 	stackElementType pop(IDType t);
 
+	// remove those entries in the stack that has thread t
+	void stackClear(IDType t);
+
 	// pop top most element of thread t and task tt
-	stackElementType pop(IDType t, string tt);
+	stackElementType pop(IDType t, std::string tt);
+
+	// remove those entries in the stack that has thread t and task tt
+	void stackClear(IDType t, std::string tt);
 
 	bool isBottom(stackElementType element);
 
