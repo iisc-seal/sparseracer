@@ -49,21 +49,31 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks, map<IDType, UAFDetecto
 	opAdjList = new HBGraph::adjListType [totalOps+1];
 	blockAdjList = new HBGraph::adjListType [totalBlocks+1];
 
-	for (long long i=1; i <= totalOps; i++) {
+	for (IDType i=1; i <= totalOps; i++) {
 		opAdjList[i].head = NULL;
 		opAdjMatrix[i] = (bool*) calloc((totalOps+1) , sizeof(bool));
 	}
-	for (long long i=1; i <= totalBlocks; i++) {
+	for (IDType i=1; i <= totalBlocks; i++) {
 		blockAdjList[i].head = NULL;
 		blockAdjMatrix[i] = (bool*) calloc((totalBlocks+1) , sizeof(bool));
+
+		// There is always a self edge for each block since there are HB edges
+		// (program-order) within the block
+		blockAdjMatrix[i][i] = true;
+		HBGraph::adjListNode *currNode = HBGraph::createNewNode(i);
+		blockAdjList[i].head = currNode;
 	}
 }
 
 HBGraph::~HBGraph() {
 }
 
-int HBGraph::addOpEdge(long long sourceOp, long long destinationOp) {
+int HBGraph::addOpEdge(IDType sourceOp, IDType destinationOp) {
 
+//#ifdef GRAPHDEBUGFULL
+#if 0
+	cout << "Adding op edge from " << sourceOp << " to " << destinationOp << endl;
+#endif
 	assert(1 <= sourceOp      && sourceOp <= totalOps);
 	assert(1 <= destinationOp && destinationOp <= totalOps);
 	assert(sourceOp != destinationOp);
@@ -103,6 +113,10 @@ int HBGraph::addOpEdge(long long sourceOp, long long destinationOp) {
 
 		struct adjListNode* destBlockNode = createNewNode(destinationBlock);
 		destBlockNode->next = blockAdjList[sourceBlock].head;
+
+		if (blockAdjList[sourceBlock].head != NULL)
+			blockAdjList[sourceBlock].head->prev = destBlockNode;
+
 		blockAdjList[sourceBlock].head = destBlockNode;
 
 		numOfBlockEdges++;
@@ -113,6 +127,10 @@ int HBGraph::addOpEdge(long long sourceOp, long long destinationOp) {
 
 			struct adjListNode* destOpNode = createNewNode(destinationOp);
 			destOpNode->next = opAdjList[sourceOp].head;
+
+			if (opAdjList[sourceOp].head != NULL)
+				opAdjList[sourceOp].head->prev = destOpNode;
+
 			opAdjList[sourceOp].head = destOpNode;
 
 			numOfOpEdges++;
@@ -129,6 +147,10 @@ int HBGraph::addOpEdge(long long sourceOp, long long destinationOp) {
 
 			struct adjListNode* destOpNode = createNewNode(destinationOp);
 			destOpNode->next = opAdjList[sourceOp].head;
+
+			if (opAdjList[sourceOp].head != NULL)
+				opAdjList[sourceOp].head->prev = destOpNode;
+
 			opAdjList[sourceOp].head = destOpNode;
 
 			numOfOpEdges++;
@@ -145,10 +167,51 @@ int HBGraph::addOpEdge(long long sourceOp, long long destinationOp) {
 	return -1;
 }
 
-int HBGraph::opEdgeExists(long long sourceOp, long long destinationOp) {
+// currNode is the adjListNode containing destinationOp in the adjacency list of sourceOp
+void HBGraph::removeOpEdge(HBGraph::adjListNode* currNode, IDType sourceOp, IDType destinationOp) {
+	assert(currNode != NULL);
+	assert(1 <= sourceOp && sourceOp <= totalOps);
+	assert(1 <= destinationOp && destinationOp <= totalOps);
 
+	if (currNode->next == NULL && currNode->prev == NULL) {
+		// This is the only node in the list.
+		// Set adjacency list of sourceOp to NULL
+		opAdjList[sourceOp].head = NULL;
+	} else if (currNode->next == NULL) {
+		// No node after this node in the list. Make the previous node point to NULL
+		currNode->prev->next = NULL;
+	} else if (currNode->prev == NULL) {
+		// This is the first node in the list. Make next node the head of adjacency list
+		currNode->next->prev = NULL;
+		opAdjList[sourceOp].head = currNode->next;
+	} else {
+		currNode->prev->next = currNode->next;
+		currNode->next->prev = currNode->prev;
+	}
+
+	opAdjMatrix[sourceOp][destinationOp] = false;
+	delete currNode;
+}
+
+int HBGraph::opEdgeExists(IDType sourceOp, IDType destinationOp) {
+
+	assert(sourceOp > 0);
+	assert(destinationOp > 0);
+	assert(sourceOp != destinationOp);
 	assert(opAdjMatrix[sourceOp][destinationOp] == true || opAdjMatrix[sourceOp][destinationOp] == false);
 
+	IDType sourceBlock = opIDMap[sourceOp].blockID;
+	IDType destinationBlock = opIDMap[destinationOp].blockID;
+	assert(sourceBlock > 0);
+	assert(destinationBlock > 0);
+
+	// If both ops are in the same block: then program order edge if sourceOp is before destinationOp
+	if (sourceBlock == destinationBlock && sourceOp < destinationOp)
+		return 1;
+	else if (sourceBlock == destinationBlock && sourceOp >= destinationOp)
+		return 0;
+
+	// Check if there is an explicit edge in the opAdjMatrix and opAdjList
 	bool edgeExistsInList = opEdgeExistsinList(sourceOp, destinationOp);
 	if (opAdjMatrix[sourceOp][destinationOp] == true && edgeExistsInList)
 		return 1;
@@ -160,11 +223,7 @@ int HBGraph::opEdgeExists(long long sourceOp, long long destinationOp) {
 		return -1;
 	}
 
-	IDType sourceBlock = opIDMap[sourceOp].blockID;
-	IDType destinationBlock = opIDMap[destinationOp].blockID;
-	assert(sourceBlock > 0);
-	assert(destinationBlock > 0);
-
+	// Check if the edge is implied transitively
 	int retValue = blockEdgeExists(sourceBlock, destinationBlock);
 	if (retValue == 0)
 		return 0;
@@ -197,8 +256,11 @@ int HBGraph::opEdgeExists(long long sourceOp, long long destinationOp) {
 	return 0;
 }
 
-int HBGraph::blockEdgeExists(long long sourceBlock, long long destinationBlock) {
+int HBGraph::blockEdgeExists(IDType sourceBlock, IDType destinationBlock) {
 
+	assert(sourceBlock > 0);
+	assert(destinationBlock > 0);
+	assert(sourceBlock != destinationBlock);
 	assert(blockAdjMatrix[sourceBlock][destinationBlock] == true || blockAdjMatrix[sourceBlock][destinationBlock] == false);
 
 	bool edgeExistsInList = blockEdgeExistsinList(sourceBlock, destinationBlock);
@@ -217,8 +279,8 @@ int HBGraph::blockEdgeExists(long long sourceBlock, long long destinationBlock) 
 
 void HBGraph::printGraph() {
 
-	cout << "Block Edges:\n";
-	for (long long i=1; i <= totalBlocks; i++) {
+	cout << "\nBlock Edges:";
+	for (IDType i=1; i <= totalBlocks; i++) {
 		cout << endl << i << ": ";
 		struct adjListNode* currNode = blockAdjList[i].head;
 		while (currNode != NULL) {
@@ -228,8 +290,8 @@ void HBGraph::printGraph() {
 	}
 	cout << "\n";
 
-	cout << "Op Edges:\n";
-	for (long long i=1; i <= totalOps; i++) {
+	cout << "\nOp Edges:";
+	for (IDType i=1; i <= totalOps; i++) {
 		cout << endl << i << ": ";
 		struct adjListNode* currNode = opAdjList[i].head;
 		while (currNode != NULL) {

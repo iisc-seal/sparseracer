@@ -51,7 +51,7 @@ public:
 
 private:
 	// Stack - each element is a pair of threadID and taskID.
-	list<stackElementType> stack;
+	std::list<stackElementType> stack;
 
 	// element to represent bottom
 	stackElementType bottom;

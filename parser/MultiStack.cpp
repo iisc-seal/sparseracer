@@ -7,6 +7,8 @@
 
 #include <parser/MultiStack.h>
 
+using namespace std;
+
 MultiStack::MultiStack() {
 	bottom.opID = -1;
 	bottom.opType = "";

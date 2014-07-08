@@ -119,14 +119,27 @@ thread(b''))))
 
 	    i = last-op-of-b
 	    while (i >= first-op-of-b)
-		set-k = {op in b': there exists edge(i, op)}
+		# Find the earliest op in b' such that there exists edge(i, op)
+		minOp = -1
+		Loop through opAdjList[i]: currop
+		    if (block(currop) != b')
+			continue
+		    if (minop == -1 || minop > currop)
+			minop = currop
+			remove edge (i,currop)
+		add-op-edge(i, currop)
+
 		j = -1;
-		for each op in set-k:
+		for each op in {minop, last-op-of-b'}
+		    mintemp = -1
 		    for each op' in b'' such that there exists edge(op, op'):
-			if (j == -1)
+			if (j == -1 || j > op')
 			    j = op'
-			else if (op' < j)
-			    j = op'
+			    remove edge(op, op')
+		    add-op-edge(op, mintemp)
+		    if (j == -1 || j > mintemp)
+			j = mintemp
+
 		add-block-edge(b,b'')
 		add-op-edge(i,j)
 		if (i == last-op-of-b and j == first-op-of-b'')
@@ -143,7 +156,7 @@ for each atomic task p:
     op-i = end op of p
     for each block b such that there exists edge(enq-block-p, b):
 	for each enq e in b:
-	    if (opEdgeExists(enq-op-b, e) == true)
+	    if (opEdgeExists(enq-op-p, e) == true)
 		op-j = deq op of task enqueued in e
 		if (opEdgeExists(op-i, op-j) == false)
 		    addEdge(op-i,op-j)

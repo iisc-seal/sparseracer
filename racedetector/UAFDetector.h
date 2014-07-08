@@ -9,6 +9,8 @@
 #include <string>
 #include <set>
 #include <iostream>
+#include <utility>
+#include <vector>
 
 #include <config.h>
 #include <debugconfig.h>
@@ -76,6 +78,23 @@ public:
 		std::string parentTask; // ID of immediate parent task
 		bool atomic;
 
+		class pauseResumePair {
+		public:
+			IDType pauseOp;
+			IDType resumeOp;
+
+			pauseResumePair() {
+				pauseOp = -1;
+				resumeOp = -1;
+			}
+
+			void printPauseResumePairDetails() {
+				cout << "Pause: " << pauseOp << " Resume: " << resumeOp;
+			}
+		};
+
+		vector<pauseResumePair> pauseResumeSequence;
+
 		IDType firstBlockID; // ID of the first block in task
 		IDType lastBlockID;  // ID of the last block in task
 
@@ -99,6 +118,14 @@ public:
 				 << " end " << endOpID << " enq " << enqOpID
 				 << " parent task " << parentTask << " atomic " << (atomic? "true": "false")
 				 << " first-block " << firstBlockID << " last-block " << lastBlockID;
+
+			cout << "\nPauseResumeSequence: ";
+			for (vector<pauseResumePair>::iterator it = pauseResumeSequence.begin();
+					it != pauseResumeSequence.end(); it++) {
+				cout << "(";
+				it->printPauseResumePairDetails();
+				cout << ")\n";
+			}
 		}
 	};
 
@@ -319,21 +346,19 @@ private:
 	// All the following functions: Return -1 if some error, 1 if atleast one edge is added, 0 if no edges are added.
 	int add_LoopPO_Fork_Join_Edges();
 	int add_TaskPO_EnqueueSTOrMT_Edges();
-	int addFifoAtomicEdges();
-	int addNoPreEdges();
-	int addFifoCallbackEdges();
-	int addFifoCallback2Edges();
-	int addFifoNestedEdges();
-	int addNoPrePrefixEdges();
-	int addNoPreSuffixEdges();
+	int add_PauseSTMT_ResumeSTMT_Edges();
+	int add_FifoAtomic_NoPre_Edges();
+	int add_FifoNested_1_2_Gen_EnqResetST_1_Edges();
+	int add_EnqReset_ST_2_3_Edges();
 	int addTransSTOrMTEdges();
 };
 
 class HBGraph {
 public:
 	struct adjListNode {
-		long long destination;
+		IDType destination;
 		struct adjListNode* next;
+		struct adjListNode* prev;
 	};
 
 private:
@@ -341,10 +366,11 @@ private:
 		struct adjListNode* head;
 	};
 
-	struct adjListNode* createNewNode(long long destination) {
+	struct adjListNode* createNewNode(IDType destination) {
 		struct adjListNode* newNode = new adjListNode;
 		newNode->destination = destination;
 		newNode->next = NULL;
+		newNode->prev = NULL;
 		return newNode;
 	}
 
@@ -353,8 +379,8 @@ public:
 	HBGraph(IDType countOfOps, IDType countOfBlocks, map<IDType, UAFDetector::opDetails> opMap, map<IDType, UAFDetector::blockDetails> blockMap);
 	virtual ~HBGraph();
 
-	long long totalBlocks;
-	long long totalOps;
+	IDType totalBlocks;
+	IDType totalOps;
 	bool** opAdjMatrix;
 	bool** blockAdjMatrix;
 	struct adjListType* opAdjList;
@@ -364,12 +390,13 @@ public:
 	unsigned long long numOfBlockEdges;
 
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
-	int addOpEdge(long long sourceOp, long long destinationOp);
-	int addBlockEdge(long long sourceBlock, long long destinationBlock);
+	int addOpEdge(IDType sourceOp, IDType destinationOp);
+	//int addBlockEdge(IDType sourceBlock, IDType destinationBlock);
+	void removeOpEdge(adjListNode* currNode, IDType sourceOp, IDType destinationOp);
 
 	// Return 1 if edge exists, 0 if not, -1 if adjMatrix and adjList are out of sync.
-	int blockEdgeExists(long long sourceBlock, long long destinationBlock);
-	int opEdgeExists(long long sourceOp, long long destinationOp);
+	int blockEdgeExists(IDType sourceBlock, IDType destinationBlock);
+	int opEdgeExists(IDType sourceOp, IDType destinationOp);
 
 	void printGraph();
 
@@ -377,7 +404,7 @@ private:
 	map<IDType, UAFDetector::opDetails> opIDMap;
 	map<IDType, UAFDetector::blockDetails> blockIDMap;
 
-	bool blockEdgeExistsinList(long long source, long long destination) {
+	bool blockEdgeExistsinList(IDType source, IDType destination) {
 		struct adjListNode* currNode;
 		currNode = blockAdjList[source].head;
 		while (currNode != NULL) {
@@ -388,7 +415,7 @@ private:
 		return false;
 	}
 
-	bool opEdgeExistsinList(long long sourceOp, long long destinationOp) {
+	bool opEdgeExistsinList(IDType sourceOp, IDType destinationOp) {
 		struct adjListNode* currNode;
 		currNode = opAdjList[sourceOp].head;
 		while (currNode != NULL) {

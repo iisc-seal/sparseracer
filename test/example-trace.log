@@ -1,3 +1,4 @@
+../test/example-trace.txt
 1 threadinit(0)
 2 enq(0,0x1,0)
 3 enq(0,0x3,0)
@@ -166,12 +167,20 @@ next-op-in-thread -1 next-op-in-task -1 next-op-in-block -1
 
 Tasks:
 Task ID: 0x1 - details: first-pause -1 last-resume -1 deq 5 end 7 enq 2 parent task  atomic true first-block 2 last-block 2
+PauseResumeSequence: 
 Task ID: 0x2 - details: first-pause 26 last-resume 30 deq 18 end 33 enq 6 parent task  atomic false first-block 7 last-block 11
+PauseResumeSequence: (Pause: 26 Resume: 30)
+
 Task ID: 0x3 - details: first-pause -1 last-resume -1 deq 8 end 11 enq 3 parent task  atomic true first-block 3 last-block 3
+PauseResumeSequence: 
 Task ID: 0x4 - details: first-pause -1 last-resume -1 deq 14 end 35 enq 10 parent task  atomic true first-block 5 last-block 5
+PauseResumeSequence: 
 Task ID: 0x5 - details: first-pause -1 last-resume -1 deq 21 end 22 enq 20 parent task  atomic true first-block 8 last-block 8
+PauseResumeSequence: 
 Task ID: 0x6 - details: first-pause -1 last-resume -1 deq 27 end 29 enq 24 parent task 0x2 atomic true first-block 10 last-block 10
+PauseResumeSequence: 
 Task ID: 0x7 - details: first-pause -1 last-resume -1 deq 36 end 39 enq 34 parent task  atomic true first-block 12 last-block 12
+PauseResumeSequence: 
 
 Threads:
 Thread ID: 0 - details: first-op 1 threadinit 1 threadexit -1 enterloop 1 exitloop -1 first-block 1 last-block 12 fork -1 join -1
@@ -245,3 +254,552 @@ Op: 38
 alloc op: 19
 read ops: 32 
 write ops: 37 
+map size: 39
+ERROR: Cannot find fork op of thread 0
+ERROR: Cannot find threadexit op of thread 0
+ERROR: Cannot find join of thread 0
+LOOP-PO edge (4, 5) -- #op-edges 1 -- #block-edges 1
+LOOP-PO edge (4, 8) -- #op-edges 2 -- #block-edges 2
+LOOP-PO edge (4, 18) -- #op-edges 3 -- #block-edges 3
+LOOP-PO edge (4, 27) -- #op-edges 4 -- #block-edges 4
+LOOP-PO edge (4, 30) -- #op-edges 5 -- #block-edges 5
+LOOP-PO edge (4, 36) -- #op-edges 6 -- #block-edges 6
+ERROR: Cannot find exitloop block of thread 0
+FORK edge (9, 12) -- #op-edges 7 -- #block-edges 7
+ERROR: Cannot find threadexit op of thread 1
+ERROR: Cannot find join of thread 1
+LOOP-PO edge (13, 14) -- #op-edges 8 -- #block-edges 8
+ERROR: Cannot find exitloop block of thread 1
+FORK edge (15, 16) -- #op-edges 9 -- #block-edges 9
+JOIN edge (25, 31) -- #op-edges 10 -- #block-edges 10
+LOOP-PO edge (17, 21) -- #op-edges 11 -- #block-edges 11
+LOOP-PO edge (17, 23) -- #op-edges 12 -- #block-edges 12
+LOOP-PO edge (22, 23) -- #op-edges 13 -- #block-edges 13
+ENQUEUE-ST/MT edge (6, 18) -- #op-edges 14 -- #block-edges 14
+TASK-PO edge (26, 30) -- #op-edges 15 -- #block-edges 15
+ENQUEUE-ST/MT edge (10, 14) -- #op-edges 16 -- #block-edges 16
+ENQUEUE-ST/MT edge (20, 21) -- #op-edges 17 -- #block-edges 17
+ENQUEUE-ST/MT edge (24, 27) -- #op-edges 18 -- #block-edges 18
+ENQUEUE-ST/MT edge (34, 36) -- #op-edges 19 -- #block-edges 19
+PAUSE-ST edge (26, 27) -- #op-edges 20 -- #block-edges 20
+
+Block Edges:
+1: 12   11   10   7   3   2   1   
+2: 7   2   
+3: 5   4   3   
+4: 5   4   
+5: 12   6   5   
+6: 9   8   6   
+7: 10   8   11   7   
+8: 9   8   
+9: 10   11   9   
+10: 10   
+11: 11   
+12: 12   
+
+Op Edges:
+1: 
+2: 
+3: 
+4: 36   30   27   18   8   5   
+5: 
+6: 18   
+7: 
+8: 
+9: 12   
+10: 14   
+11: 
+12: 
+13: 14   
+14: 
+15: 16   
+16: 
+17: 23   21   
+18: 
+19: 
+20: 21   
+21: 
+22: 23   
+23: 
+24: 27   
+25: 31   
+26: 27   30   
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 36   
+35: 
+36: 
+37: 
+38: 
+39: 
+Adding Fifo-Atomic/No-Pre edges
+FIFO-ATOMIC edge (7, 18) -- #op-edges 21 -- #block-edges 20
+FIFO-ATOMIC edge (7, 8) -- #op-edges 22 -- #block-edges 21
+FIFO-ATOMIC edge (11, 18) -- #op-edges 23 -- #block-edges 22
+NO-PRE edge (11, 36) -- #op-edges 24 -- #block-edges 23
+
+Block Edges:
+1: 12   11   10   7   3   2   1   
+2: 3   7   2   
+3: 12   7   5   4   3   
+4: 5   4   
+5: 12   6   5   
+6: 9   8   6   
+7: 10   8   11   7   
+8: 9   8   
+9: 10   11   9   
+10: 10   
+11: 11   
+12: 12   
+
+Op Edges:
+1: 
+2: 
+3: 
+4: 36   30   27   18   8   5   
+5: 
+6: 18   
+7: 8   18   
+8: 
+9: 12   
+10: 14   
+11: 36   18   
+12: 
+13: 14   
+14: 
+15: 16   
+16: 
+17: 23   21   
+18: 
+19: 
+20: 21   
+21: 
+22: 23   
+23: 
+24: 27   
+25: 31   
+26: 27   30   
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 36   
+35: 
+36: 
+37: 
+38: 
+39: 
+Adding Fifo-Nested-1/2/GEN or EnqResetST-1 edges
+Adding EnqReset-ST-2/3 edges
+Adding Trans-ST/MT edges
+Restored edge from 4 to 18
+Restored edge from 20 to 21
+TRANS-ST/MT Edge (4, 21) -- #opEdges 27 -- #blockEdges 24
+Restored edge from 4 to 8
+Restored edge from 10 to 14
+TRANS-ST/MT Edge (4, 14) -- #opEdges 30 -- #blockEdges 25
+Restored edge from 4 to 8
+Restored edge from 9 to 12
+TRANS-ST/MT Edge (4, 12) -- #opEdges 33 -- #blockEdges 26
+Restored edge from 7 to 8
+Restored edge from 11 to 36
+TRANS-ST/MT Edge (7, 36) -- #opEdges 36 -- #blockEdges 27
+Restored edge from 7 to 8
+Restored edge from 10 to 14
+TRANS-ST/MT Edge (7, 14) -- #opEdges 39 -- #blockEdges 28
+Restored edge from 7 to 8
+Restored edge from 9 to 12
+TRANS-ST/MT Edge (7, 12) -- #opEdges 42 -- #blockEdges 29
+Restored edge from 7 to 18
+Restored edge from 26 to 27
+TRANS-ST/MT Edge (7, 27) -- #opEdges 45 -- #blockEdges 30
+Restored edge from 7 to 18
+Restored edge from 20 to 21
+TRANS-ST/MT Edge (7, 21) -- #opEdges 48 -- #blockEdges 31
+Restored edge from 7 to 18
+Restored edge from 26 to 30
+TRANS-ST/MT Edge (7, 30) -- #opEdges 51 -- #blockEdges 32
+Restored edge from 11 to 18
+Restored edge from 26 to 27
+TRANS-ST/MT Edge (11, 27) -- #opEdges 54 -- #blockEdges 33
+Restored edge from 11 to 18
+Restored edge from 20 to 21
+TRANS-ST/MT Edge (11, 21) -- #opEdges 57 -- #blockEdges 34
+Restored edge from 11 to 18
+Restored edge from 26 to 30
+TRANS-ST/MT Edge (11, 30) -- #opEdges 60 -- #blockEdges 35
+Restored edge from 10 to 14
+Restored edge from 15 to 16
+TRANS-ST/MT Edge (10, 16) -- #opEdges 63 -- #blockEdges 36
+Restored edge from 9 to 12
+Restored edge from 13 to 14
+Restored edge from 13 to 14
+Restored edge from 34 to 36
+TRANS-ST/MT Edge (13, 36) -- #opEdges 68 -- #blockEdges 37
+Restored edge from 13 to 14
+Restored edge from 15 to 16
+TRANS-ST/MT Edge (13, 16) -- #opEdges 71 -- #blockEdges 38
+Restored edge from 15 to 16
+Restored edge from 17 to 23
+TRANS-ST/MT Edge (15, 23) -- #opEdges 74 -- #blockEdges 39
+Restored edge from 15 to 16
+Restored edge from 17 to 21
+TRANS-ST/MT Edge (15, 21) -- #opEdges 77 -- #blockEdges 40
+Restored edge from 17 to 23
+Restored edge from 24 to 27
+TRANS-ST/MT Edge (17, 27) -- #opEdges 80 -- #blockEdges 41
+Restored edge from 17 to 23
+Restored edge from 25 to 31
+TRANS-ST/MT Edge (17, 31) -- #opEdges 83 -- #blockEdges 42
+Restored edge from 20 to 21
+Restored edge from 22 to 23
+TRANS-ST/MT Edge (20, 23) -- #opEdges 86 -- #blockEdges 43
+Restored edge from 22 to 23
+Restored edge from 24 to 27
+TRANS-ST/MT Edge (22, 27) -- #opEdges 89 -- #blockEdges 44
+Restored edge from 22 to 23
+Restored edge from 25 to 31
+TRANS-ST/MT Edge (22, 31) -- #opEdges 92 -- #blockEdges 45
+
+Block Edges:
+1: 4   5   8   12   11   10   7   3   2   1   
+2: 11   8   10   4   5   12   3   7   2   
+3: 6   11   8   10   12   7   5   4   3   
+4: 6   12   5   4   
+5: 8   9   12   6   5   
+6: 11   10   9   8   6   
+7: 9   10   8   11   7   
+8: 11   10   9   8   
+9: 10   11   9   
+10: 10   
+11: 11   
+12: 12   
+
+Op Edges:
+1: 
+2: 
+3: 
+4: 12   8   14   21   18   36   30   27   5   
+5: 
+6: 18   
+7: 30   18   21   27   12   8   14   36   
+8: 
+9: 12   
+10: 16   14   
+11: 30   18   21   27   36   
+12: 
+13: 16   14   36   
+14: 
+15: 21   16   23   
+16: 
+17: 31   23   27   21   
+18: 
+19: 
+20: 23   21   
+21: 
+22: 31   23   27   
+23: 
+24: 27   
+25: 31   
+26: 30   27   
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 36   
+35: 
+36: 
+37: 
+38: 
+39: 
+Adding Fifo-Atomic/No-Pre edges
+Adding Fifo-Nested-1/2/GEN or EnqResetST-1 edges
+FIFO-NESTED-1 edge (26, 36) -- #op-edges 93 -- #block-edges 46
+
+Block Edges:
+1: 4   5   8   12   11   10   7   3   2   1   
+2: 11   8   10   4   5   12   3   7   2   
+3: 6   11   8   10   12   7   5   4   3   
+4: 6   12   5   4   
+5: 8   9   12   6   5   
+6: 11   10   9   8   6   
+7: 12   9   10   8   11   7   
+8: 11   10   9   8   
+9: 10   11   9   
+10: 10   
+11: 11   
+12: 12   
+
+Op Edges:
+1: 
+2: 
+3: 
+4: 12   8   14   21   18   36   30   27   5   
+5: 
+6: 18   
+7: 30   18   21   27   12   8   14   36   
+8: 
+9: 12   
+10: 16   14   
+11: 30   18   21   27   36   
+12: 
+13: 16   14   36   
+14: 
+15: 21   16   23   
+16: 
+17: 31   23   27   21   
+18: 
+19: 
+20: 23   21   
+21: 
+22: 31   23   27   
+23: 
+24: 27   
+25: 31   
+26: 36   30   27   
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 36   
+35: 
+36: 
+37: 
+38: 
+39: 
+Adding EnqReset-ST-2/3 edges
+Adding Trans-ST/MT edges
+Restored edge from 4 to 12
+Restored edge from 13 to 16
+TRANS-ST/MT Edge (4, 16) -- #opEdges 96 -- #blockEdges 47
+Restored edge from 4 to 14
+Restored edge from 15 to 23
+TRANS-ST/MT Edge (4, 23) -- #opEdges 99 -- #blockEdges 48
+Restored edge from 7 to 21
+Restored edge from 22 to 23
+TRANS-ST/MT Edge (7, 23) -- #opEdges 102 -- #blockEdges 49
+Restored edge from 7 to 12
+Restored edge from 13 to 16
+TRANS-ST/MT Edge (7, 16) -- #opEdges 105 -- #blockEdges 50
+Restored edge from 10 to 16
+Restored edge from 17 to 23
+TRANS-ST/MT Edge (10, 23) -- #opEdges 108 -- #blockEdges 51
+Restored edge from 11 to 21
+Restored edge from 22 to 23
+TRANS-ST/MT Edge (11, 23) -- #opEdges 111 -- #blockEdges 51
+Restored edge from 10 to 14
+Restored edge from 15 to 16
+Restored edge from 9 to 12
+Restored edge from 13 to 16
+Restored edge from 9 to 12
+Restored edge from 13 to 14
+Restored edge from 13 to 16
+Restored edge from 17 to 31
+TRANS-ST/MT Edge (13, 31) -- #opEdges 120 -- #blockEdges 52
+Restored edge from 13 to 16
+Restored edge from 17 to 27
+TRANS-ST/MT Edge (13, 27) -- #opEdges 123 -- #blockEdges 53
+Restored edge from 13 to 16
+Restored edge from 17 to 23
+TRANS-ST/MT Edge (13, 23) -- #opEdges 126 -- #blockEdges 54
+Restored edge from 13 to 16
+Restored edge from 17 to 21
+TRANS-ST/MT Edge (13, 21) -- #opEdges 129 -- #blockEdges 55
+Restored edge from 15 to 21
+Restored edge from 22 to 31
+TRANS-ST/MT Edge (15, 31) -- #opEdges 132 -- #blockEdges 56
+Restored edge from 15 to 21
+Restored edge from 22 to 27
+TRANS-ST/MT Edge (15, 27) -- #opEdges 135 -- #blockEdges 57
+Restored edge from 15 to 21
+Restored edge from 22 to 23
+Restored edge from 15 to 23
+Restored edge from 24 to 27
+Restored edge from 15 to 23
+Restored edge from 25 to 31
+Restored edge from 15 to 16
+Restored edge from 17 to 31
+Restored edge from 15 to 16
+Restored edge from 17 to 27
+Restored edge from 15 to 16
+Restored edge from 17 to 23
+Restored edge from 15 to 16
+Restored edge from 17 to 21
+Restored edge from 17 to 23
+Restored edge from 25 to 31
+Restored edge from 17 to 21
+Restored edge from 22 to 31
+Restored edge from 20 to 21
+Restored edge from 22 to 23
+Restored edge from 22 to 23
+Restored edge from 25 to 31
+
+Block Edges:
+1: 9   6   4   5   8   12   11   10   7   3   2   1   
+2: 6   9   11   8   10   4   5   12   3   7   2   
+3: 9   6   11   8   10   12   7   5   4   3   
+4: 8   9   10   11   6   12   5   4   
+5: 10   11   8   9   12   6   5   
+6: 11   10   9   8   6   
+7: 12   9   10   8   11   7   
+8: 11   10   9   8   
+9: 10   11   9   
+10: 10   
+11: 11   
+12: 12   
+
+Op Edges:
+1: 
+2: 
+3: 
+4: 23   14   16   12   8   21   18   36   30   27   5   
+5: 
+6: 18   
+7: 16   12   23   21   30   18   27   8   14   36   
+8: 
+9: 12   
+10: 14   23   16   
+11: 23   21   30   18   27   36   
+12: 
+13: 21   16   23   27   31   14   36   
+14: 
+15: 16   23   21   27   31   
+16: 
+17: 21   23   27   31   
+18: 
+19: 
+20: 21   23   
+21: 
+22: 23   31   27   
+23: 
+24: 27   
+25: 31   
+26: 36   30   27   
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 36   
+35: 
+36: 
+37: 
+38: 
+39: 
+Adding Fifo-Atomic/No-Pre edges
+Adding Fifo-Nested-1/2/GEN or EnqResetST-1 edges
+Adding EnqReset-ST-2/3 edges
+Adding Trans-ST/MT edges
+Restored edge from 10 to 14
+Restored edge from 15 to 16
+Restored edge from 9 to 12
+Restored edge from 13 to 16
+Restored edge from 9 to 12
+Restored edge from 13 to 14
+Restored edge from 13 to 21
+Restored edge from 22 to 31
+Restored edge from 13 to 23
+Restored edge from 25 to 31
+Restored edge from 13 to 16
+Restored edge from 17 to 31
+Restored edge from 13 to 14
+Restored edge from 15 to 31
+Restored edge from 15 to 21
+Restored edge from 22 to 31
+Restored edge from 15 to 21
+Restored edge from 22 to 27
+Restored edge from 15 to 21
+Restored edge from 22 to 23
+Restored edge from 15 to 23
+Restored edge from 24 to 27
+Restored edge from 15 to 23
+Restored edge from 25 to 31
+Restored edge from 15 to 16
+Restored edge from 17 to 31
+Restored edge from 15 to 16
+Restored edge from 17 to 27
+Restored edge from 15 to 16
+Restored edge from 17 to 23
+Restored edge from 15 to 16
+Restored edge from 17 to 21
+Restored edge from 17 to 23
+Restored edge from 25 to 31
+Restored edge from 17 to 21
+Restored edge from 22 to 31
+Restored edge from 20 to 21
+Restored edge from 22 to 23
+Restored edge from 22 to 23
+Restored edge from 25 to 31
+
+Block Edges:
+1: 9   6   4   5   8   12   11   10   7   3   2   1   
+2: 6   9   11   8   10   4   5   12   3   7   2   
+3: 9   6   11   8   10   12   7   5   4   3   
+4: 8   9   10   11   6   12   5   4   
+5: 10   11   8   9   12   6   5   
+6: 11   10   9   8   6   
+7: 12   9   10   8   11   7   
+8: 11   10   9   8   
+9: 10   11   9   
+10: 10   
+11: 11   
+12: 12   
+
+Op Edges:
+1: 
+2: 
+3: 
+4: 23   14   16   12   8   21   18   36   30   27   5   
+5: 
+6: 18   
+7: 16   12   23   21   30   18   27   8   14   36   
+8: 
+9: 12   
+10: 14   23   16   
+11: 23   21   30   18   27   36   
+12: 
+13: 14   16   23   21   27   31   36   
+14: 
+15: 16   23   21   31   27   
+16: 
+17: 21   23   27   31   
+18: 
+19: 
+20: 21   23   
+21: 
+22: 23   31   27   
+23: 
+24: 27   
+25: 31   
+26: 36   30   27   
+27: 
+28: 
+29: 
+30: 
+31: 
+32: 
+33: 
+34: 36   
+35: 
+36: 
+37: 
+38: 
+39: 
+Total op edges = 197
+Total block edges = 57

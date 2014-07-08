@@ -23,6 +23,7 @@ using namespace std;
  */
 TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 	traceFile.open(traceFileName, ios_base::in);
+	cout << traceFileName << endl;
 	if (!traceFile.is_open()) {
 		cout << "Cannot open trace file\n";
 		logger.streamObject << "Cannot open trace file "
@@ -978,6 +979,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								taskdetails.firstPauseOpID = opCount;
 								taskdetails.atomic = false;
 								taskdetails.firstBlockID = blockCount;
+								UAFDetector::taskDetails::pauseResumePair pauseResumeDetails;
+								pauseResumeDetails.pauseOp = opCount;
+								taskdetails.pauseResumeSequence.push_back(pauseResumeDetails);
 								detector.taskIDMap[task] = taskdetails;
 							} else {
 								cout << "ERROR: Found duplicate entry for task " << task << " in taskIDMap\n";
@@ -1072,6 +1076,11 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 									cout << "While examining pause op " << opCount << endl;
 									return -1;
 								}
+
+								UAFDetector::taskDetails::pauseResumePair pr;
+								pr.pauseOp = opCount;
+								existingEntry.pauseResumeSequence.push_back(pr);
+
 								detector.taskIDMap.erase(detector.taskIDMap.find(task));
 								detector.taskIDMap[task] = existingEntry;
 							}
@@ -1300,6 +1309,11 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								UAFDetector::taskDetails taskdetails;
 								taskdetails.firstBlockID = blockCount;
 								taskdetails.atomic = false;
+
+								UAFDetector::taskDetails::pauseResumePair pr;
+								pr.resumeOp = opCount;
+								taskdetails.pauseResumeSequence.push_back(pr);
+
 								detector.taskIDMap[task] = taskdetails;
 							} else {
 								cout << "ERROR: Found duplicate entry for task " << task << " in taskIDMap\n";
@@ -1410,6 +1424,32 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								existingEntry.nextOpInTask = opCount;
 								detector.opIDMap.erase(detector.opIDMap.find(previousOpInTask.opID));
 								detector.opIDMap[previousOpInTask.opID] = existingEntry;
+							}
+
+							if (detector.taskIDMap.find(task) == detector.taskIDMap.end()) {
+								cout << "ERROR: Cannot find entry for task " << task << " in taskIDMap\n";
+								cout << "While examining op " << opCount;
+							} else {
+								UAFDetector::taskDetails existingEntry = detector.taskIDMap[task];
+								for (vector<UAFDetector::taskDetails::pauseResumePair>::iterator prIt = existingEntry.pauseResumeSequence.begin();
+										prIt != existingEntry.pauseResumeSequence.end(); prIt++) {
+									if (prIt->resumeOp == -1) {
+										IDType pauseOp = prIt->pauseOp;
+										if (detector.pauseResumeResetOps.find(pauseOp) == detector.pauseResumeResetOps.end()) {
+											cout << "ERROR: Cannot find shared variable of pause op " << pauseOp << " in pauseResumeResetOps\n";
+											cout << "While examining op " << opCount << endl;
+											return -1;
+										} else {
+											std::string pauseVariable = detector.pauseResumeResetOps[pauseOp];
+											if (pauseVariable.compare(sharedVariable) == 0) {
+												prIt->resumeOp = opCount;
+											}
+										}
+									}
+								}
+
+								detector.taskIDMap.erase(detector.taskIDMap.find(task));
+								detector.taskIDMap[task] = existingEntry;
 							}
 
 							if (detector.nestingLoopMap.find(sharedVariable) == detector.nestingLoopMap.end()) {
