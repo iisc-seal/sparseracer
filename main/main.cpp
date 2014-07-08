@@ -41,12 +41,8 @@ int main(int argc, char* argv[]) {
 		cout << "ERROR while constructing HB Graph\n";
 		return -1;
 	}
-	return 0;
 
-#ifdef GRAPHDEBUG
-//	detectorObj.printEdges();
-#endif
-
+	cout << "\nFinding UAF\n";
 	int retfindUAF = detectorObj.findUAFwithoutAlloc(logger);
 
 	if (retfindUAF == -1) {
@@ -54,10 +50,10 @@ int main(int argc, char* argv[]) {
 		return -1;
 	} else if (retfindUAF == 0) {
 		cout << "No UAF in the trace\n";
-		return 0;
 	}
 
 #ifdef DATARACE
+	cout << "\nFinding data races\n";
 	int retfindRace = detectorObj.findDataRaces(logger);
 
 	if (retfindRace == -1) {
@@ -65,7 +61,6 @@ int main(int argc, char* argv[]) {
 		return -1;
 	} else if (retfindRace == 0) {
 		cout << "No data races in the trace\n";
-		return 0;
 	}
 #endif
 	return 0;

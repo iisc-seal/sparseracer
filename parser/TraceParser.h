@@ -34,6 +34,7 @@ private:
 		   intRegEx, 	// regex for integers (used as threadIDs)
 		   hexRegEx,	// regex for hexadecimal numbers (used as taskID, memory address, etc)
 		   prefixRegEx, // regex for prefix (if any) of each line in the trace file
+		   suffixRegEx, // regex for suffix (if any) of each line in the trace file
 		   finalRegEx;  // regex for a valid line in the trace file
 
 	long long opCount;		// no of operations in the trace

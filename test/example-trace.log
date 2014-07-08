@@ -26,7 +26,7 @@
 25 threadexit(2)
 26 pause(0,0x2,0x100)
 27 deq(0,0x6)
-28 reset(0,0x6,0x100)
+28 reset(0,0x100)
 29 end(0,0x6)
 30 resume(0,0x2,0x100)
 31 join(0,2)
@@ -803,3 +803,10 @@ Op Edges:
 39: 
 Total op edges = 197
 Total block edges = 57
+
+Finding UAF
+Potential UAF between read op 32 (read at address 0x1)  and free op 38 (freed 2 bytes from address 0x1)
+Memory originally allocated at 19 (allocated 3 bytes from address 0x0)
+
+Finding data races
+Potential data race between read op 32 and write op 37 on address 0x1

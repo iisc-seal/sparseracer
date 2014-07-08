@@ -21,6 +21,8 @@
 // To process inc() and dec() ops in the trace
 // #define REFCOUNT
 
+// To find data races also
+ #define DATARACE
 
 #ifdef SMALL
 typedef int IDType;

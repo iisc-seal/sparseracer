@@ -1,1 +1,2 @@
- exitmonitor(0, 0x1fe2900, 1)
+enq(1,0x9,1)
+enq(1,0x9,1)	

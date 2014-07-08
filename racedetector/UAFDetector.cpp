@@ -1555,25 +1555,23 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 0;
 }
 
-#if 0
 int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 
 	bool flag = false;
 
 	// Loop through freeIDMap, for each free, find use that no HB edge
 
-	for (map<long long, freeOpDetails>::iterator freeIt = freeIDMap.begin(); freeIt != freeIDMap.end(); freeIt++) {
-		long long freeID = freeIt->first;
-		long long allocID = freeIt->second.allocOpID;
+	for (map<IDType, freeOpDetails>::iterator freeIt = freeIDMap.begin(); freeIt != freeIDMap.end(); freeIt++) {
+		IDType freeID = freeIt->first;
+		IDType allocID = freeIt->second.allocOpID;
 
 		if (allocID == -1) {
 			cout << "ERROR: Cannot find alloc for free op " << freeID << endl;
-//			return -1;
 			continue;
 		}
 #ifdef ACCESS
-		for (set<long long>::iterator accessIt = freeIt->second.accessOps.begin(); accessIt != freeIt->second.accessOps.end(); accessIt++) {
-			long long accessID = *accessIt;
+		for (set<IDType>::iterator accessIt = freeIt->second.accessOps.begin(); accessIt != freeIt->second.accessOps.end(); accessIt++) {
+			IDType accessID = *accessIt;
 
 			if (graph->edgeExists(freeID, accessID) == 1) {
 				cout << "Definite UAF between access op " << accessID << " (access at address " << accessSet[accessID].startingAddress << ") "
@@ -1607,10 +1605,10 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 		}
 
 #else
-		for (set<long long>::iterator readIt = freeIt->second.readOps.begin(); readIt != freeIt->second.readOps.end(); readIt++) {
-			long long readID = *readIt;
+		for (set<IDType>::iterator readIt = freeIt->second.readOps.begin(); readIt != freeIt->second.readOps.end(); readIt++) {
+			IDType readID = *readIt;
 
-			if (graph->edgeExists(freeID, readID) == 1) {
+			if (graph->opEdgeExists(freeID, readID) == 1) {
 				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
 					 << ")\n";
@@ -1620,14 +1618,14 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 
-			if (graph->edgeExists(readID, freeID) == 0) {
+			if (graph->opEdgeExists(readID, freeID) == 0) {
 
 #ifdef ADDITIONS
 				// Even if there is no edge between read and free,
 				// if there is an edge from alloc to read (alloc happens before read), and the alloc is in the same task as the read and the task is atomic, this is a false positive.
 				// This is true only if free is in the same thread as alloc and read.
-				if (graph->edgeExists(allocID, readID) && opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
-					&& atomicTasks.find(opIDMap[allocID].taskID) != atomicTasks.end() && opIDMap[freeID].threadID == opIDMap[readID].threadID)
+				if (graph->opEdgeExists(allocID, readID) && opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
+					&& taskIDMap[opIDMap[allocID].taskID].atomic && opIDMap[freeID].threadID == opIDMap[readID].threadID)
 					continue;
 #endif
 				cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
@@ -1640,10 +1638,10 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 			}
 		}
 
-		for (set<long long>::iterator writeIt = freeIt->second.writeOps.begin(); writeIt != freeIt->second.writeOps.end(); writeIt++) {
-			long long writeID = *writeIt;
+		for (set<IDType>::iterator writeIt = freeIt->second.writeOps.begin(); writeIt != freeIt->second.writeOps.end(); writeIt++) {
+			IDType writeID = *writeIt;
 
-			if (graph->edgeExists(freeID, writeID) == 1) {
+			if (graph->opEdgeExists(freeID, writeID) == 1) {
 				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
 					 << ")\n";
@@ -1653,14 +1651,14 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 
-			if (graph->edgeExists(writeID, freeID) == 0) {
+			if (graph->opEdgeExists(writeID, freeID) == 0) {
 
 #ifdef ADDITIONS
 				// Even if there is no edge between write and free,
 				// if there is an edge from alloc to write (alloc happens before write), and the alloc is in the same task as the write and the task is atomic, this is a false positive.
 				// This is true only if free is in the same thwrite as alloc and write.
-				if (graph->edgeExists(allocID, writeID) && opIDMap[allocID].taskID.compare(opIDMap[writeID].taskID) == 0
-					&& atomicTasks.find(opIDMap[allocID].taskID) != atomicTasks.end() && opIDMap[freeID].threadID == opIDMap[writeID].threadID)
+				if (graph->opEdgeExists(allocID, writeID) && opIDMap[allocID].taskID.compare(opIDMap[writeID].taskID) == 0
+					&& taskIDMap[opIDMap[allocID].taskID].atomic && opIDMap[freeID].threadID == opIDMap[writeID].threadID)
 					continue;
 #endif
 
@@ -1687,19 +1685,19 @@ int UAFDetector::findDataRaces(Logger &logger){
 
 	bool flag = false;
 
-	for (map<long long, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
-		for (set<long long>::iterator writeIt = allocIt->second.writeOps.begin(); writeIt != allocIt->second.writeOps.end(); writeIt++) {
+	for (map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
+		for (set<IDType>::iterator writeIt = allocIt->second.writeOps.begin(); writeIt != allocIt->second.writeOps.end(); writeIt++) {
 
 			string writeAddress1 = writeSet[*writeIt].startingAddress;
 
 			// write-write races
-			for (set<long long>::iterator write2It = allocIt->second.writeOps.begin(); write2It != allocIt->second.writeOps.end(); write2It++) {
+			for (set<IDType>::iterator write2It = allocIt->second.writeOps.begin(); write2It != allocIt->second.writeOps.end(); write2It++) {
 				if (*write2It == *writeIt) continue;
 
 				string writeAddress2 = writeSet[*write2It].startingAddress;
 				if (writeAddress1.compare(writeAddress2) != 0) continue;
 
-				if (graph->edgeExists(*writeIt, *write2It) == 0 && graph->edgeExists(*write2It, *writeIt) == 0) {
+				if (graph->opEdgeExists(*writeIt, *write2It) == 0 && graph->opEdgeExists(*write2It, *writeIt) == 0) {
 					cout << "Potential data race between write ops " << *writeIt << " and " << *write2It << " on address "
 						 << writeAddress1 << endl;
 					flag = true;
@@ -1708,13 +1706,13 @@ int UAFDetector::findDataRaces(Logger &logger){
 			}
 
 			// write-read / read-write races
-			for (set<long long>::iterator readIt = allocIt->second.readOps.begin(); readIt != allocIt->second.readOps.end(); readIt++) {
+			for (set<IDType>::iterator readIt = allocIt->second.readOps.begin(); readIt != allocIt->second.readOps.end(); readIt++) {
 				if (*readIt == *writeIt) continue;
 
 				string readAddress = readSet[*readIt].startingAddress;
 				if (writeAddress1.compare(readAddress) != 0) continue;
 
-				if (graph->edgeExists(*writeIt, *readIt) == 0 && graph->edgeExists(*readIt, *writeIt) == 0) {
+				if (graph->opEdgeExists(*writeIt, *readIt) == 0 && graph->opEdgeExists(*readIt, *writeIt) == 0) {
 					cout << "Potential data race between read op " << *readIt << " and write op " << *writeIt << " on address "
 						 << readAddress << endl;
 					flag = true;
@@ -1729,23 +1727,4 @@ int UAFDetector::findDataRaces(Logger &logger){
 	else
 		return 0;
 }
-#endif
-
-#ifdef GRAPHDEBUG
-void UAFDetector::printEdges() {
-
-	for (long long i=1; i <= graph->totalNodes; i++) {
-		for (long long j=1; j <= graph->totalNodes; j++) {
-			int retValue = graph->edgeExists(i, j);
-			if (retValue == 1) {
-				cout << "Edge: (" << i << ", " << opIDMap[i].opType << ") -- ("
-								  << j << ", " << opIDMap[j].opType << ")\n";
-			} else if (retValue == -1) {
-				cout << "ERROR: With edge (" << i << ", " << opIDMap[i].opType << ") -- ("
-											 << j << ", " << opIDMap[j].opType << ")\n";
-			}
-		}
-	}
-}
-#endif
 #endif

@@ -40,7 +40,8 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 	opCount = 0;
 	blockCount = 0;
 	// The prefix regular expression
-	prefixRegEx = " *";
+	//prefixRegEx = " *";
+	prefixRegEx = "\\s*";
 
 	intRegEx = "[0-9]+";
 	hexRegEx = "0[xX][0-9a-fA-F]+";
@@ -60,8 +61,7 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
 			  " *(resume) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
-			  " *(reset) *\\( *("	   + intRegEx + ") *, *("      + hexRegEx + ") *, *("
-			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
+			  " *(reset) *\\( *("	   + intRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +
 			  " *(alloc) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
 			  	  	  	  	  	  	  	  	  	    		  	   + intRegEx + ") *\\) *" + "|" +
 			  " *(free) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
@@ -73,8 +73,9 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 			  " *(read) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(write) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *";
 
+	suffixRegEx = "\\s*";
 	// Regular expression for the entire line
-	finalRegEx = "^" + prefixRegEx + "(" + opRegEx + ")" + "$";
+	finalRegEx = "^" + prefixRegEx + "(" + opRegEx + ")" + suffixRegEx + "$";
 }
 
 TraceParser::~TraceParser() {
@@ -1105,17 +1106,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						}
 					} else if (match.compare("reset") == 0) {
 						// Obtain 2nd & 3rd argument (i.e., current task & shared variable) of reset
-						string task, sharedVariable;
+						string sharedVariable;
 						unsigned j;
 						for (j=threadPos+1; j < matches.size(); j++) {
-							string m1(matches[j].first, matches[j].second);
-							// find the next non-empty matches[i] after threadID of operation.
-							if (!m1.empty() && m1.compare(" ") != 0) {
-								task = m1;
-								break;
-							}
-						}
-						for (j=j+1; j < matches.size(); j++) {
 							string m1(matches[j].first, matches[j].second);
 							// find the next non-empty matches[i] after threadID of operation.
 							if (!m1.empty() && m1.compare(" ") != 0) {
@@ -1148,7 +1141,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							// This means this is the first op in the thread
 							blockCount++;
 							opdetails.blockID = blockCount;
-							opdetails.taskID = task;
 
 							// Update firstop, firstblock and exitloopblock for current thread
 							if (detector.threadIDMap.find(threadID) == detector.threadIDMap.end()) {
@@ -1170,26 +1162,12 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 
 							if (detector.blockIDMap.find(blockCount) == detector.blockIDMap.end()) {
 								blockdetails.firstOpInBlock = opCount;
-								blockdetails.taskID = task;
 								detector.blockIDMap[blockCount] = blockdetails;
 							} else {
 								cout << "ERROR: Found duplicate entry for block " << blockCount << " in blockIDMap\n";
 								cout << "While examining op " << opCount;
 								cout << "\nDuplicate entry:\n";
 								detector.blockIDMap[blockCount].printBlockDetails();
-								cout << endl;
-								return -1;
-							}
-
-							if (detector.taskIDMap.find(task) == detector.taskIDMap.end()) {
-								UAFDetector::taskDetails taskdetails;
-								taskdetails.firstBlockID = blockCount;
-								detector.taskIDMap[task] = taskdetails;
-							} else {
-								cout << "ERROR: Found duplicate entry for task " << task << " in taskIDMap\n";
-								cout << "While examining op " << opCount;
-								cout << "\nDuplicate entry:\n";
-								detector.taskIDMap[task].printTaskDetails();
 								cout << endl;
 								return -1;
 							}
@@ -1207,7 +1185,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								return -1;
 							}
 							stackElement.blockID = blockCount;
-							stackElement.taskID = task;
 							stackForThreadAndBlockOrder.push(stackElement);
 //							stackForTaskOrder.push(stackElement);
 
@@ -1216,7 +1193,6 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							// In the case of reset, the previous op in thread is the previous op in task.
 							// So no need to look separately in task stack.
 
-							opdetails.taskID = task;
 							opdetails.blockID = previousOpInThread.blockID;
 							opdetails.prevOpInBlock = previousOpInThread.opID;
 							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
@@ -1231,12 +1207,11 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								// Sanity check: prev op has same threadID and taskID as current op
 								assert(previousOpInThread.threadID == threadID);
 								assert(existingEntry.threadID == threadID);
-								assert(previousOpInThread.taskID.compare(task) == 0);
-								assert(existingEntry.taskID.compare(task) == 0);
 #endif
 								existingEntry.nextOpInBlock = opCount;
 								existingEntry.nextOpInTask = opCount;
 								existingEntry.nextOpInThread = opCount;
+								opdetails.taskID = existingEntry.taskID;
 								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
 								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
@@ -1254,7 +1229,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							}
 
 							stackElement.blockID = previousOpInThread.blockID;
-							stackElement.taskID = task;
+							stackElement.taskID = opdetails.taskID;
 							stackForThreadAndBlockOrder.push(stackElement);
 //							stackForTaskOrder.push(stackElement);
 						}
