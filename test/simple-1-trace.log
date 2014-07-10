@@ -378,6 +378,8 @@ Op Edges:
 28: 
 Total op edges = 17
 Total block edges = 8
+
+Finding UAF
 Potential UAF between read op 12 (read at address 0x19)  and free op 25 (freed 30 bytes from address 0xa)
 Memory originally allocated at 5 (allocated 30 bytes from address 0xa)
 Potential UAF between read op 15 (read at address 0x4b)  and free op 27 (freed 50 bytes from address 0x46)
@@ -386,4 +388,6 @@ Potential UAF between write op 14 (write at address 0x4b)  and free op 27 (freed
 Memory originally allocated at 13 (allocated 50 bytes from address 0x46)
 Potential UAF between write op 16 (write at address 0x50)  and free op 27 (freed 50 bytes from address 0x46)
 Memory originally allocated at 13 (allocated 50 bytes from address 0x46)
+
+Finding data races
 Potential data race between read op 26 and write op 14 on address 0x4b

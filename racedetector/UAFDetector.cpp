@@ -378,6 +378,11 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 
 	for (map<string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
 
+		if (it->second.enqOpID > 0 && it->second.deqOpID <= 0) {
+			// Saw an enq of the task, but no deq
+			continue;
+		}
+
 		// ENQUEUE-ST/MT
 
 		IDType enqOp = it->second.enqOpID;
@@ -476,6 +481,11 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 
 
 	for (map<string, taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
+
+		if (it->second.enqOpID > 0 && it->second.deqOpID <= 0) {
+			// Saw an enq of the task, but no deq
+			continue;
+		}
 		// Adding FIFO-ATOMIC edges.
 
 		// If the task is not atomic, the rule does not apply
@@ -696,6 +706,9 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 			if (threadOfPauseOp != threadOfResetOp) {
 				int retValue = graph->opEdgeExists(opI, opJ);
 				if (retValue == 0) {
+#ifdef EXTRADEBUGINFO
+					cout << "DEBUG: Adding PAUSE-MT edge (" << opI << ", " << opJ << ")\n";
+#endif
 					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
 					if (addEdgeRetValue == 1) {
 						flag = true;
@@ -723,6 +736,9 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 
 				int retValue = graph->opEdgeExists(opI, opJ);
 				if (retValue == 0) {
+#ifdef EXTRADEBUGINFO
+					cout << "DEBUG: Adding PAUSE-ST edge (" << opI << ", " << opJ << ")\n";
+#endif
 					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
 					if (addEdgeRetValue == 1) {
 						flag = true;
@@ -762,6 +778,9 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 			if (threadOfResetOp != threadOfResumeOp) {
 				int retValue = graph->opEdgeExists(opI, opJ);
 				if (retValue == 0) {
+#ifdef EXTRADEBUGINFO
+					cout << "DEBUG: Adding RESUME-MT edge (" << opI << ", " << opJ << ")\n";
+#endif
 					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
 					if (addEdgeRetValue == 1) {
 						flag = true;
@@ -789,6 +808,9 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 
 				int retValue = graph->opEdgeExists(opI, opJ);
 				if (retValue == 0) {
+#ifdef EXTRADEBUGINFO
+					cout << "DEBUG: Adding RESUME-ST edge (" << opI << ", " << opJ << ")\n";
+#endif
 					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
 					if (addEdgeRetValue == 1) {
 						flag = true;
@@ -818,6 +840,12 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 	bool flag = false;
 
 	for (map<std::string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
+
+		if (it->second.enqOpID > 0 && it->second.deqOpID <= 0) {
+			// Saw an enq of task, but no deq
+			continue;
+		}
+
 		IDType opI, opJ;
 		IDType threadI, threadJ;
 
@@ -1226,26 +1254,21 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 			assert(*resetIt > 0);
 #endif
 			IDType opK = *resetIt;
-			std::string taskK = opIDMap[opK].taskID;
-#ifdef SANITYCHECK
-			assert(taskK.compare("") != 0);
-#endif
-			// Task containing reset needs to be atomic
-			if (taskIDMap[taskK].atomic == false) continue;
-
 			IDType opM = it->second.resumeOpID;
-#ifdef SANITYCHECK
-			assert(opM > 0);
-#endif
 
 			// reset (opK) and resume(opM) needs to be in the same thread
 			if (opIDMap[opM].threadID != opIDMap[opK].threadID)
 				continue;
 
+			std::string taskK = opIDMap[opK].taskID;
 			std::string taskM = opIDMap[opM].taskID;
 #ifdef SANITYCHECK
+			assert(opM > 0);
+			assert(taskK.compare("") != 0);
 			assert(taskM.compare("") != 0);
 #endif
+			// Task containing reset needs to be atomic
+			if (taskIDMap[taskK].atomic == false) continue;
 
 			// opM needs to be the last resume of taskM
 			if (opM != taskIDMap[taskM].lastResumeOpID)
@@ -1277,6 +1300,9 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 					if (enqToTaskEnqueued[opL].targetThread != opIDMap[opK].threadID)
 						continue;
 
+#ifdef EXTRADEBUGINFO
+					cout << "DEBUG: checking op edge (" << opK << ", " << opL << ")\n";
+#endif
 					int retValue = graph->opEdgeExists(opK, opL);
 					if (retValue == 1) {
 						std::string taskL = enqToTaskEnqueued[opL].taskEnqueued;
@@ -1285,7 +1311,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 #endif
 						opJ = taskIDMap[taskL].deqOpID;
 #ifdef SANITYCHECK
-						assert(opL > 0);
+						assert(opJ > 0);
 #endif
 						// ENQRESET-ST-2
 						opI = taskIDMap[taskM].endOpID;
@@ -1293,6 +1319,9 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 						assert(opI > 0);
 #endif
 
+#ifdef EXTRADEBUGINFO
+						cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
+#endif
 						int edgeRetValue = graph->opEdgeExists(opI, opJ);
 						if (edgeRetValue == 0) {
 							int addEdgeRetValue = graph->addOpEdge(opI, opJ);
@@ -1331,6 +1360,9 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 						}
 
 						if (foundFlag) {
+#ifdef EXTRADEBUGINFO
+							cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
+#endif
 							int edgeRetValue = graph->opEdgeExists(opI, opJ);
 							if (edgeRetValue == 0) {
 								int addEdgeRetValue = graph->addOpEdge(opI, opJ);
