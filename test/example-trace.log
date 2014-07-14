@@ -281,6 +281,7 @@ ENQUEUE-ST/MT edge (10, 14) -- #op-edges 16 -- #block-edges 16
 ENQUEUE-ST/MT edge (20, 21) -- #op-edges 17 -- #block-edges 17
 ENQUEUE-ST/MT edge (24, 27) -- #op-edges 18 -- #block-edges 18
 ENQUEUE-ST/MT edge (34, 36) -- #op-edges 19 -- #block-edges 19
+DEBUG: Adding PAUSE-ST edge (26, 27)
 PAUSE-ST edge (26, 27) -- #op-edges 20 -- #block-edges 20
 
 Block Edges:

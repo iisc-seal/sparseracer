@@ -308,8 +308,11 @@ TASK-PO edge (26, 37) -- #op-edges 19 -- #block-edges 19
 TASK-PO edge (32, 37) -- #op-edges 20 -- #block-edges 20
 ENQUEUE-ST/MT edge (22, 27) -- #op-edges 21 -- #block-edges 21
 ENQUEUE-ST/MT edge (25, 33) -- #op-edges 22 -- #block-edges 22
+DEBUG: Adding PAUSE-ST edge (23, 24)
 PAUSE-ST edge (23, 24) -- #op-edges 23 -- #block-edges 23
+DEBUG: Adding PAUSE-ST edge (26, 27)
 PAUSE-ST edge (26, 27) -- #op-edges 24 -- #block-edges 24
+DEBUG: Adding PAUSE-ST edge (32, 33)
 PAUSE-ST edge (32, 33) -- #op-edges 25 -- #block-edges 25
 
 Block Edges:

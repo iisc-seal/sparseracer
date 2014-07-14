@@ -361,8 +361,11 @@ TASK-PO edge (24, 37) -- #op-edges 26 -- #block-edges 26
 ENQUEUE-ST/MT edge (23, 25) -- #op-edges 27 -- #block-edges 27
 ENQUEUE-ST/MT edge (27, 30) -- #op-edges 28 -- #block-edges 28
 ENQUEUE-ST/MT edge (28, 33) -- #op-edges 29 -- #block-edges 29
+DEBUG: Adding PAUSE-ST edge (21, 30)
 PAUSE-ST edge (21, 30) -- #op-edges 30 -- #block-edges 30
+DEBUG: Adding PAUSE-ST edge (24, 33)
 PAUSE-ST edge (24, 33) -- #op-edges 31 -- #block-edges 31
+DEBUG: Adding PAUSE-ST edge (42, 43)
 PAUSE-ST edge (42, 43) -- #op-edges 32 -- #block-edges 32
 
 Block Edges:
@@ -614,6 +617,7 @@ Op Edges:
 49: 
 50: 
 Adding EnqReset-ST-2/3 edges
+DEBUG: checking op edge (35, 34)
 Adding Trans-ST/MT edges
 Restored edge from 3 to 4
 Restored edge from 6 to 11
@@ -842,6 +846,7 @@ Op Edges:
 50: 
 Adding Fifo-Nested-1/2/GEN or EnqResetST-1 edges
 Adding EnqReset-ST-2/3 edges
+DEBUG: checking op edge (35, 34)
 Adding Trans-ST/MT edges
 Restored edge from 3 to 9
 Restored edge from 10 to 14
@@ -1049,6 +1054,7 @@ Op Edges:
 Adding Fifo-Atomic/No-Pre edges
 Adding Fifo-Nested-1/2/GEN or EnqResetST-1 edges
 Adding EnqReset-ST-2/3 edges
+DEBUG: checking op edge (35, 34)
 Adding Trans-ST/MT edges
 Restored edge from 6 to 11
 Restored edge from 13 to 14

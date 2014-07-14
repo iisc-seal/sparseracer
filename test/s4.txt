@@ -31,7 +31,6 @@
          deq(1, 0x7)
 	 reset(1, 0xaa)
 	 reset(1, 0xdd)
-	 enq(1, 0x10, 1)
 	 end(1, 0x7)
        resume(1, 0x9, 0xdd) 	  
  exitloop(2)
