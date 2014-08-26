@@ -55,11 +55,11 @@ namespace MemInstrument {
     };
     
     std::set<std::string> freeFunctions = {
-      "_ZdlPv", // operator delete(void*)
-      "_ZdaPv", // operator delete[](void*)
+      //      "_ZdlPv", // operator delete(void*)
+      //"_ZdaPv", // operator delete[](void*)
       "free",
-      "_ZdlPvRKSt9nothrow_t",  // delete(void*, nothrow)
-      "ZdaPvRKSt9nothrow_t"   // delete[](void*, nothrow)
+      //"_ZdlPvRKSt9nothrow_t",  // delete(void*, nothrow)
+      //"ZdaPvRKSt9nothrow_t"   // delete[](void*, nothrow)
     };
 
     std::set<std::string> whiteList = {

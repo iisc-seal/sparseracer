@@ -53,20 +53,21 @@ namespace MemInstrument {
       // Try to abort early based on the directories to be instrumented
       std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
       
-      if(search != funcNameToDirName.end()) {
-	dirName = search->second;
-      }
+      // if(search != funcNameToDirName.end()) {
+      // 	dirName = search->second;
+      // }
       
-       if(dirName.compare("")!=0)
-	 if(!shouldInstrumentDirectory(dirName))
-	   continue;
+      //  if(dirName.compare("")!=0)
+      // 	 if(!shouldInstrumentDirectory(dirName))
+      // 	   continue;
+
       // 	   || dirName.find("nsprpub/pr/src") != std::string::npos
       // 	   || dirName.find("ipc/chromium/src/base") != std::string::npos)
       // 	  continue;
 
       // Debug output to see that the IR being generated is OK	   
       // llvm::outs() << "Processing " << fName+" in "+dirName << "\n";
-      // if(fName.find("Capture") != std::string::npos){
+      // if(fName.find("CaptureStreamInternal") != std::string::npos){
       // 	llvm::outs() << "Instrumenting " << fName << "\n";
       // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
       // 	  llvm::outs() << *I << "\n";
@@ -97,6 +98,7 @@ namespace MemInstrument {
 	 fName.find("getID") != std::string::npos ||
 	 fName.find("pt_AttachThread") != std::string::npos) 
 	continue;
+      
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
       }
@@ -202,9 +204,16 @@ namespace MemInstrument {
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
       // Getting the dirname earlier failed. Try again using the instruction
+
+      
+
       if(dName.compare("")==0)
-       if(!shouldInstrumentDirectory(getDirName(BI)))
+	if(!shouldInstrumentDirectory(getDirName(BI)) && 
+	   !shouldInstrumentFile(getFileName(BI)))
 	 continue;
+      
+      // llvm::outs() << "Processing " << fName << " in " << getFileName(BI) << " \n";
+      // llvm::outs() << "shouldInstrumentFile " << shouldInstrumentFile(getFileName(BI)) << " \n";
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here

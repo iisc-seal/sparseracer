@@ -49,6 +49,16 @@ namespace MemInstrument {
     return "";
   }
 
+  std::string getFileName(Instruction *I){
+    if (MDNode *N = I->getMetadata("dbg")) {  // Here I is an LLVM instruction
+      DILocation Loc(N);                      // DILocation is in DebugInfo.h
+      //std::string File = Loc.getFilename().str();
+      std::string fileName = Loc.getFilename().str();
+      return fileName;
+    }
+    return "";
+  }
+
   std::string getSourceInfoAsString(Instruction *I, std::string name){
     if (MDNode *N = I->getMetadata("dbg")) {  // Here I is an LLVM instruction
       DILocation Loc(N);                      // DILocation is in DebugInfo.h
@@ -76,6 +86,25 @@ namespace MemInstrument {
     for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
       std::size_t found = name.find(*it);
       if (found != std::string::npos){
+	return true;
+      }
+    }
+    
+    return false;
+  }
+
+  bool shouldInstrumentFile(std::string name){
+    char *files = getenv("INSTRUMENTFILES");
+    if(files == NULL)
+      return false;
+    std::string instrFiles(files);
+    std::vector<std::string> wList = split(instrFiles, ':');
+
+    for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
+      std::size_t found = name.find(*it);
+      // llvm::outs() << name << " : " << *it << "\n";
+      if (found != std::string::npos){
+	// llvm::outs() << "Instrumenting " << name << "\n";
 	return true;
       }
     }
