@@ -173,8 +173,9 @@ namespace MemInstrument {
   Value* AllocFreeInstrument::getMemSize(CallInst* Original, 
 					 const TargetLibraryInfo *TLI, IRBuilder<> IRB){
     Value* MemSize;
-    if(llvm::isOperatorNewLikeFn(Original, TLI) 
-       || llvm::isMallocLikeFn(Original, TLI))
+    if(allocFunctions.find(Original->getCalledFunction()->getName()) != allocFunctions.end()
+       && Original->getCalledFunction()->getName().compare("realloc") != 0
+       && Original->getCalledFunction()->getName().compare("calloc") != 0)
       MemSize = getIntegerValue(Original->getOperand(0));
     else if(Original->getCalledFunction()->getName().compare("realloc") == 0)
       MemSize = getIntegerValue(Original->getOperand(1));
@@ -200,14 +201,13 @@ namespace MemInstrument {
     
     if(BitCastInst* BCI = dyn_cast<BitCastInst>(Succ))
       AllocatedType = BCI -> getDestTy();
-    
-    IRBuilder<> IRB(Succ);
-    Type *AllocatedType = Succ -> getDestTy();
-    if(isMallocLikeFn(Original, TLI)){
-      PointerType *PType =  llvm::getMallocType(Original, TLI); 
-      AllocatedType = PType ? PType->getElementType() : 
-	Type::getVoidTy(Original->getParent()->getContext());
-    }
+    else
+      AllocatedType = cast<PointerType>(Original->getType());
+    // if(isMallocLikeFn(Original, TLI)){
+    //   PointerType *PType =  llvm::getMallocType(Original, TLI); 
+    //   AllocatedType = PType ? PType->getElementType() : nullptr;
+    // 	//Type::getVoidTy(Original->getParent()->getContext());
+    // }
     
     // Get the address allocated
     Value *AddrLong = IRB.CreatePointerCast(Original, IntptrTy);
@@ -221,7 +221,11 @@ namespace MemInstrument {
 
     // errs() << "Size " << *MemSize<< "\n";
     //Create a string representing the type being written to
-    Value *TypeString = IRB.CreateGlobalString(getTypeAsString(AllocatedType));
+    Value *TypeString;
+    if(AllocatedType)
+      TypeString = IRB.CreateGlobalString(getTypeAsString(AllocatedType));
+    else
+      TypeString = IRB.CreateGlobalString("void*");
     //errs() << "Type String" << *TypeString<< "\n";
     //Get a pointer to the string   
     Value *TypeStringPtr = IRB.CreateBitCast(TypeString, IRB.getInt8PtrTy());
@@ -270,8 +274,6 @@ namespace MemInstrument {
 	    //continue;
 	//}
 
-	
-
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
 	  bool found = (freeFunctions.find(name) != freeFunctions.end());
@@ -287,7 +289,7 @@ namespace MemInstrument {
 	  }
 	}
       }
-      
+    }  
     for(std::vector< std::pair<Instruction*, Instruction*> >::size_type i = 0; 
 	  i != Interesting.size(); i++) {
       CallInst * CI = dyn_cast<CallInst>(Interesting[i].first);
@@ -302,12 +304,12 @@ namespace MemInstrument {
       IRBuilder<> IRB(Succ);
       AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
 
-      Interesting[i].first->print(llvm::outs());
-      llvm::outs() << "\n";
-      if(Interesting[i].second){
-      	Interesting[i].second->print(llvm::outs());
-      	llvm::outs() << "\n";
-      }
+      // Interesting[i].first->print(llvm::outs());
+      // llvm::outs() << "\n";
+      // if(Interesting[i].second){
+      // 	Interesting[i].second->print(llvm::outs());
+      // 	llvm::outs() << "\n";
+      // }
     }
 
     //errs() << "========B*B===========\n";
