@@ -52,8 +52,6 @@ namespace MemInstrument {
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
       std::string fName = F->getName().str();
-      if(fName.compare("moz_xmalloc") == 0)
-	llvm::outs() << "Processing " << fName << "\n";
       std::string dirName = "";
       // Try to abort early based on the directories to be instrumented 
       std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
@@ -85,8 +83,6 @@ namespace MemInstrument {
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-	if(fName.compare("moz_xmalloc") == 0)
-	  llvm::outs() << "Instrumenting " << fName << "\n";
 	AllocFreeInstrument::runOnBasicBlock(BB, fName, dirName, TLI);
       }
     }
@@ -196,38 +192,26 @@ namespace MemInstrument {
     return MemSize;
   }
 
-  void AllocFreeInstrument::InstrumentAlloc(BitCastInst* Succ, CallInst *Original, 
-					    std::string fName, const TargetLibraryInfo *TLI) {
+  void AllocFreeInstrument::InstrumentAlloc(Instruction* Succ, CallInst *Original, 
+					    std::string fName, const TargetLibraryInfo *TLI,
+					    IRBuilder<> IRB) {
 
-    // This is fragile in the sense that it assumes that a cast
-    // instruction always follows an alloc instruction where the
-    // address returned by the alloc is cast to the type of the
-    // register. The pass will break if the assumption does not hold.
-
-    //Type *OrigTy;
+    Type *AllocatedType;
     
-    // for (Value::use_iterator i = Original->use_begin(), e = Original->use_end(); i != e; ++i)
-    //   if (Instruction *Inst = dyn_cast<Instruction>(*i)) {
-    // 	errs() << "F is used in instruction:\n";
-    // 	errs() << *Inst << "\n";
-    //   }
-
-
-    //OrigTy = Succ->getDestTy();
-    //errs() << *OrigTy << "\n";
-    //OrigTy->dump();
-    
+    if(BitCastInst* BCI = dyn_cast<BitCastInst>(Succ))
+      AllocatedType = BCI -> getDestTy();
     
     IRBuilder<> IRB(Succ);
     Type *AllocatedType = Succ -> getDestTy();
     if(isMallocLikeFn(Original, TLI)){
       PointerType *PType =  llvm::getMallocType(Original, TLI); 
-      AllocatedType = PType ? PType->getElementType() : nullptr;
+      AllocatedType = PType ? PType->getElementType() : 
+	Type::getVoidTy(Original->getParent()->getContext());
     }
     
     // Get the address allocated
     Value *AddrLong = IRB.CreatePointerCast(Original, IntptrTy);
-    //errs() << "Address " << *AddrLong << "\n";
+    // errs() << "Address " << *AddrLong << "\n";
     // Get the number of bytes allocated
     Value *MemSize = getMemSize(Original, TLI, IRB);
     // if(isa<llvm::ConstantInt>(Original->getOperand(0)))
@@ -235,7 +219,7 @@ namespace MemInstrument {
     // else
     //   MemSize = Original->getOperand(0);
 
-    //errs() << "Size " << *MemSize<< "\n";
+    // errs() << "Size " << *MemSize<< "\n";
     //Create a string representing the type being written to
     Value *TypeString = IRB.CreateGlobalString(getTypeAsString(AllocatedType));
     //errs() << "Type String" << *TypeString<< "\n";
@@ -264,17 +248,20 @@ namespace MemInstrument {
 
   bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB, std::string callerName, 
 					    std::string dName, const TargetLibraryInfo *TLI) {
-    //errs() << "========BB===========\n";
+
     bool flag = false;
+    std::vector< std::pair<Instruction*, Instruction*> > Interesting;
+    int count = 0;
+
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
          BI != BE; ++BI) { 
       
-      if(flag){
-	//BI->dump();
-      	//errs() << "Got here! \n";
+      if(flag == true){
+	Interesting[count].second = BI;
+	count++;
 	flag = false;
       }
-      
+
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
         // llvm::outs() << dirName << "\n";
 	//if(dName.compare("")==0){
@@ -283,82 +270,53 @@ namespace MemInstrument {
 	    //continue;
 	//}
 
-	/*Debug Stats: How many malloc like functions don't have bitcast?*/
-	/*We're essentially gonna miss these sites*/
-	// Determine if CallInst has a bitcast use.
-	if(isMallocLikeFn(CI, TLI)){
-	  int NumOfBitCastUses = 0;
-	  
-	  for (User *U : CI->users())
-	    if (dyn_cast<BitCastInst>(U)) 
-	      NumOfBitCastUses++;
-	  
-	  if(NumOfBitCastUses == 0){
-	    ++MissedMalloc;
-	    llvm::outs() << "Missed in " << callerName + dName;
-	  }
-	}
+	
 
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
-	  // llvm::outs() << name << "\n"; 
-	  const bool found = (freeFunctions.find(name) != freeFunctions.end());
+	  bool found = (freeFunctions.find(name) != freeFunctions.end());
 	  if(found){
-	    // delete and delete[] are overloaded to redirect to moz_free
-	    // moz_free in turn calls free
-	    // so avoid instrumenting twice
-	    // if(callerName.compare("_ZdlPv") == 0 || callerName.compare("_ZdaPv") == 0
-	    //    || callerName.compare("moz_free") == 0)
-	    //   continue;
 	    AllocFreeInstrument::InstrumentDealloc(BI, callerName, TLI);
+	    continue;
 	  }
-	  
-	}
-      }
-      // assume an alloc is always followed by a bitcast
-      else if (BitCastInst *BCI = dyn_cast<BitCastInst>(BI)) {
-	if (CallInst * CI = dyn_cast<CallInst>(BCI->getOperand(0))) {
-	  // if(dName.compare("")==0){
-	  // std::string dirName = getDirName(CI);
-	  // if(!shouldInstrumentDirectory(dirName))
-	  //   continue;
-	  // }
-	  if (Function * CalledFunc = CI->getCalledFunction()) {
-	    std::string name = CalledFunc->getName();
-	    const bool found = (allocFunctions.find(name) != allocFunctions.end());
-	    if(found){
-	      // new and new[] are overloaded to redirect to moz_malloc/moz_xmalloc
-	      // moz_malloc and moz_xmalloc in turn call malloc
-	      // so avoid instrumenting twice
-	      // if(callerName.compare("_Znwm") == 0 
-	      // 	 || callerName.compare("_Znam") == 0
-	      // 	 || callerName.compare("moz_malloc") == 0 
-	      // 	 || callerName.compare("moz_xmalloc") == 0)
-	      // 	continue;
-	      //BI->dump();
-	      if(callerName.compare("moz_xmalloc") == 0)
-		llvm::outs() << "Instrumenting " << name << " in " << " callername \n";
-
-	      AllocFreeInstrument::InstrumentAlloc(BCI, CI, callerName, TLI);
-	      //errs() << "Alloc insert success!" ;
-	      flag = true;
-	      //BI->dump();
-	    }
+	  found = (allocFunctions.find(name) != allocFunctions.end());
+	  if(found){
+	    flag = true;
+	    std::pair <Instruction*, Instruction*> allocAndNext = std::make_pair (BI, nullptr);
+	    Interesting.push_back(allocAndNext);
 	  }
 	}
-      }
-      else {
-	//errs() << " ";
       }
       
-      //errs() << "BI: " << BI->getOpcodeName() << "\n";
+    for(std::vector< std::pair<Instruction*, Instruction*> >::size_type i = 0; 
+	  i != Interesting.size(); i++) {
+      CallInst * CI = dyn_cast<CallInst>(Interesting[i].first);
+      Instruction* Succ = Interesting[i].second;
+      assert(Succ);
+      // if(Succ == CI->getParent()->getTerminator()){
+      // 	IRBuilder<> IRB(CI->getParent());
+      // 	llvm::outs() << callerName << "\n";
+      // 	AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
+      // }
+      
+      IRBuilder<> IRB(Succ);
+      AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
+
+      Interesting[i].first->print(llvm::outs());
+      llvm::outs() << "\n";
+      if(Interesting[i].second){
+      	Interesting[i].second->print(llvm::outs());
+      	llvm::outs() << "\n";
+      }
     }
-    //errs() << "========BB===========\n";
+
+    //errs() << "========B*B===========\n";
     return true;
   }
   
   void AllocFreeInstrument::getAnalysisUsage(AnalysisUsage &AU) const {
       AU.addRequired<DataLayoutPass>();
+      //AU.addRequired<TargetLibraryInfoPass>();
   }
 }
   

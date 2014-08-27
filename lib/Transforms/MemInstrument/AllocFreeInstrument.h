@@ -30,7 +30,7 @@
 
 using namespace llvm;
 STATISTIC(MissedFrees, "Counts number of free sites untracked");
-STATISTIC(MissedMalloc, "Counts number of malloc sites untracked");
+//STATISTIC(MissedMalloc, "Counts number of malloc sites untracked");
 namespace MemInstrument {
   class AllocFreeInstrument : public ModulePass {
 
@@ -84,8 +84,8 @@ namespace MemInstrument {
     virtual bool runOnModule(Module &M);
     void InstrumentDealloc(BasicBlock::iterator &BI, std::string fName, 
 			   const TargetLibraryInfo *TLI);
-    void InstrumentAlloc(BitCastInst* Succ, CallInst *Original, std::string fName, 
-			 const TargetLibraryInfo *TLI);
+    void InstrumentAlloc(Instruction* Succ, CallInst *Original, std::string fName, 
+			 const TargetLibraryInfo *TLI, IRBuilder<> IRB);
     virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName, 
 				 std::string dirName, const TargetLibraryInfo *TLI);
     Value* getMemSize(CallInst* Original, const TargetLibraryInfo *TLI, 

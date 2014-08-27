@@ -12,6 +12,10 @@ struct product{
   }nested;
 };
 
+void *foo(int size){
+  return malloc(size);
+}
+
 int main(){
   openlog ("struct3", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
   int *base = (int*)malloc(sizeof(int));
@@ -28,6 +32,12 @@ int main(){
   delete p->nested.f2;
   free(p);
   printf("%d", sizeof(struct product));
-  closelog();
+  malloc(10);
+
+  for(int i = 0; i < 10; i++)
+     printf("ok \n");
+
+   closelog();
+   foo(30);
   //return 0;
 }
