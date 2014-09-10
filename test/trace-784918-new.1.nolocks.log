@@ -1,0 +1,36 @@
+../test/trace-784918-new.1.nolocks.txt
+Cannot open trace file
+Finished parsing the file
+No of ops: 0
+No of blocks: 0
+No of tasks: 0
+No of atomic tasks: 0
+No of nesting loops: 0
+No of threads: 0
+
+Ops: 
+
+Tasks:
+
+Threads:
+
+Blocks:
+
+Nesting Loops:
+
+Pause/Reset/Resume Ops:
+
+Set - enq
+
+Set - alloc
+
+Set - free
+
+Set - read
+
+Set - write
+
+Map - alloc
+
+Map - free
+map size: 0

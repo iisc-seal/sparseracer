@@ -42,6 +42,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+#if 0
 	cout << "\nFinding UAF\n";
 	int retfindUAF = detectorObj.findUAFwithoutAlloc(logger);
 
@@ -62,6 +63,7 @@ int main(int argc, char* argv[]) {
 	} else if (retfindRace == 0) {
 		cout << "No data races in the trace\n";
 	}
+#endif
 #endif
 	return 0;
 }

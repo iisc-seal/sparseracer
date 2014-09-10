@@ -3,3 +3,4 @@
 #define GRAPHDEBUGFULL
 #define EXTRADEBUGINFO
 //#define HACKS
+#define PERMIT

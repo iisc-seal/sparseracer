@@ -1,0 +1,230 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ADDITIONS	config.h	5;"	d
+ASM_SRCS	Debug/sources.mk	/^ASM_SRCS := $/;"	m
+CC_DEPS	Debug/sources.mk	/^CC_DEPS := $/;"	m
+CC_SRCS	Debug/sources.mk	/^CC_SRCS := $/;"	m
+CPP_DEPS	Debug/sources.mk	/^CPP_DEPS := $/;"	m
+CPP_SRCS	Debug/sources.mk	/^CPP_SRCS := $/;"	m
+CXX_DEPS	Debug/sources.mk	/^CXX_DEPS := $/;"	m
+CXX_SRCS	Debug/sources.mk	/^CXX_SRCS := $/;"	m
+C_DEPS	Debug/sources.mk	/^C_DEPS := $/;"	m
+C_SRCS	Debug/sources.mk	/^C_SRCS := $/;"	m
+C_UPPER_DEPS	Debug/sources.mk	/^C_UPPER_DEPS := $/;"	m
+C_UPPER_SRCS	Debug/sources.mk	/^C_UPPER_SRCS := $/;"	m
+DATARACE	config.h	25;"	d
+ERRLOG	racedetector/UAFDetector.h	/^	void ERRLOG(std::string error) {$/;"	f	class:UAFDetector
+EXECUTABLES	Debug/sources.mk	/^EXECUTABLES := $/;"	m
+EXTRADEBUGINFO	debugconfig.h	4;"	d
+GRAPHDEBUG	debugconfig.h	2;"	d
+GRAPHDEBUGFULL	debugconfig.h	3;"	d
+HBGRAPH_H_	racedetector/HBGraph.h	17;"	d
+HBGraph	racedetector/HBGraph.cpp	/^HBGraph::HBGraph(){$/;"	f	class:HBGraph
+HBGraph	racedetector/HBGraph.cpp	/^HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks, map<IDType, UAFDetector::opDetails> opMap, map<IDType, UAFDetector::blockDetails> blockMap) {$/;"	f	class:HBGraph
+HBGraph	racedetector/HBGraph.h	/^class HBGraph {$/;"	c
+HBGraph	racedetector/UAFDetector.h	/^class HBGraph {$/;"	c
+IDType	config.h	/^typedef int IDType;$/;"	t
+IDType	config.h	/^typedef long IDType;$/;"	t
+IDType	config.h	/^typedef long long IDType;$/;"	t
+LIBS	Debug/objects.mk	/^LIBS := -lboost_regex$/;"	m
+LOGGER_H_	logging/Logger.h	14;"	d
+Logger	logging/Logger.cpp	/^Logger::Logger(string fileName) {$/;"	f	class:Logger
+Logger	logging/Logger.h	/^class Logger {$/;"	c
+MULTISTACK_H_	parser/MultiStack.h	14;"	d
+MultiStack	parser/MultiStack.cpp	/^MultiStack::MultiStack() {$/;"	f	class:MultiStack
+MultiStack	parser/MultiStack.h	/^class MultiStack {$/;"	c
+NILCallback	racedetector/UAFDetector.cpp	16;"	d	file:
+OBJS	Debug/sources.mk	/^OBJS := $/;"	m
+OBJ_SRCS	Debug/sources.mk	/^OBJ_SRCS := $/;"	m
+O_SRCS	Debug/sources.mk	/^O_SRCS := $/;"	m
+RM	Debug/makefile	/^RM := rm -rf$/;"	m
+SANITYCHECK	config.h	11;"	d
+SMALL	config.h	15;"	d
+SUBDIRS	Debug/sources.mk	/^SUBDIRS := \\$/;"	m
+S_UPPER_SRCS	Debug/sources.mk	/^S_UPPER_SRCS := $/;"	m
+TRACEDEBUG	debugconfig.h	1;"	d
+TRACEPARSER_H_	parser/TraceParser.h	15;"	d
+TraceParser	parser/TraceParser.cpp	/^TraceParser::TraceParser(char* traceFileName, Logger &logger) {$/;"	f	class:TraceParser
+TraceParser	parser/TraceParser.h	/^class TraceParser {$/;"	c
+UAFDETECTOR_H_	racedetector/UAFDetector.h	20;"	d
+UAFDetector	racedetector/UAFDetector.cpp	/^UAFDetector::UAFDetector()$/;"	f	class:UAFDetector
+UAFDetector	racedetector/UAFDetector.h	/^class UAFDetector {$/;"	c
+USER_OBJS	Debug/objects.mk	/^USER_OBJS :=$/;"	m
+addEdges	racedetector/UAFDetector.cpp	/^int UAFDetector::addEdges(Logger &logger) {$/;"	f	class:UAFDetector
+addOpEdge	racedetector/HBGraph.cpp	/^int HBGraph::addOpEdge(IDType sourceOp, IDType destinationOp) {$/;"	f	class:HBGraph
+adjListNode	racedetector/HBGraph.h	/^	struct adjListNode {$/;"	s	class:HBGraph
+adjListNode	racedetector/UAFDetector.h	/^	struct adjListNode {$/;"	s	class:HBGraph
+adjListType	racedetector/HBGraph.h	/^	struct adjListType {$/;"	s	class:HBGraph
+adjListType	racedetector/UAFDetector.h	/^	struct adjListType {$/;"	s	class:HBGraph
+allocIDMap	racedetector/UAFDetector.h	/^	map<IDType, allocOpDetails> allocIDMap;$/;"	m	class:UAFDetector
+allocOpDetails	racedetector/UAFDetector.h	/^		allocOpDetails() {$/;"	f	class:UAFDetector::allocOpDetails
+allocOpDetails	racedetector/UAFDetector.h	/^	class allocOpDetails {$/;"	c	class:UAFDetector
+allocOpID	racedetector/UAFDetector.h	/^		IDType allocOpID;$/;"	m	class:UAFDetector::freeOpDetails
+allocSet	racedetector/UAFDetector.h	/^	map<IDType, memoryOpDetails> allocSet;$/;"	m	class:UAFDetector
+atomic	racedetector/UAFDetector.h	/^		bool atomic;$/;"	m	class:UAFDetector::taskDetails
+blockAdjList	racedetector/HBGraph.h	/^	struct adjListType* blockAdjList;$/;"	m	class:HBGraph	typeref:struct:HBGraph::adjListType
+blockAdjList	racedetector/UAFDetector.h	/^	struct adjListType* blockAdjList;$/;"	m	class:HBGraph	typeref:struct:HBGraph::adjListType
+blockAdjMatrix	racedetector/HBGraph.h	/^	bool** blockAdjMatrix;$/;"	m	class:HBGraph
+blockAdjMatrix	racedetector/UAFDetector.h	/^	bool** blockAdjMatrix;$/;"	m	class:HBGraph
+blockCount	parser/TraceParser.h	/^	long long blockCount;	\/\/ no of blocks in the trace$/;"	m	class:TraceParser
+blockDetails	racedetector/UAFDetector.h	/^		blockDetails() {$/;"	f	class:UAFDetector::blockDetails
+blockDetails	racedetector/UAFDetector.h	/^	class blockDetails {$/;"	c	class:UAFDetector
+blockEdgeExists	racedetector/HBGraph.cpp	/^int HBGraph::blockEdgeExists(IDType sourceBlock, IDType destinationBlock) {$/;"	f	class:HBGraph
+blockEdgeExistsinList	racedetector/HBGraph.h	/^	bool blockEdgeExistsinList(long long source, long long destination) {$/;"	f	class:HBGraph
+blockEdgeExistsinList	racedetector/UAFDetector.h	/^	bool blockEdgeExistsinList(IDType source, IDType destination) {$/;"	f	class:HBGraph
+blockID	parser/MultiStack.h	/^		IDType blockID;$/;"	m	struct:MultiStack::stackElementType
+blockID	racedetector/UAFDetector.h	/^		IDType blockID;$/;"	m	class:UAFDetector::opDetails
+blockIDMap	racedetector/HBGraph.h	/^	map<IDType, UAFDetector::blockDetails> blockIDMap;$/;"	m	class:HBGraph
+blockIDMap	racedetector/UAFDetector.h	/^	map<IDType, UAFDetector::blockDetails> blockIDMap;$/;"	m	class:HBGraph
+blockIDMap	racedetector/UAFDetector.h	/^	map<IDType, blockDetails> blockIDMap;$/;"	m	class:UAFDetector
+bottom	parser/MultiStack.h	/^	stackElementType bottom;$/;"	m	class:MultiStack
+createNewNode	racedetector/HBGraph.h	/^	struct adjListNode* createNewNode(long long destination) {$/;"	f	class:HBGraph
+createNewNode	racedetector/UAFDetector.h	/^	struct adjListNode* createNewNode(IDType destination) {$/;"	f	class:HBGraph
+deqOpID	racedetector/UAFDetector.h	/^		IDType deqOpID;$/;"	m	class:UAFDetector::taskDetails
+destination	racedetector/HBGraph.h	/^		long long destination;$/;"	m	struct:HBGraph::adjListNode
+destination	racedetector/UAFDetector.h	/^		IDType destination;$/;"	m	struct:HBGraph::adjListNode
+endOpID	racedetector/UAFDetector.h	/^		IDType endOpID;$/;"	m	class:UAFDetector::taskDetails
+enqOpDetails	racedetector/UAFDetector.h	/^		enqOpDetails() {$/;"	f	class:UAFDetector::enqOpDetails
+enqOpDetails	racedetector/UAFDetector.h	/^	class enqOpDetails {$/;"	c	class:UAFDetector
+enqOpID	racedetector/UAFDetector.h	/^		IDType enqOpID;$/;"	m	class:UAFDetector::taskDetails
+enqSet	racedetector/UAFDetector.h	/^		set<IDType> enqSet; \/\/ Set of enqs in the block$/;"	m	class:UAFDetector::blockDetails
+enqToTaskEnqueued	racedetector/UAFDetector.h	/^	map<IDType, enqOpDetails> enqToTaskEnqueued;$/;"	m	class:UAFDetector
+enterloopBlockID	racedetector/UAFDetector.h	/^		IDType enterloopBlockID;$/;"	m	class:UAFDetector::threadDetails
+exitloopBlockID	racedetector/UAFDetector.h	/^		IDType exitloopBlockID;$/;"	m	class:UAFDetector::threadDetails
+finalRegEx	parser/TraceParser.h	/^	std::string finalRegEx;  \/\/ regex for a valid line in the trace file$/;"	m	class:TraceParser
+firstBlockID	racedetector/UAFDetector.h	/^		IDType firstBlockID; \/\/ ID of the first block in task$/;"	m	class:UAFDetector::taskDetails
+firstBlockID	racedetector/UAFDetector.h	/^		IDType firstBlockID;$/;"	m	class:UAFDetector::threadDetails
+firstOpID	racedetector/UAFDetector.h	/^		IDType firstOpID;$/;"	m	class:UAFDetector::threadDetails
+firstOpInBlock	racedetector/UAFDetector.h	/^		IDType firstOpInBlock;$/;"	m	class:UAFDetector::blockDetails
+firstPauseOpID	racedetector/UAFDetector.h	/^		IDType firstPauseOpID;$/;"	m	class:UAFDetector::taskDetails
+forkOpID	racedetector/UAFDetector.h	/^		IDType forkOpID; \/\/ op that forked this thread$/;"	m	class:UAFDetector::threadDetails
+freeIDMap	racedetector/UAFDetector.h	/^	map<IDType, freeOpDetails> freeIDMap;$/;"	m	class:UAFDetector
+freeOpDetails	racedetector/UAFDetector.h	/^		freeOpDetails() {$/;"	f	class:UAFDetector::freeOpDetails
+freeOpDetails	racedetector/UAFDetector.h	/^	class freeOpDetails {$/;"	c	class:UAFDetector
+freeOps	racedetector/UAFDetector.h	/^		set<IDType> freeOps;$/;"	m	class:UAFDetector::allocOpDetails
+freeSet	racedetector/UAFDetector.h	/^	map<IDType, memoryOpDetails> freeSet;$/;"	m	class:UAFDetector
+graph	racedetector/UAFDetector.h	/^	HBGraph* graph;$/;"	m	class:UAFDetector
+head	racedetector/HBGraph.h	/^		struct adjListNode* head;$/;"	m	struct:HBGraph::adjListType	typeref:struct:HBGraph::adjListType::adjListNode
+head	racedetector/UAFDetector.h	/^		struct adjListNode* head;$/;"	m	struct:HBGraph::adjListType	typeref:struct:HBGraph::adjListType::adjListNode
+hexRegEx	parser/TraceParser.h	/^	std::string hexRegEx;	 \/\/ regex for hexadecimal numbers (used as taskID, memory address, etc)$/;"	m	class:TraceParser
+initGraph	racedetector/UAFDetector.cpp	/^void UAFDetector::initGraph(IDType countOfOps, IDType countOfNodes) {$/;"	f	class:UAFDetector
+initLog	logging/Logger.cpp	/^void Logger::initLog() {$/;"	f	class:Logger
+intRegEx	parser/TraceParser.h	/^	std::string intRegEx; 	 \/\/ regex for integers (used as threadIDs)$/;"	m	class:TraceParser
+isBottom	parser/MultiStack.cpp	/^bool MultiStack::isBottom(MultiStack::stackElementType element) {$/;"	f	class:MultiStack
+isEmpty	parser/MultiStack.cpp	/^bool MultiStack::isEmpty(IDType thread) {$/;"	f	class:MultiStack
+joinOpID	racedetector/UAFDetector.h	/^		IDType joinOpID; \/\/ op that joined this thread$/;"	m	class:UAFDetector::threadDetails
+lastBlockID	racedetector/UAFDetector.h	/^		IDType lastBlockID;  \/\/ ID of the last block in task$/;"	m	class:UAFDetector::taskDetails
+lastBlockID	racedetector/UAFDetector.h	/^		IDType lastBlockID;$/;"	m	class:UAFDetector::threadDetails
+lastOpInBlock	racedetector/UAFDetector.h	/^		IDType lastOpInBlock;$/;"	m	class:UAFDetector::blockDetails
+lastResumeOpID	racedetector/UAFDetector.h	/^		IDType lastResumeOpID;$/;"	m	class:UAFDetector::taskDetails
+logFile	logging/Logger.h	/^	ofstream logFile;$/;"	m	class:Logger
+logFileName	logging/Logger.h	/^	string logFileName;$/;"	m	class:Logger
+main	main/main.cpp	/^int main(int argc, char* argv[]) {$/;"	f
+memoryOpDetails	racedetector/UAFDetector.h	/^		memoryOpDetails() {$/;"	f	class:UAFDetector::memoryOpDetails
+memoryOpDetails	racedetector/UAFDetector.h	/^	class memoryOpDetails {$/;"	c	class:UAFDetector
+nestingLoopDetails	racedetector/UAFDetector.h	/^		nestingLoopDetails() {$/;"	f	class:UAFDetector::nestingLoopDetails
+nestingLoopDetails	racedetector/UAFDetector.h	/^	class nestingLoopDetails {$/;"	c	class:UAFDetector
+nestingLoopMap	racedetector/UAFDetector.h	/^	map<std::string, nestingLoopDetails> nestingLoopMap;$/;"	m	class:UAFDetector
+next	racedetector/HBGraph.h	/^		struct adjListNode* next;$/;"	m	struct:HBGraph::adjListNode	typeref:struct:HBGraph::adjListNode::adjListNode
+next	racedetector/UAFDetector.h	/^		struct adjListNode* next;$/;"	m	struct:HBGraph::adjListNode	typeref:struct:HBGraph::adjListNode::adjListNode
+nextBlockInTask	racedetector/UAFDetector.h	/^		IDType nextBlockInTask;$/;"	m	class:UAFDetector::blockDetails
+nextBlockInThread	racedetector/UAFDetector.h	/^		IDType nextBlockInThread;$/;"	m	class:UAFDetector::blockDetails
+nextOpInBlock	racedetector/UAFDetector.h	/^		IDType nextOpInBlock;$/;"	m	class:UAFDetector::opDetails
+nextOpInTask	racedetector/UAFDetector.h	/^		IDType nextOpInTask;$/;"	m	class:UAFDetector::opDetails
+nextOpInThread	racedetector/UAFDetector.h	/^		IDType nextOpInThread;$/;"	m	class:UAFDetector::opDetails
+numOfBlockEdges	racedetector/HBGraph.h	/^	unsigned long long numOfBlockEdges;$/;"	m	class:HBGraph
+numOfBlockEdges	racedetector/UAFDetector.h	/^	unsigned long long numOfBlockEdges;$/;"	m	class:HBGraph
+numOfOpEdges	racedetector/HBGraph.h	/^	unsigned long long numOfOpEdges;$/;"	m	class:HBGraph
+numOfOpEdges	racedetector/UAFDetector.h	/^	unsigned long long numOfOpEdges;$/;"	m	class:HBGraph
+opAdjList	racedetector/HBGraph.h	/^	struct adjListType* opAdjList;$/;"	m	class:HBGraph	typeref:struct:HBGraph::adjListType
+opAdjList	racedetector/UAFDetector.h	/^	struct adjListType* opAdjList;$/;"	m	class:HBGraph	typeref:struct:HBGraph::adjListType
+opAdjMatrix	racedetector/HBGraph.h	/^	bool** opAdjMatrix;$/;"	m	class:HBGraph
+opAdjMatrix	racedetector/UAFDetector.h	/^	bool** opAdjMatrix;$/;"	m	class:HBGraph
+opCount	parser/TraceParser.h	/^	long long opCount;		\/\/ no of operations in the trace$/;"	m	class:TraceParser
+opDetails	racedetector/UAFDetector.h	/^		opDetails() {$/;"	f	class:UAFDetector::opDetails
+opDetails	racedetector/UAFDetector.h	/^	class opDetails {$/;"	c	class:UAFDetector
+opEdgeExists	racedetector/HBGraph.cpp	/^int HBGraph::opEdgeExists(IDType sourceOp, IDType destinationOp) {$/;"	f	class:HBGraph
+opEdgeExistsinList	racedetector/HBGraph.h	/^	bool opEdgeExistsinList(long long sourceOp, long long destinationOp) {$/;"	f	class:HBGraph
+opEdgeExistsinList	racedetector/UAFDetector.h	/^	bool opEdgeExistsinList(IDType sourceOp, IDType destinationOp) {$/;"	f	class:HBGraph
+opID	parser/MultiStack.h	/^		IDType opID;$/;"	m	struct:MultiStack::stackElementType
+opIDMap	racedetector/HBGraph.h	/^	map<IDType, UAFDetector::opDetails> opIDMap;$/;"	m	class:HBGraph
+opIDMap	racedetector/UAFDetector.h	/^	map<IDType, UAFDetector::opDetails> opIDMap;$/;"	m	class:HBGraph
+opIDMap	racedetector/UAFDetector.h	/^	map<IDType, opDetails> opIDMap;$/;"	m	class:UAFDetector
+opRegEx	parser/TraceParser.h	/^	std::string opRegEx;	 \/\/ regex for all valid operations$/;"	m	class:TraceParser
+opType	parser/MultiStack.h	/^		std::string opType;$/;"	m	struct:MultiStack::stackElementType
+opType	racedetector/UAFDetector.h	/^		std::string opType;$/;"	m	class:UAFDetector::opDetails
+parentTask	racedetector/UAFDetector.h	/^		std::string parentTask; \/\/ ID of immediate parent task$/;"	m	class:UAFDetector::taskDetails
+parse	parser/TraceParser.cpp	/^int TraceParser::parse(UAFDetector &detector, Logger &logger) {$/;"	f	class:TraceParser
+pauseOp	racedetector/UAFDetector.h	/^		IDType pauseOp;$/;"	m	class:UAFDetector::pauseResumeResetTuple
+pauseResumeResetOps	racedetector/UAFDetector.h	/^	map<IDType, std::string> pauseResumeResetOps;$/;"	m	class:UAFDetector
+pauseResumeResetSequence	racedetector/UAFDetector.h	/^		vector<pauseResumeResetTuple> pauseResumeResetSequence;$/;"	m	class:UAFDetector::taskDetails
+pauseResumeResetSet	racedetector/UAFDetector.h	/^		set<pauseResumeResetTuple> pauseResumeResetSet;$/;"	m	class:UAFDetector::nestingLoopDetails
+pauseResumeResetTuple	racedetector/UAFDetector.h	/^		pauseResumeResetTuple() {$/;"	f	class:UAFDetector::pauseResumeResetTuple
+pauseResumeResetTuple	racedetector/UAFDetector.h	/^	class pauseResumeResetTuple {$/;"	c	class:UAFDetector
+peek	parser/MultiStack.cpp	/^MultiStack::stackElementType MultiStack::peek(IDType thread) {$/;"	f	class:MultiStack
+pop	parser/MultiStack.cpp	/^MultiStack::stackElementType MultiStack::pop(IDType thread) {$/;"	f	class:MultiStack
+pop	parser/MultiStack.cpp	/^MultiStack::stackElementType MultiStack::pop(IDType thread, string task) {$/;"	f	class:MultiStack
+prefixRegEx	parser/TraceParser.h	/^	std::string prefixRegEx; \/\/ regex for prefix (if any) of each line in the trace file$/;"	m	class:TraceParser
+prev	racedetector/UAFDetector.h	/^		struct adjListNode* prev;$/;"	m	struct:HBGraph::adjListNode	typeref:struct:HBGraph::adjListNode::adjListNode
+prevBlockInThread	racedetector/UAFDetector.h	/^		IDType prevBlockInThread;$/;"	m	class:UAFDetector::blockDetails
+prevOpInBlock	racedetector/UAFDetector.h	/^		IDType prevOpInBlock;$/;"	m	class:UAFDetector::opDetails
+printBlockDetails	racedetector/UAFDetector.h	/^		void printBlockDetails() {$/;"	f	class:UAFDetector::blockDetails
+printDetails	racedetector/UAFDetector.h	/^		void printDetails() {$/;"	f	class:UAFDetector::allocOpDetails
+printDetails	racedetector/UAFDetector.h	/^		void printDetails() {$/;"	f	class:UAFDetector::freeOpDetails
+printEnqDetails	racedetector/UAFDetector.h	/^		void printEnqDetails() {$/;"	f	class:UAFDetector::enqOpDetails
+printGraph	racedetector/HBGraph.cpp	/^void HBGraph::printGraph() {$/;"	f	class:HBGraph
+printMemOpDetails	racedetector/UAFDetector.h	/^		void printMemOpDetails() {$/;"	f	class:UAFDetector::memoryOpDetails
+printNestingLoopDetails	racedetector/UAFDetector.h	/^		void printNestingLoopDetails() {$/;"	f	class:UAFDetector::nestingLoopDetails
+printOpDetails	racedetector/UAFDetector.h	/^		void printOpDetails() {$/;"	f	class:UAFDetector::opDetails
+printPauseResumeResetTupleDetails	racedetector/UAFDetector.h	/^		void printPauseResumeResetTupleDetails() const {$/;"	f	class:UAFDetector::pauseResumeResetTuple
+printTaskDetails	racedetector/UAFDetector.h	/^		void printTaskDetails() {$/;"	f	class:UAFDetector::taskDetails
+printThreadDetails	racedetector/UAFDetector.h	/^		void printThreadDetails() {$/;"	f	class:UAFDetector::threadDetails
+push	parser/MultiStack.cpp	/^void MultiStack::push(stackElementType element) {$/;"	f	class:MultiStack
+range	racedetector/UAFDetector.h	/^		IDType range;$/;"	m	class:UAFDetector::memoryOpDetails
+readOps	racedetector/UAFDetector.h	/^		set<IDType> readOps;$/;"	m	class:UAFDetector::allocOpDetails
+readOps	racedetector/UAFDetector.h	/^		set<IDType> readOps;$/;"	m	class:UAFDetector::freeOpDetails
+readSet	racedetector/UAFDetector.h	/^	map<IDType, memoryOpDetails> readSet;$/;"	m	class:UAFDetector
+removeOpEdge	racedetector/HBGraph.cpp	/^void HBGraph::removeOpEdge(HBGraph::adjListNode* currNode, IDType sourceOp, IDType destinationOp) {$/;"	f	class:HBGraph
+resetOp	racedetector/UAFDetector.h	/^		IDType resetOp;$/;"	m	class:UAFDetector::pauseResumeResetTuple
+resumeOp	racedetector/UAFDetector.h	/^		IDType resumeOp;$/;"	m	class:UAFDetector::pauseResumeResetTuple
+stack	parser/MultiStack.h	/^	std::list<stackElementType> stack;$/;"	m	class:MultiStack
+stackClear	parser/MultiStack.cpp	/^void MultiStack::stackClear(IDType thread) {$/;"	f	class:MultiStack
+stackClear	parser/MultiStack.cpp	/^void MultiStack::stackClear(IDType thread, string task) {$/;"	f	class:MultiStack
+stackElementType	parser/MultiStack.h	/^	struct stackElementType {$/;"	s	class:MultiStack
+startingAddress	racedetector/UAFDetector.h	/^		std::string startingAddress;$/;"	m	class:UAFDetector::memoryOpDetails
+streamObject	logging/Logger.h	/^	std::stringstream streamObject;$/;"	m	class:Logger
+suffixRegEx	parser/TraceParser.h	/^	std::string suffixRegEx; \/\/ regex for suffix (if any) of each line in the trace file$/;"	m	class:TraceParser
+targetThread	racedetector/UAFDetector.h	/^		IDType targetThread;$/;"	m	class:UAFDetector::enqOpDetails
+taskDetails	racedetector/UAFDetector.h	/^		taskDetails() {$/;"	f	class:UAFDetector::taskDetails
+taskDetails	racedetector/UAFDetector.h	/^	class taskDetails {$/;"	c	class:UAFDetector
+taskEnqueued	racedetector/UAFDetector.h	/^		std::string taskEnqueued;$/;"	m	class:UAFDetector::enqOpDetails
+taskID	parser/MultiStack.h	/^		std::string taskID;$/;"	m	struct:MultiStack::stackElementType
+taskID	racedetector/UAFDetector.h	/^		std::string taskID;$/;"	m	class:UAFDetector::blockDetails
+taskID	racedetector/UAFDetector.h	/^		std::string taskID;$/;"	m	class:UAFDetector::opDetails
+taskIDMap	racedetector/UAFDetector.h	/^	map<std::string, taskDetails> taskIDMap;$/;"	m	class:UAFDetector
+threadDetails	racedetector/UAFDetector.h	/^		threadDetails() {$/;"	f	class:UAFDetector::threadDetails
+threadDetails	racedetector/UAFDetector.h	/^	class threadDetails {$/;"	c	class:UAFDetector
+threadID	parser/MultiStack.h	/^		IDType threadID;$/;"	m	struct:MultiStack::stackElementType
+threadID	racedetector/UAFDetector.h	/^		IDType threadID;$/;"	m	class:UAFDetector::blockDetails
+threadID	racedetector/UAFDetector.h	/^		IDType threadID;$/;"	m	class:UAFDetector::opDetails
+threadIDMap	racedetector/UAFDetector.h	/^	map<IDType, threadDetails> threadIDMap;$/;"	m	class:UAFDetector
+threadexitOpID	racedetector/UAFDetector.h	/^		IDType threadexitOpID;$/;"	m	class:UAFDetector::threadDetails
+threadinitOpID	racedetector/UAFDetector.h	/^		IDType threadinitOpID;$/;"	m	class:UAFDetector::threadDetails
+totalBlocks	racedetector/HBGraph.h	/^	long long totalBlocks;$/;"	m	class:HBGraph
+totalBlocks	racedetector/UAFDetector.h	/^	IDType totalBlocks;$/;"	m	class:HBGraph
+totalOps	racedetector/HBGraph.h	/^	long long totalOps;$/;"	m	class:HBGraph
+totalOps	racedetector/UAFDetector.h	/^	IDType totalOps;$/;"	m	class:HBGraph
+traceFile	parser/TraceParser.h	/^	ifstream traceFile;$/;"	m	class:TraceParser
+writeLog	logging/Logger.cpp	/^void Logger::writeLog() {$/;"	f	class:Logger
+writeOps	racedetector/UAFDetector.h	/^		set<IDType> writeOps;$/;"	m	class:UAFDetector::allocOpDetails
+writeOps	racedetector/UAFDetector.h	/^		set<IDType> writeOps;$/;"	m	class:UAFDetector::freeOpDetails
+writeSet	racedetector/UAFDetector.h	/^	map<IDType, memoryOpDetails> writeSet;$/;"	m	class:UAFDetector
+~HBGraph	racedetector/HBGraph.cpp	/^HBGraph::~HBGraph() {$/;"	f	class:HBGraph
+~Logger	logging/Logger.cpp	/^Logger::~Logger() {$/;"	f	class:Logger
+~MultiStack	parser/MultiStack.cpp	/^MultiStack::~MultiStack() {$/;"	f	class:MultiStack
+~TraceParser	parser/TraceParser.cpp	/^TraceParser::~TraceParser() {$/;"	f	class:TraceParser
+~UAFDetector	racedetector/UAFDetector.cpp	/^UAFDetector::~UAFDetector() {$/;"	f	class:UAFDetector

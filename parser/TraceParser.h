@@ -30,12 +30,12 @@ public:
 private:
 	ifstream traceFile;
 
-	std::string opRegEx,		// regex for all valid operations
-		   intRegEx, 	// regex for integers (used as threadIDs)
-		   hexRegEx,	// regex for hexadecimal numbers (used as taskID, memory address, etc)
-		   prefixRegEx, // regex for prefix (if any) of each line in the trace file
-		   suffixRegEx, // regex for suffix (if any) of each line in the trace file
-		   finalRegEx;  // regex for a valid line in the trace file
+	std::string opRegEx;	 // regex for all valid operations
+	std::string intRegEx; 	 // regex for integers (used as threadIDs)
+	std::string hexRegEx;	 // regex for hexadecimal numbers (used as taskID, memory address, etc)
+	std::string prefixRegEx; // regex for prefix (if any) of each line in the trace file
+	std::string suffixRegEx; // regex for suffix (if any) of each line in the trace file
+	std::string finalRegEx;  // regex for a valid line in the trace file
 
 	long long opCount;		// no of operations in the trace
 	long long blockCount;	// no of blocks in the trace

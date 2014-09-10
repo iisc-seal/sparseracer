@@ -64,6 +64,26 @@ public:
 	// Maps operationID to its threadID, taskID and type.
 	map<IDType, opDetails> opIDMap;
 
+	// Stores pause-resume pair
+	class pauseResumeResetTuple {
+	public:
+		IDType pauseOp;
+		IDType resumeOp;
+		IDType resetOp;
+
+		pauseResumeResetTuple() {
+			pauseOp = -1;
+			resumeOp = -1;
+			resetOp = -1;
+		}
+
+		void printPauseResumeResetTupleDetails() const {
+			cout << "Pause: " << pauseOp << " Resume: " << resumeOp
+			     << " Reset: " << resetOp;
+		}
+	};
+
+
 	// Stores (1) enq, deq, first-pause, last-resume and end op IDs,
 	//		  (2) parent task ID, (3) flag denoting whether the task is atomic,
 	//		  (4) the first block and the last block IDs of a task.
@@ -78,22 +98,7 @@ public:
 		std::string parentTask; // ID of immediate parent task
 		bool atomic;
 
-		class pauseResumePair {
-		public:
-			IDType pauseOp;
-			IDType resumeOp;
-
-			pauseResumePair() {
-				pauseOp = -1;
-				resumeOp = -1;
-			}
-
-			void printPauseResumePairDetails() {
-				cout << "Pause: " << pauseOp << " Resume: " << resumeOp;
-			}
-		};
-
-		vector<pauseResumePair> pauseResumeSequence;
+		vector<pauseResumeResetTuple> pauseResumeResetSequence;
 
 		IDType firstBlockID; // ID of the first block in task
 		IDType lastBlockID;  // ID of the last block in task
@@ -119,11 +124,11 @@ public:
 				 << " parent task " << parentTask << " atomic " << (atomic? "true": "false")
 				 << " first-block " << firstBlockID << " last-block " << lastBlockID;
 
-			cout << "\nPauseResumeSequence: ";
-			for (vector<pauseResumePair>::iterator it = pauseResumeSequence.begin();
-					it != pauseResumeSequence.end(); it++) {
+			cout << "\nPauseResumeResetSequence: ";
+			for (vector<pauseResumeResetTuple>::iterator it = pauseResumeResetSequence.begin();
+					it != pauseResumeResetSequence.end(); it++) {
 				cout << "(";
-				it->printPauseResumePairDetails();
+				it->printPauseResumeResetTupleDetails();
 				cout << ")\n";
 			}
 		}
@@ -134,21 +139,19 @@ public:
 
 	class nestingLoopDetails {
 	public:
-		IDType pauseOpID;
-		IDType resumeOpID;
-		set<IDType> resetSet;
+		vector<pauseResumeResetTuple> pauseResumeResetSet;
 
 		nestingLoopDetails() {
-			pauseOpID = -1;
-			resumeOpID = -1;
-			resetSet = set<IDType>();
+			pauseResumeResetSet = vector<pauseResumeResetTuple>();
 		}
 
 		void printNestingLoopDetails() {
-			cout << "Pause " << pauseOpID << " Resume " << resumeOpID << endl;
-			cout << "Reset ops: ";
-			for (set<IDType>::iterator it = resetSet.begin(); it != resetSet.end(); it++)
-				cout << *it << " ";
+			cout << "Pause-Resume-Reset: ";
+			for (vector<pauseResumeResetTuple>::iterator it =
+			    pauseResumeResetSet.begin(); it != pauseResumeResetSet.end(); it++) {
+				it->printPauseResumeResetTupleDetails();
+				cout << "\n";
+			}
 		}
 	};
 
@@ -327,6 +330,31 @@ public:
 	};
 
 	map<IDType, freeOpDetails> freeIDMap;
+
+	class writeOpDetails {
+	public:
+		IDType allocOpID;
+		set<IDType> readOps;
+		set<IDType> writeOps;
+
+		writeOpDetails() {
+			allocOpID = -1;
+			readOps = set<IDType>();
+			writeOps = set<IDType>();
+		}
+
+		void printDetails() {
+			cout << "alloc op: " << allocOpID << "\n";
+			cout << "read ops: ";
+			for (set<IDType>::iterator it = readOps.begin(); it != readOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nwrite ops: ";
+			for (set<IDType>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
+				cout << *it << " ";
+		}
+	};
+
+	map<IDType, writeOpDetails> writeIDMap;
 
 	HBGraph* graph;
 

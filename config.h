@@ -24,6 +24,9 @@
 // To find data races also
  #define DATARACE
 
+// To use extra rules
+// #define EXTRARULES
+
 #ifdef SMALL
 typedef int IDType;
 #endif
