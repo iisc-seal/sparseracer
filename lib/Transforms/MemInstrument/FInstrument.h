@@ -12,6 +12,7 @@
 #include "llvm/Support/raw_ostream.h"
 #define DEBUG_TYPE "FInstrument"
 
+#include <pthread.h>
 #include "Utils.h"
 
 using namespace llvm;
@@ -23,7 +24,8 @@ namespace MemInstrument {
     LLVMContext *Context;
     Constant *PrintFunc;
     Constant *PrintF;
-    
+    Constant *Logger;
+
     std::set<std::string> whiteList = {
       "nsHTMLEditor::ContentAppended",
       "nsHTMLEditor::ContentInserted",

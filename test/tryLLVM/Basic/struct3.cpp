@@ -25,19 +25,19 @@ int main(){
   p->serialNum = 10;
   p->nested.f1 = 10;
   p->nested.f2 = new int;
-  base = (int*)realloc(base, 10*sizeof(int));
-  base[0] = 4;
-  printf("%x\n", p->nested.f2);
-  *(p->nested.f2) = 3;
-  delete p->nested.f2;
-  free(p);
-  printf("%d", sizeof(struct product));
-  malloc(10);
+  // base = (int*)realloc(base, 10*sizeof(int));
+  // base[0] = 4;
+  // printf("%x\n", p->nested.f2);
+  // *(p->nested.f2) = 3;
+  // delete p->nested.f2;
+  // free(p);
+  // printf("%d", sizeof(struct product));
+  // malloc(10);
 
-  for(int i = 0; i < 10; i++)
-     printf("ok \n");
+  // for(int i = 0; i < 10; i++)
+  //    printf("ok \n");
 
    closelog();
-   foo(30);
+   // foo(30);
   //return 0;
 }

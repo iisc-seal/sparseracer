@@ -60,11 +60,12 @@ namespace MemInstrument {
       }
       // also, abort if function is related to the allocation of threads
       // we don't want to read thread id's before the memory is allocated
-      //if(dirName.compare("")!=0)
-        //if(!shouldInstrumentDirectory(dirName) 
-      if(dirName.find("nsprpub/pr/src") != std::string::npos
-	   || dirName.find("ipc/chromium/src/base") !=std::string::npos)
-          continue;
+      // if(dirName.compare("")!=0)
+      //   if(!shouldInstrumentDirectory(dirName) 
+      
+      // if(dirName.find("nsprpub/pr/src") != std::string::npos
+      // 	   || dirName.find("ipc/chromium/src/base") !=std::string::npos)
+      //     continue;
       // don't instrument within alloc and free functions
       // becuse this will cause duplicates in the trace
       const bool found = (allocFunctions.find(fName) != allocFunctions.end() ||
@@ -74,11 +75,11 @@ namespace MemInstrument {
       // don't instrument syslog
       if(fName.find("syslog")!=std::string::npos)
 	continue;
-      if(fName.find("PR_GetThreadID")!=std::string::npos || 
-	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("_PR_") != std::string::npos ||
-	 fName.find("pt_") !=std::string::npos || fName.compare("mopAlloc")==0
-	 || fName.compare("mopDealloc") == 0 || fName.compare("mopInstrument")==0) 
+      if(// fName.find("PR_GetThreadID")!=std::string::npos || 
+	 // fName.find("PR_GetCurrentThread")!=std::string::npos || 
+	 // fName.find("_PR_") != std::string::npos ||
+	 // fName.find("pt_") !=std::string::npos || fName.compare("mopAlloc")==0 ||
+	 fName.compare("mopDealloc") == 0 || fName.compare("mopInstrument")==0) 
 	continue;
       // if (!shouldInstrument(demangleFunctionName(F->getName().str()), whiteList))
       // 	continue;
@@ -115,21 +116,17 @@ namespace MemInstrument {
     //OrigTy->dump();
     //errs() << "\n";
 
+    uint64_t TypeSize = 1;
     // Get size of type being freed
-    if(!OrigTy->isSized()){
-      //errs() << "Failed to track free on :"; 
-      //OrigTy->dump();
-      ++MissedFrees;
-      return;
-    }
-    assert(OrigTy->isSized());
+    if(OrigTy->isSized()){
+    
     //uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
     //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
-    uint64_t TypeSize;
-    if(!getObjectSize(Addr, TypeSize, DL, TLI, false)){
-      TypeSize = DL->getTypeStoreSizeInBits(OrigTy)/8;
+    
+      if(!getObjectSize(Addr, TypeSize, DL, TLI, false)){
+	TypeSize = DL->getTypeStoreSizeInBits(OrigTy)/8;
+      }
     }
-
     Value *Size =  ConstantInt::get(Type::getInt64Ty(*Context), TypeSize);
     //assert((TypeSize % 8) == 0);
     
@@ -173,23 +170,24 @@ namespace MemInstrument {
   Value* AllocFreeInstrument::getMemSize(CallInst* Original, 
 					 const TargetLibraryInfo *TLI, IRBuilder<> IRB){
     Value* MemSize;
+    // if(llvm::isOperatorNewLikeFn(Original, TLI) 
+    //    || llvm::isMallocLikeFn(Original, TLI))
     if(allocFunctions.find(Original->getCalledFunction()->getName()) != allocFunctions.end()
        && Original->getCalledFunction()->getName().compare("realloc") != 0
        && Original->getCalledFunction()->getName().compare("calloc") != 0)
+      {
+	//llvm::outs() << "Got here! \n";
       MemSize = getIntegerValue(Original->getOperand(0));
+    }
     else if(Original->getCalledFunction()->getName().compare("realloc") == 0)
       MemSize = getIntegerValue(Original->getOperand(1));
     else if(Original->getCalledFunction()->getName().compare("calloc") == 0){
       Value *size1 = getIntegerValue(Original->getOperand(0));
       Value *size2 = getIntegerValue(Original->getOperand(1));
-      Value* totalSize = IRB.CreateMul(size1, size2);
-      MemSize = totalSize;
-      //MemSize = IRB.CreatePointerCast(totalSize, IntptrTy);
+      MemSize = IRB.CreateMul(size1, size2);
     }
-    else {
-      llvm::outs() << Original->getCalledFunction()->getName() << "\n";
+    else 
       assert("Trying to instrument unsupported allocator!");
-    }
     return MemSize;
   }
 
@@ -197,57 +195,61 @@ namespace MemInstrument {
 					    std::string fName, const TargetLibraryInfo *TLI,
 					    IRBuilder<> IRB) {
 
-    Type *AllocatedType;
-    
+    // Original->print(llvm::outs());
+    // llvm::outs() << "\n";
+    // Succ->print(llvm::outs());
+    // llvm::outs() << "\n";
+
+    Type *AllocatedType = nullptr;
     if(BitCastInst* BCI = dyn_cast<BitCastInst>(Succ))
-      AllocatedType = BCI -> getDestTy();
-    else
-      AllocatedType = cast<PointerType>(Original->getType());
+      AllocatedType = BCI -> getType();
+    else 
+      AllocatedType = Original->getType();   
+
     // if(isMallocLikeFn(Original, TLI)){
     //   PointerType *PType =  llvm::getMallocType(Original, TLI); 
-    //   AllocatedType = PType ? PType->getElementType() : nullptr;
-    // 	//Type::getVoidTy(Original->getParent()->getContext());
+    //   AllocatedType = PType ? PType->getElementType() : 
+    // 	Type::getVoidTy(Original->getParent()->getContext());
     // }
-    
+   
     // Get the address allocated
     Value *AddrLong = IRB.CreatePointerCast(Original, IntptrTy);
     // errs() << "Address " << *AddrLong << "\n";
+
     // Get the number of bytes allocated
     Value *MemSize = getMemSize(Original, TLI, IRB);
     // if(isa<llvm::ConstantInt>(Original->getOperand(0)))
     //   MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
     // else
     //   MemSize = Original->getOperand(0);
-
     // errs() << "Size " << *MemSize<< "\n";
+
     //Create a string representing the type being written to
-    Value *TypeString;
-    if(AllocatedType)
-      TypeString = IRB.CreateGlobalString(getTypeAsString(AllocatedType));
-    else
-      TypeString = IRB.CreateGlobalString("void*");
-    //errs() << "Type String" << *TypeString<< "\n";
+    Value *TypeString  = IRB.CreateGlobalString(getTypeAsString(AllocatedType));
+    //errs() << "Type String" << getTypeAsString(AllocatedType) << "\n";
     //Get a pointer to the string   
     Value *TypeStringPtr = IRB.CreateBitCast(TypeString, IRB.getInt8PtrTy());
-    //errs() << "TYS PTr" << *TypeStringPtr<< "\n";
+    // errs() << "TYS PTr" << *TypeStringPtr<< "\n";
     //Get a string representing source line number information
     Value *DebugLocationString = IRB.CreateGlobalString(getSourceInfoAsString(Original, fName));
-    //errs() << "DebugLocPtr" << *DebugLocationString<< "\n";
+    // errs() << "DebugLocPtr" << *DebugLocationString<< "\n";
     //Get a pointer to the string
     Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
-    //errs() << "DebugStrPtr" << *DebugStringPtr<< "\n";
+    // errs() << "DebugStrPtr" << *DebugStringPtr<< "\n";
     //errs() <<"Alloc! \n";
     //Get a string representing the function this write is in
-    Value *FunctionNameString = IRB.CreateGlobalString(fName);
+    std::string extra = "";
+    if(Original->getCalledFunction()->getName().compare("realloc")==0)
+      extra = "realloc";
+    Value *FunctionNameString = IRB.CreateGlobalString(extra + " in " + fName);
     
     //Get a pointer to the string representing the function name
     Value *FunctionStringPtr = IRB.CreateBitCast(FunctionNameString, IRB.getInt8PtrTy());
 
 
     IRB.CreateCall5(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
-    // errs() << "Got Here after call! \n";
-    //errs() << *CI << "\n";
-        
+    //errs() << "Got Here after call! \n";
+    //errs() << *CI << "\n";        
   }
 
   bool AllocFreeInstrument::runOnBasicBlock(Function::iterator &BB, std::string callerName, 
@@ -267,12 +269,12 @@ namespace MemInstrument {
       }
 
       if (CallInst * CI = dyn_cast<CallInst>(BI)) {
-        // llvm::outs() << dirName << "\n";
-	//if(dName.compare("")==0){
-	  //std::string dirName = getDirName(CI);
-	  //if(!shouldInstrumentDirectory(dirName))
-	    //continue;
-	//}
+
+        // if(dName.compare("")==0){
+	//   std::string dirName = getDirName(CI);
+	//   if(!shouldInstrumentDirectory(dirName))
+	//     continue;
+	// }
 
 	if (Function * CalledFunc = CI->getCalledFunction()) {
 	  std::string name = CalledFunc->getName();
@@ -289,7 +291,8 @@ namespace MemInstrument {
 	  }
 	}
       }
-    }  
+      
+    }
     for(std::vector< std::pair<Instruction*, Instruction*> >::size_type i = 0; 
 	  i != Interesting.size(); i++) {
       CallInst * CI = dyn_cast<CallInst>(Interesting[i].first);
@@ -302,6 +305,7 @@ namespace MemInstrument {
       // }
       
       IRBuilder<> IRB(Succ);
+      //llvm::outs() << "Caller Name: " << callerName << "\n";
       AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
 
       // Interesting[i].first->print(llvm::outs());

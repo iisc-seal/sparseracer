@@ -32,15 +32,22 @@ namespace MemInstrument {
     // errs() << Printf->getName() << "\n";
       
     std::vector<Type*> Params;
-    Params.push_back(PointerType::getUnqual(Type::getInt8Ty(*Context)));
-    // Get the printf() function (takes an i8* followed by variadic parameters)
-    PrintF = M.getOrInsertFunction("printf",
-				   FunctionType::get(Type::getVoidTy(*Context), Params, true));
+    Params.push_back(PointerType::getUnqual(Type::getInt8Ty(*Context))); // fName as the first
+    Params.push_back(Type::getInt32Ty(*Context));  // enter/exit bit as the second
+    // Get the logger function (takes an i8* followed by an int)
+    Logger = M.getOrInsertFunction("fInstrument",
+				   FunctionType::get(Type::getVoidTy(*Context), Params, false));
     //errs() << PrintF->getName() << "\n";
 
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
-      if (F->getName().str() == "free" || F->getName().str() == "printf") continue;
+      std::string FName = F->getName().str();
+      //llvm::outs() << FName << "\n";
+      //llvm::outs() << demangleFunctionName(FName) << "\n";
+      if(!shouldInstrumentFunction(FName))
+	continue;
+
+      //if (F->getName().str() == "free" || F->getName().str() == "printf") continue;
       std::vector<BasicBlock*> exitBlocks;
        
       FInstrument::instrumentEntry(F);
@@ -61,12 +68,12 @@ namespace MemInstrument {
     BasicBlock &Entry = F->getEntryBlock();
     Instruction *First = Entry.begin();
     IRBuilder<> IRB(First);
-    std::string name("Crap \n");
+    // std::string name("Crap \n");
     //errs() << F->getName() << "\n";
     //errs() << F->getName().str() << "\n";
-    name = F->getName().str();
-    std::string unmangled(demangleFunctionName(name));
-    bool flag = shouldInstrumentFunction(unmangled, whiteList);
+    // name = F->getName().str();
+    // std::string unmangled(demangleFunctionName(name));
+    // bool flag = shouldInstrumentFunction(unmangled, whiteList);
     //flag = true;
     // for (std::set<std::string>::iterator it=whiteList.begin(); it!=whiteList.end(); ++it){
     // 	if (it->find(unmangled) != std::string::npos && unmangled.length() > 10) {
@@ -75,21 +82,28 @@ namespace MemInstrument {
     // 	  break;
     // 	}
     // }
-    if(false == flag)
-      return;
+    // if(false == flag)
+    //   return;
 
-    std::string message("Entering "+unmangled+" \n");
-    // errs() << "Suspect \n";
-    Value *MessageString = IRB.CreateGlobalString(message);
+    
+    //Value *ThreadId =  ConstantInt::get(Type::getInt64Ty(*Context), pthread_self());
+    Value *MessageString = IRB.CreateGlobalString(F->getName().str());
     Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
-    IRB.CreateCall(PrintF, MessagePtr); 
+    Value *MessageType =  ConstantInt::get(Type::getInt32Ty(*Context), 1);
+
+    std::vector<llvm::Value*> paramArrayRef;
+    paramArrayRef.push_back(MessagePtr);
+    paramArrayRef.push_back(MessageType);
+    // paramArrayRef.push_back(ThreadId);
+
+    IRB.CreateCall(Logger, paramArrayRef); 
   }
 
   void FInstrument::instrumentExits(Function *F, std::vector<BasicBlock*> exitBlocks){
     for (unsigned i=0; i != exitBlocks.size(); ++i){
       //ReturnInst *Ret = cast<ReturnInst>(exitBlocks[i]->getTerminator());
       IRBuilder<> IRB(exitBlocks[i]->getTerminator());
-      std::string name("Crap \n");
+      //std::string name("Crap \n");
       // errs() << F->getName() << "\n";
       // errs() << F->getName().str() << "\n";
       //name = demangleFunctionName(F->getName().str());
@@ -97,10 +111,10 @@ namespace MemInstrument {
       //   continue;
       // }
 	
-      name = F->getName().str();
-      std::string unmangled(demangleFunctionName(name));
+      std::string name = F->getName().str();
+      // std::string unmangled(demangleFunctionName(name));
       
-      bool flag = shouldInstrumentFunction(unmangled, whiteList);
+      // bool flag = shouldInstrumentFunction(unmangled, whiteList);
       // flag = true;	
       // for (std::set<std::string>::iterator it=whiteList.begin(); it!=whiteList.end(); ++it){
       //   if (it->find(unmangled) != std::string::npos && unmangled.length() > 10) {
@@ -108,13 +122,23 @@ namespace MemInstrument {
       //     break;
       //   }
       // }
-      if(false == flag)
-	return;
-	
-      std::string message("Exiting "+unmangled+" \n");
-      Value *MessageString = IRB.CreateGlobalString(message);
+      // if(false == flag)
+      // return;
+
+      //std::string message("exiting(%lu, "+ name +")");
+      //Value *ThreadId =  ConstantInt::get(Type::getInt64Ty(*Context), pthread_self());
+      Value *MessageString = IRB.CreateGlobalString(name);
       Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
-      IRB.CreateCall(PrintF, MessagePtr);
+      Value *MessageType =  ConstantInt::get(Type::getInt32Ty(*Context), 0);
+
+      std::vector<llvm::Value*> paramArrayRef;
+
+      paramArrayRef.push_back(MessagePtr);
+      paramArrayRef.push_back(MessageType);
+      //paramArrayRef.push_back(ThreadId);
+      
+      IRB.CreateCall(Logger, paramArrayRef); 
+
     }
   }
 

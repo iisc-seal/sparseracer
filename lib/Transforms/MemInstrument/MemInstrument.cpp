@@ -1,4 +1,3 @@
-
 #include "llvm/Pass.h"
 #include "llvm/PassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -7,6 +6,7 @@
 #include "FInstrument.h"
 #include "LoadStoreInstrument.h"
 #include "AllocFreeInstrument.h"
+#include "RunnableInstrument.h"
 
 using namespace llvm;
 namespace MemInstrument{
@@ -17,7 +17,8 @@ namespace MemInstrument{
     // char MemInstrument::AllocFreeInstrument::ID = 0;
     PM.add(new MemInstrument::LoadStoreInstrument());
     PM.add(new MemInstrument::AllocFreeInstrument());
-    //PM.add(new MemInstrument::FInstrument());
+    PM.add(new MemInstrument::FInstrument());
+    PM.add(new MemInstrument::RunnableInstrument());
     
   }
 

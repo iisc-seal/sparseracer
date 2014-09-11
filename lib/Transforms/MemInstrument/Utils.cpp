@@ -49,6 +49,16 @@ namespace MemInstrument {
     return "";
   }
 
+  std::string getFileName(Instruction *I){
+    if (MDNode *N = I->getMetadata("dbg")) {  // Here I is an LLVM instruction
+      DILocation Loc(N);                      // DILocation is in DebugInfo.h
+      //std::string File = Loc.getFilename().str();
+      std::string fileName = Loc.getFilename().str();
+      return fileName;
+    }
+    return "";
+  }
+
   std::string getSourceInfoAsString(Instruction *I, std::string name){
     if (MDNode *N = I->getMetadata("dbg")) {  // Here I is an LLVM instruction
       DILocation Loc(N);                      // DILocation is in DebugInfo.h
@@ -66,6 +76,22 @@ namespace MemInstrument {
     return false;
   }
 
+  bool shouldInstrumentFunction(std::string name){
+    char *funcs = getenv("INSTRUMENTFUNCS");
+    if(funcs == NULL)
+      return false;
+    std::string instrFuncs(funcs);
+    std::vector<std::string> wList = split(instrFuncs, ':');
+
+    for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
+      std::size_t found = name.find(*it);
+      if (found != std::string::npos){
+	return true;
+      }
+    }
+    return false;
+  }
+
   bool shouldInstrumentDirectory(std::string name){
     char *dirs = getenv("INSTRUMENTDIRS");
     if(dirs == NULL)
@@ -76,6 +102,25 @@ namespace MemInstrument {
     for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
       std::size_t found = name.find(*it);
       if (found != std::string::npos){
+	return true;
+      }
+    }
+    
+    return false;
+  }
+
+  bool shouldInstrumentFile(std::string name){
+    char *files = getenv("INSTRUMENTFILES");
+    if(files == NULL)
+      return false;
+    std::string instrFiles(files);
+    std::vector<std::string> wList = split(instrFiles, ':');
+
+    for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
+      std::size_t found = name.find(*it);
+      // llvm::outs() << name << " : " << *it << "\n";
+      if (found != std::string::npos){
+	// llvm::outs() << "Instrumenting " << name << "\n";
 	return true;
       }
     }
@@ -107,7 +152,7 @@ namespace MemInstrument {
   }
 
   std::string demangleFunctionName(std::string func) {
-    std::string ret(func);
+    // std::string ret(func);
     // Check for name mangling. C++ functions will always start with _Z                                 
     // Demangled form is processed to remove type information.                                          
 
@@ -123,25 +168,26 @@ namespace MemInstrument {
       free(test);
 
       // Select up to the first ( to only insert function name                                          
-      size_t endpos = demangled.find("(");
+      // size_t endpos = demangled.find("(");
 
       // Templated functions will have type information first, so skip to the                           
       // first space.                                                                                   
-      size_t startpos = demangled.find(" ");
-      if(startpos < endpos) {
-	// skip until after the space                                                                   
-	++startpos;
-	// also modify endpos to the first '<' to remove template info                                  
-	endpos = demangled.find("<") - startpos;
-      } else {
-	// regular C++ function, no template info to remove                                             
-	startpos = 0;
-      }
+      // size_t startpos = demangled.find(" ");
+      // if(startpos < endpos) {
+      // 	// skip until after the space                                                                   
+      // 	++startpos;
+      // 	// also modify endpos to the first '<' to remove template info                                  
+      // 	endpos = demangled.find("<") - startpos;
+      // } else {
+      // 	// regular C++ function, no template info to remove                                             
+      // 	startpos = 0;
+      // }
 
-      ret = demangled.substr(startpos,endpos);
+      //return demangled.substr(startpos,endpos);
+      return demangled;
     }
 
-    return ret;
+    return func;
   }
 
 }

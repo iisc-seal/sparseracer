@@ -53,13 +53,14 @@ namespace MemInstrument {
       // Try to abort early based on the directories to be instrumented
       std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(fName);
       
-      if(search != funcNameToDirName.end()) {
-	dirName = search->second;
-      }
+      // if(search != funcNameToDirName.end()) {
+      // 	dirName = search->second;
+      // }
       
-       // if(dirName.compare("")!=0)
-       // 	 if(!shouldInstrumentDirectory(dirName))
-       // 	   continue;
+      //  if(dirName.compare("")!=0)
+      // 	 if(!shouldInstrumentDirectory(dirName))
+      // 	   continue;
+
       // 	   || dirName.find("nsprpub/pr/src") != std::string::npos
       // 	   || dirName.find("ipc/chromium/src/base") != std::string::npos)
       // 	  continue;
@@ -91,12 +92,13 @@ namespace MemInstrument {
 	continue;
 	// don't instrument functions used in mopInstrument
         // or functions that are called transitively
-      if(fName.find("PR_GetThreadID")!=std::string::npos || 
-	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
-	 fName.find("PR_") != std::string::npos||
-	 fName.find("getId") != std::string::npos||
-	 fName.find("pt_AttachThread") != std::string::npos) 
-	continue;
+      // if(fName.find("PR_GetThreadID")!=std::string::npos || 
+      // 	 fName.find("PR_GetCurrentThread")!=std::string::npos || 
+      // 	 fName.find("_PR_") != std::string::npos ||
+      // 	 fName.find("getID") != std::string::npos ||
+      // 	 fName.find("pt_AttachThread") != std::string::npos) 
+      // 	continue;
+      
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
       }
@@ -135,7 +137,7 @@ namespace MemInstrument {
     // Get size of type being accessed
     assert(OrigTy->isSized());
     uint32_t TypeSize = DL->getTypeStoreSizeInBits(OrigTy);
-    //errs() << "\n"<< "Type Size is: " << TypeSize << "\n";
+    // errs() << "\n"<< "Got here: " << TypeSize << "\n";
       
     Value *Size =  ConstantInt::get(Type::getInt64Ty(Context), TypeSize/8);
     assert((TypeSize % 8) == 0);
@@ -202,9 +204,18 @@ namespace MemInstrument {
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end();
 	 BI != BE; ++BI) { 
       // Getting the dirname earlier failed. Try again using the instruction
-      // if(dName.compare("")==0)
-      //  if(!shouldInstrumentDirectory(getDirName(BI)))
-      // 	 continue;
+
+      
+
+      if(dName.compare("")==0)
+       if(!shouldInstrumentDirectory(getDirName(BI))  &&
+	  fName.find("assign_assuming_AddRef") == std::string::npos
+	  && fName.find("CheckAcquire") == std::string::npos )
+	  //!shouldInstrumentFile(getFileName(BI)))
+	 continue;
+      
+      // llvm::outs() << "Processing " << fName << " in " << getFileName(BI) << " \n";
+      // llvm::outs() << "shouldInstrumentFile " << shouldInstrumentFile(getFileName(BI)) << " \n";
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
