@@ -3424,14 +3424,14 @@ it++) {
 						str1 << baseAddress;
 						IDType baseAddressIntFree, endAddressIntFree;
 						str1 >> std::hex >> baseAddressIntFree;
-						endAddressIntFree = baseAddressIntFree + size;
+						endAddressIntFree = baseAddressIntFree + size - 1;
 
 						for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.allocSet.begin(); it != detector.allocSet.end(); it++) {
 							std::stringstream str2;
 							str2 << it->second.startingAddress;
 							IDType baseAddressIntAlloc, endAddressIntAlloc;
 							str2 >> std::hex >> baseAddressIntAlloc;
-							endAddressIntAlloc = baseAddressIntAlloc + it->second.range;
+							endAddressIntAlloc = baseAddressIntAlloc + it->second.range - 1;
 
 							if (baseAddressIntAlloc <= baseAddressIntFree && endAddressIntFree <= endAddressIntAlloc) {
 								if (detector.allocIDMap.find(it->first) == detector.allocIDMap.end()) {
@@ -3815,7 +3815,7 @@ it++) {
 							str2 << it->second.startingAddress;
 							IDType baseAddressIntAlloc, endAddressIntAlloc;
 							str2 >> std::hex >> baseAddressIntAlloc;
-							endAddressIntAlloc = baseAddressIntAlloc + it->second.range;
+							endAddressIntAlloc = baseAddressIntAlloc + it->second.range - 1;
 
 							if (baseAddressIntAlloc <= addressIntRead && addressIntRead <= endAddressIntAlloc) {
 								if (detector.allocIDMap.find(it->first) == detector.allocIDMap.end()) {
@@ -3836,7 +3836,7 @@ it++) {
 							str2 << it->second.startingAddress;
 							IDType baseAddressIntFree, endAddressIntFree;
 							str2 >> std::hex >> baseAddressIntFree;
-							endAddressIntFree = baseAddressIntFree + it->second.range;
+							endAddressIntFree = baseAddressIntFree + it->second.range - 1;
 
 							if (baseAddressIntFree <= addressIntRead && addressIntRead <= endAddressIntFree) {
 								if (detector.freeIDMap.find(it->first) == detector.freeIDMap.end()) {
@@ -4169,7 +4169,7 @@ it++) {
 							str2 << it->second.startingAddress;
 							IDType baseAddressIntAlloc, endAddressIntAlloc;
 							str2 >> std::hex >> baseAddressIntAlloc;
-							endAddressIntAlloc = baseAddressIntAlloc + it->second.range;
+							endAddressIntAlloc = baseAddressIntAlloc + it->second.range - 1;
 
 							if (baseAddressIntAlloc <= addressIntWrite && addressIntWrite <= endAddressIntAlloc) {
 								if (detector.allocIDMap.find(it->first) == detector.allocIDMap.end()) {
@@ -4190,7 +4190,7 @@ it++) {
 							str2 << it->second.startingAddress;
 							IDType baseAddressIntFree, endAddressIntFree;
 							str2 >> std::hex >> baseAddressIntFree;
-							endAddressIntFree = baseAddressIntFree + it->second.range;
+							endAddressIntFree = baseAddressIntFree + it->second.range - 1;
 
 							if (baseAddressIntFree <= addressIntWrite && addressIntWrite <= endAddressIntFree) {
 								if (detector.freeIDMap.find(it->first) == detector.freeIDMap.end()) {

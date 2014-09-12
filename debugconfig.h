@@ -1,6 +1,6 @@
 #define TRACEDEBUG
 #define GRAPHDEBUG
-#define GRAPHDEBUGFULL
+//#define GRAPHDEBUGFULL
 #define EXTRADEBUGINFO
 //#define HACKS
 #define PERMIT

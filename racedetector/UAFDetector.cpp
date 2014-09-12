@@ -2076,9 +2076,10 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 0;
 }
 
-int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
+IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 
 	bool flag = false;
+	IDType uafCount = 0;
 
 	// Loop through freeIDMap, for each free, find use that no HB edge
 
@@ -2100,6 +2101,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					 << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
+				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2120,6 +2122,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					 << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
+				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2137,6 +2140,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
 				}
+				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2160,6 +2164,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
 				}
+				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2174,6 +2179,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					 << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
+				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2198,6 +2204,7 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
 				}
+				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2206,15 +2213,16 @@ int  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 	}
 
 	if (flag)
-		return 1;
+		return uafCount;
 	else
 		return 0;
 }
 
 #ifndef ACCESS
-int UAFDetector::findDataRaces(Logger &logger){
+IDType UAFDetector::findDataRaces(Logger &logger){
 
 	bool flag = false;
+	IDType raceCount = 0;
 
 	for (map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
 		for (set<IDType>::iterator writeIt = allocIt->second.writeOps.begin(); writeIt != allocIt->second.writeOps.end(); writeIt++) {
@@ -2231,6 +2239,7 @@ int UAFDetector::findDataRaces(Logger &logger){
 				if (graph->opEdgeExists(*writeIt, *write2It) == 0 && graph->opEdgeExists(*write2It, *writeIt) == 0) {
 					cout << "Potential data race between write ops " << *writeIt << " and " << *write2It << " on address "
 						 << writeAddress1 << endl;
+					raceCount++;
 					flag = true;
 					continue;
 				}
@@ -2246,6 +2255,7 @@ int UAFDetector::findDataRaces(Logger &logger){
 				if (graph->opEdgeExists(*writeIt, *readIt) == 0 && graph->opEdgeExists(*readIt, *writeIt) == 0) {
 					cout << "Potential data race between read op " << *readIt << " and write op " << *writeIt << " on address "
 						 << readAddress << endl;
+					raceCount++;
 					flag = true;
 					continue;
 				}
@@ -2254,7 +2264,7 @@ int UAFDetector::findDataRaces(Logger &logger){
 	}
 
 	if (flag)
-		return 1;
+		return raceCount;
 	else
 		return 0;
 }
