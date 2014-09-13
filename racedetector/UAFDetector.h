@@ -331,30 +331,48 @@ public:
 
 	map<IDType, freeOpDetails> freeIDMap;
 
-	class writeOpDetails {
+	class lockOpDetails {
 	public:
-		IDType allocOpID;
-		set<IDType> readOps;
-		set<IDType> writeOps;
+		IDType threadID;
+		std::string lockID;
 
-		writeOpDetails() {
-			allocOpID = -1;
-			readOps = set<IDType>();
-			writeOps = set<IDType>();
+		lockOpDetails() {
+			threadID = -1;
+			lockID = "";
 		}
 
 		void printDetails() {
-			cout << "alloc op: " << allocOpID << "\n";
-			cout << "read ops: ";
-			for (set<IDType>::iterator it = readOps.begin(); it != readOps.end(); it++)
-				cout << *it << " ";
-			cout << "\nwrite ops: ";
-			for (set<IDType>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
-				cout << *it << " ";
+			cout << "thread: " << threadID << " lockID: " << lockID;
 		}
 	};
 
-	map<IDType, writeOpDetails> writeIDMap;
+	map<IDType, lockOpDetails> waitSet;
+	map<IDType, lockOpDetails> notifySet;
+	map<IDType, lockOpDetails> notifyAllSet;
+
+	class setOfOps {
+	public:
+		set<IDType> opSet;
+		setOfOps() {
+			opSet = set<IDType>();
+		}
+		void printDetails() {
+			for (set<IDType>::iterator it = opSet.begin(); it != opSet.end(); it++) {
+				cout << *it << " ";
+			}
+		}
+	};
+	// shared variable to set of notify ops
+	map<std::string, setOfOps> lockToNotify;
+	// shared variable to set of notifyall ops
+	map<std::string, setOfOps> lockToNotifyAll;
+
+	// map notify op to corresponding wait
+	map<IDType, IDType> notifyToWait;
+	// map notifyall op to corresponding set of wait ops
+	map<IDType, setOfOps> notifyAllToWaitSet;
+	// map wait op to corresponding notify/notifyall
+	map<IDType, IDType> waitToNotify;
 
 	HBGraph* graph;
 
@@ -373,6 +391,7 @@ public:
 private:
 	// All the following functions: Return -1 if some error, 1 if atleast one edge is added, 0 if no edges are added.
 	int add_LoopPO_Fork_Join_Edges();
+	int add_WaitNotify_Edges();
 	int add_TaskPO_EnqueueSTOrMT_Edges();
 	int add_PauseSTMT_ResumeSTMT_Edges();
 	int add_FifoAtomic_NoPre_Edges();

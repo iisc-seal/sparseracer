@@ -64,6 +64,12 @@ int UAFDetector::addEdges(Logger &logger) {
 		return -1;
 	}
 
+	// WAIT-NOTIFY
+	if (add_WaitNotify_Edges() < 0) {
+		cout << "ERROR: While adding WAIT-NOTIFY edges\n";
+		return -1;
+	}
+
 	bool edgeAdded = false;
 	while (true) {
 		int retValue;
@@ -1066,6 +1072,90 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 				cout << "DEBUG: Cannot find resume for shared variable " << it->first << "\n";
 				cout << "DEBUG: Skipping RESUME-ST/MT\n";
 #endif
+			}
+		}
+	}
+
+	if (flag)
+		return 1;
+	else
+		return 0;
+}
+
+int UAFDetector::add_WaitNotify_Edges() {
+	bool flag = false;
+
+	for (map<IDType, IDType>::iterator it = notifyToWait.begin(); it != notifyToWait.end(); it++) {
+		// Adding NOTIFY-WAIT edges
+
+		IDType opI = it->first;
+		IDType opJ = it->second;
+
+		if (opI > 0 && opJ > 0) {
+			int retOpValue = graph->opEdgeExists(opI, opJ);
+            if (retOpValue == 0) {
+            	int addEdgeRetValue = graph->addOpEdge(opI, opJ);
+                if (addEdgeRetValue == 1) {
+                	flag = true;
+#ifdef GRAPHDEBUG
+                    cout << "NOTIFY-WAIT edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
+                         << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+                } else if (addEdgeRetValue == -1) {
+                    cout << "ERROR: While adding NOTIFY-WAIT edge from " << opI << " to " << opJ << endl;
+                    return -1;
+                }
+            } else if (retOpValue == -1) {
+            	cout << "ERROR: While checking NOTIFY-WAIT edge from " << opI << " to " << opJ << endl;
+            	return -1;
+            }
+		} else {
+            if (opI <= 0) {
+            	cout << "ERROR: Found invalid notify op in notifyToWait\n";
+            	return -1;
+            }
+            if (opJ <= 0) {
+            	cout << "ERROR: Found invalid wait op for notify " << opI << " in notifyToWait\n";
+            	return -1;
+            }
+		}
+	}
+
+	for (map<IDType, UAFDetector::setOfOps>::iterator it = notifyAllToWaitSet.begin();
+			it != notifyAllToWaitSet.end(); it++) {
+		// Adding NOTIFYALL-WAIT edges
+
+		IDType opI = it->first;
+		for (set<IDType>::iterator waitIt = it->second.opSet.begin(); waitIt != it->second.opSet.end(); waitIt++) {
+			IDType opJ = *waitIt;
+
+			if (opI > 0 && opJ > 0) {
+				int retOpValue = graph->opEdgeExists(opI, opJ);
+				if (retOpValue == 0) {
+					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
+					if (addEdgeRetValue == 1) {
+						flag = true;
+#ifdef GRAPHDEBUG
+						cout << "NOTIFYALL-WAIT edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
+							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding NOTIFYALL-WAIT edge from " << opI << " to " << opJ << endl;
+						return -1;
+					}
+				} else if (retOpValue == -1) {
+					cout << "ERROR: While checking NOTIFYALL-WAIT edge from " << opI << " to " << opJ << endl;
+					return -1;
+				}
+			} else {
+				if (opI <= 0) {
+					cout << "ERROR: Found invalid notifyall op in notifyAllToWaitSet\n";
+					return -1;
+				}
+				if (opJ <= 0) {
+					cout << "ERROR: Found invalid wait op for notifyall " << opI << " in notifyAllToWaitSet\n";
+					return -1;
+				}
 			}
 		}
 	}
@@ -2096,9 +2186,10 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 			IDType accessID = *accessIt;
 
 			if (graph->edgeExists(freeID, accessID) == 1) {
-				cout << "Definite UAF between access op " << accessID << " (access at address " << accessSet[accessID].startingAddress << ") "
+				cout << "Definite UAF between access op " << accessID << " (access at address " << accessSet[accessID].startingAddress
+					 << " in task " << opIDMap[accessID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
-					 << ")\n";
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
 				uafCount++;
@@ -2117,11 +2208,12 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 					continue;
 #endif
 
-				cout << "Potential UAF between read op " << accessID << " (access at address " << accessSet[accessID].startingAddress << ") "
+				cout << "Potential UAF between read op " << accessID << " (access at address " << accessSet[accessID].startingAddress
+					 << " in task " << opIDMap[accessID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
-					 << ")\n";
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
-					 << allocSet[allocID].startingAddress << ")\n";
+					 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID << ")\n";
 				uafCount++;
 				flag = true;
 				continue;
@@ -2133,12 +2225,13 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 			IDType readID = *readIt;
 
 			if (graph->opEdgeExists(freeID, readID) == 1) {
-				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
+				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
+					 << " in task " << opIDMap[readID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
-					 << ")\n";
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				if (allocID > 0) {
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
-						 << allocSet[allocID].startingAddress << ")\n";
+						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID << ")\n";
 				}
 				uafCount++;
 				flag = true;
@@ -2157,9 +2250,10 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 						continue;
 				}
 #endif
-				cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress << ") "
+				cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
+					 << " in task " << opIDMap[readID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
-					 << ")\n";
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				if (allocID > 0) {
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
@@ -2174,9 +2268,10 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 			IDType writeID = *writeIt;
 
 			if (graph->opEdgeExists(freeID, writeID) == 1) {
-				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
+				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress
+					 << " in task " << opIDMap[writeID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
-					 << ")\n";
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
 				uafCount++;
@@ -2197,9 +2292,10 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				}
 #endif
 
-				cout << "Potential UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress << ") "
+				cout << "Potential UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress
+					 << " in task " << opIDMap[writeID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
-					 << ")\n";
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				if (allocID > 0) {
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
@@ -2237,7 +2333,8 @@ IDType UAFDetector::findDataRaces(Logger &logger){
 				if (writeAddress1.compare(writeAddress2) != 0) continue;
 
 				if (graph->opEdgeExists(*writeIt, *write2It) == 0 && graph->opEdgeExists(*write2It, *writeIt) == 0) {
-					cout << "Potential data race between write ops " << *writeIt << " and " << *write2It << " on address "
+					cout << "Potential data race between write ops " << *writeIt << " (in task " << opIDMap[*writeIt].taskID
+						 << ") and " << *write2It << " (in task " << opIDMap[*write2It].taskID << ") on address "
 						 << writeAddress1 << endl;
 					raceCount++;
 					flag = true;
@@ -2253,7 +2350,8 @@ IDType UAFDetector::findDataRaces(Logger &logger){
 				if (writeAddress1.compare(readAddress) != 0) continue;
 
 				if (graph->opEdgeExists(*writeIt, *readIt) == 0 && graph->opEdgeExists(*readIt, *writeIt) == 0) {
-					cout << "Potential data race between read op " << *readIt << " and write op " << *writeIt << " on address "
+					cout << "Potential data race between read op " << *readIt << " (in task " << opIDMap[*readIt].taskID
+						 << ") and write op " << *writeIt << "( in task " << opIDMap[*writeIt].taskID << ") on address "
 						 << readAddress << endl;
 					raceCount++;
 					flag = true;
