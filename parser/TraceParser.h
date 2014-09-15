@@ -38,6 +38,7 @@ private:
 	std::string finalRegEx;  // regex for a valid line in the trace file
 
 	long long opCount;		// no of operations in the trace
+	long long nodeCount;	// no of nodes in the trace/graph
 	long long blockCount;	// no of blocks in the trace
 };
 

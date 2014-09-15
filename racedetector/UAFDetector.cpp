@@ -38,7 +38,7 @@ UAFDetector::~UAFDetector() {
 }
 
 void UAFDetector::initGraph(IDType countOfOps, IDType countOfNodes) {
-	graph = new HBGraph(countOfOps, countOfNodes, opIDMap, blockIDMap);
+	graph = new HBGraph(countOfOps, countOfNodes, opIDMap, blockIDMap, nodeIDMap);
 	assert(graph != NULL);
 }
 
@@ -75,7 +75,7 @@ int UAFDetector::addEdges(Logger &logger) {
 		int retValue;
 
 #ifdef GRAPHDEBUGFULL
-		graph->printGraph();
+		//graph->printGraph();
 #endif
 
 		// FIFO-ATOMIC/NO-PRE
@@ -94,8 +94,8 @@ int UAFDetector::addEdges(Logger &logger) {
 		}
 
 #ifdef GRAPHDEBUGFULL
-		if (retValue == 1)
-			graph->printGraph();
+		//if (retValue == 1)
+			//graph->printGraph();
 #endif
 
 		// FIFO-NESTED-1/2/GEN Or ENQRESET-ST-1
@@ -114,8 +114,8 @@ int UAFDetector::addEdges(Logger &logger) {
 		}
 
 #ifdef GRAPHDEBUGFULL
-		if (retValue == 1)
-			graph->printGraph();
+		//if (retValue == 1)
+			//graph->printGraph();
 #endif
 
 		// ENQRESET-ST-2/3
@@ -135,7 +135,7 @@ int UAFDetector::addEdges(Logger &logger) {
 
 #ifdef GRAPHDEBUGFULL
 		if (retValue == 1)
-			graph->printGraph();
+			//graph->printGraph();
 #endif
 
 		// TRANS-ST/MT
@@ -159,7 +159,7 @@ int UAFDetector::addEdges(Logger &logger) {
 	}
 
 #ifdef GRAPHDEBUGFULL
-	graph->printGraph();
+	//graph->printGraph();
 #endif
 
 	cout << "Total op edges = " << graph->numOfOpEdges << endl;
@@ -179,29 +179,38 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 		opJ = it->second.threadinitOpID;
 
 		if (opI > 0 && opJ > 0) {
-			int retOpValue = graph->opEdgeExists(opI, opJ);
-			if (retOpValue == 0) {
-				int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-				if (addEdgeRetValue == 1) {
-					flag = true;
+			IDType nodeI = opIDMap[opI].nodeID;
+			IDType nodeJ = opIDMap[opJ].nodeID;
+			if (nodeI <= 0) {
+				cout << "ERROR: Invalid node ID for op " << opI << "\n";
+				return -1;
+			} else if (nodeJ <= 0) {
+				cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+				return -1;
+			} else {
+				int retOpValue = graph->opEdgeExists(nodeI, nodeJ);
+				if (retOpValue == 0) {
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+					if (addEdgeRetValue == 1) {
+						flag = true;
 #ifdef GRAPHDEBUG
-					cout << "FORK edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																<< " -- #block-edges " << graph->numOfBlockEdges << endl;
+						cout << "FORK edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-				} else if (addEdgeRetValue == -1) {
-					cout << "ERROR: While adding FORK Op edge from " << opI << " to " << opJ << endl;
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding FORK Op edge from " << nodeI << " to " << nodeJ << endl;
+						return -1;
+					}
+				} else if (retOpValue == -1) {
+					cout << "ERROR: While checking FORK Op edge from " << nodeI << " to " << nodeJ << endl;
 					return -1;
 				}
-			} else if (retOpValue == -1) {
-				cout << "ERROR: While checking FORK Op edge from " << opI << " to " << opJ << endl;
-				return -1;
 			}
 		} else {
 			if (opI <= 0) {
 				cout << "DEBUG: Cannot find fork op of thread " << it->first << endl;
 				cout << "DEBUG: Skipping FORK-edge for thread " << it->first << endl;
-			}
-			if (opJ <= 0) {
+			} else if (opJ <= 0) {
 				cout << "DEBUG: Cannot find threadinit of thread " << it->first << endl;
 				cout << "DEBUG: Skipping FORK-edge for thread " << it->first << endl;
 			}
@@ -213,22 +222,32 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 		opJ = it->second.joinOpID;
 
 		if (opI > 0 && opJ > 0) {
-			int retOpValue = graph->opEdgeExists(opI, opJ);
-			if (retOpValue == 0) {
-				int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-				if (addEdgeRetValue == 1) {
-					flag = true;
+			IDType nodeI = opIDMap[opI].nodeID;
+			IDType nodeJ = opIDMap[opJ].nodeID;
+			if (nodeI <= 0) {
+				cout << "ERROR: Invalid node ID for op " << opI << "\n";
+				return -1;
+			} else if (nodeJ <= 0) {
+				cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+				return -1;
+			} else {
+				int retOpValue = graph->opEdgeExists(nodeI, nodeJ);
+				if (retOpValue == 0) {
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+					if (addEdgeRetValue == 1) {
+						flag = true;
 #ifdef GRAPHDEBUG
-					cout << "JOIN edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																<< " -- #block-edges " << graph->numOfBlockEdges << endl;
+						cout << "JOIN edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-				} else if (addEdgeRetValue == -1) {
-					cout << "ERROR: While adding JOIN Op edge from " << opI << " to " << opJ << endl;
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding JOIN Op edge from " << nodeI << " to " << nodeJ << endl;
+						return -1;
+					}
+				} else if (retOpValue == -1) {
+					cout << "ERROR: While checking JOIN Op edge from " << nodeI << " to " << nodeJ << endl;
 					return -1;
 				}
-			} else if (retOpValue == -1) {
-				cout << "ERROR: While checking JOIN Op edge from " << opI << " to " << opJ << endl;
-				return -1;
 			}
 		} else {
 			if (opI <= 0) {
@@ -236,8 +255,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 				cout << "DEBUG: Cannot find threadexit op of thread " << it->first << endl;
 				cout << "DEBUG: Skipping JOIN-edge for thread " << it->first << endl;
 #endif
-			}
-			if (opJ <= 0) {
+			} else if (opJ <= 0) {
 #ifdef GRAPHDEBUG
 				cout << "DEBUG: Cannot find join op of thread " << it->first << endl;
 				cout << "DEBUG: Skipping JOIN-edge for thread " << it->first << endl;
@@ -312,24 +330,33 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 				assert(opI > 0);
 				assert(opJ > 0);
 #endif
-				int retOpValue = graph->opEdgeExists(opI, opJ);
-				if (retOpValue == 0) {
-					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-					if (addEdgeRetValue == 1) {
-						flag = true;
+				IDType nodeI = opIDMap[opI].nodeID;
+				IDType nodeJ = opIDMap[opJ].nodeID;
+				if (nodeI <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opI << "\n";
+					return -1;
+				} else if (nodeJ <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+					return -1;
+				} else {
+					int retOpValue = graph->opEdgeExists(nodeI, nodeJ);
+					if (retOpValue == 0) {
+						int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+						if (addEdgeRetValue == 1) {
+							flag = true;
 #ifdef GRAPHDEBUG
-						cout << "LOOP-PO edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																	   << " -- #block-edges " << graph->numOfBlockEdges << endl;
+							cout << "LOOP-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+								 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding LOOP-PO Op edge from " << opI << " to " << opJ << endl;
+						} else if (addEdgeRetValue == -1) {
+							cout << "ERROR: While adding LOOP-PO Op edge from " << nodeI << " to " << nodeJ << endl;
+							return -1;
+						}
+					} else if (retOpValue == -1) {
+						cout << "ERROR: While checking LOOP-PO Op edge from " << nodeI << " to " << nodeJ << endl;
 						return -1;
 					}
-				} else if (retOpValue == -1) {
-					cout << "ERROR: While checking LOOP-PO Op edge from " << opI << " to " << opJ << endl;
-					return -1;
 				}
-
 			}
 		}
 
@@ -399,26 +426,35 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 				assert(opI > 0);
 				assert(opJ > 0);
 #endif
-				int retOpValue = graph->opEdgeExists(opJ, opI);
-				if (retOpValue == 0) {
-					int addEdgeRetValue = graph->addOpEdge(opJ, opI);
-					if (addEdgeRetValue == 1) {
-						flag = true;
+				IDType nodeI = opIDMap[opI].nodeID;
+				IDType nodeJ = opIDMap[opJ].nodeID;
+				if (nodeI <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opI << "\n";
+					return -1;
+				} else if (nodeJ <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+					return -1;
+				} else {
+					int retOpValue = graph->opEdgeExists(nodeJ, nodeI);
+					if (retOpValue == 0) {
+						int addEdgeRetValue = graph->addOpEdge(nodeJ, nodeI);
+						if (addEdgeRetValue == 1) {
+							flag = true;
 #ifdef GRAPHDEBUG
-						cout << "LOOP-PO edge (" << opJ << ", " << opI << ") -- #op-edges "   << graph->numOfOpEdges
-																	   << " -- #block-edges " << graph->numOfBlockEdges << endl;
+							cout << "LOOP-PO edge (" << nodeJ << ", " << nodeI << ") -- #op-edges "   << graph->numOfOpEdges
+								 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding LOOP-PO Op edge from " << opJ << " to " << opI << endl;
+						} else if (addEdgeRetValue == -1) {
+							cout << "ERROR: While adding LOOP-PO Op edge from " << nodeJ << " to " << nodeI << endl;
+							return -1;
+						}
+					} else if (retOpValue == -1) {
+						cout << "ERROR: While checking LOOP-PO Op edge from " << nodeJ << " to " << nodeI << endl;
 						return -1;
 					}
-				} else if (retOpValue == -1) {
-					cout << "ERROR: While checking LOOP-PO Op edge from " << opJ << " to " << opI << endl;
-					return -1;
 				}
 			}
 		}
-
 	}
 
 	if (flag)
@@ -432,37 +468,38 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 
 	for (map<string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
 
-#if 0
-		if (it->second.enqOpID > 0 && it->second.deqOpID <= 0) {
-			// Saw an enq of the task, but no deq
-			cout << "DEBUG: Saw an enq of task " << it->first << " at " << it->second.enqOpID << "\n";
-			cout << "DEBUG: Skipping TASK-PO/ENQUEUE-ST/MT edges for this task\n";
-			continue;
-		}
-#endif
-
 		// ENQUEUE-ST/MT
 
 		IDType enqOp = it->second.enqOpID;
 		IDType deqOp = it->second.deqOpID;
 
 		if (enqOp > 0 && deqOp > 0) {
-			int retOpValue = graph->opEdgeExists(enqOp, deqOp);
-			if (retOpValue == 0) {
-				int addEdgeRetValue = graph->addOpEdge(enqOp, deqOp);
-				if (addEdgeRetValue == 1) {
-					flag = true;
+			IDType nodeEnq = opIDMap[enqOp].nodeID;
+			IDType nodeDeq = opIDMap[deqOp].nodeID;
+			if (nodeEnq <= 0) {
+				cout << "ERROR: Invalid node ID for op " << enqOp << "\n";
+				return -1;
+			} else if (nodeDeq <= 0) {
+				cout << "ERROR: Invalid node ID for op " << deqOp << "\n";
+				return -1;
+			} else {
+				int retOpValue = graph->opEdgeExists(nodeEnq, nodeDeq);
+				if (retOpValue == 0) {
+					int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq);
+					if (addEdgeRetValue == 1) {
+						flag = true;
 #ifdef GRAPHDEBUG
-					cout << "ENQUEUE-ST/MT edge (" << enqOp << ", " << deqOp << ") -- #op-edges "   << graph->numOfOpEdges
-																<< " -- #block-edges " << graph->numOfBlockEdges << endl;
+						cout << "ENQUEUE-ST/MT edge (" << nodeEnq << ", " << nodeDeq << ") -- #op-edges "   << graph->numOfOpEdges
+							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-				} else if (addEdgeRetValue == -1) {
-					cout << "ERROR: While adding ENQUEUE-ST/MT Op edge from " << enqOp << " to " << deqOp << endl;
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding ENQUEUE-ST/MT Op edge from " << nodeEnq << " to " << nodeDeq << endl;
+						return -1;
+					}
+				} else if (retOpValue == -1) {
+					cout << "ERROR: While checking ENQUEUE-ST/MT Op edge from " << nodeEnq << " to " << nodeDeq << endl;
 					return -1;
 				}
-			} else if (retOpValue == -1) {
-				cout << "ERROR: While checking ENQUEUE-ST/MT Op edge from " << enqOp << " to " << deqOp << endl;
-				return -1;
 			}
 		} else {
 			if (enqOp <= 0) {
@@ -520,22 +557,32 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 				assert(opI > 0);
 				assert(opJ > 0);
 #endif
-				int retOpValue = graph->opEdgeExists(opI, opJ);
-				if (retOpValue == 0) {
-					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-					if (addEdgeRetValue == 1) {
-						flag = true;
+				IDType nodeI = opIDMap[opI].nodeID;
+				IDType nodeJ = opIDMap[opJ].nodeID;
+				if (nodeI <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opI << "\n";
+					return -1;
+				} else if (nodeJ <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+					return -1;
+				} else {
+					int retOpValue = graph->opEdgeExists(nodeI, nodeJ);
+					if (retOpValue == 0) {
+						int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+						if (addEdgeRetValue == 1) {
+							flag = true;
 #ifdef GRAPHDEBUG
-						cout << "TASK-PO edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																	   << " -- #block-edges " << graph->numOfBlockEdges << endl;
+							cout << "TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+								 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding TASK-PO Op edge from " << opI << " to " << opJ << endl;
+						} else if (addEdgeRetValue == -1) {
+							cout << "ERROR: While adding TASK-PO Op edge from " << nodeI << " to " << nodeJ << endl;
+							return -1;
+						}
+					} else if (retOpValue == -1) {
+						cout << "ERROR: While checking TASK-PO Op edge from " << nodeI << " to " << nodeJ << endl;
 						return -1;
 					}
-				} else if (retOpValue == -1) {
-					cout << "ERROR: While checking TASK-PO Op edge from " << opI << " to " << opJ << endl;
-					return -1;
 				}
 			}
 		}
@@ -628,36 +675,56 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 							// FIFO-ATOMIC does not apply if the two tasks are not posted to the same thread
 							if (enqToTaskEnqueued[enqOp].targetThread != enqToTaskEnqueued[tempenqOp].targetThread) continue;
 
-							int retOpValue1 = graph->opEdgeExists(enqOp, tempenqOp);
-							if (retOpValue1 == 1) {
-								IDType opJ = taskIDMap[taskName].deqOpID;
-								if (opJ <= 0) {
+							IDType nodeEnq = opIDMap[enqOp].nodeID;
+							IDType nodeTempEnq = opIDMap[tempenqOp].nodeID;
+							if (nodeEnq <= 0) {
+								cout << "ERROR: Invalid node ID for op " << enqOp << "\n";
+								return -1;
+							} else if (nodeTempEnq <= 0) {
+								cout << "ERROR: Invalid node ID for op " << tempenqOp << "\n";
+								return -1;
+							} else {
+								int retOpValue1 = graph->opEdgeExists(nodeEnq, nodeTempEnq);
+								if (retOpValue1 == 1) {
+									IDType opJ = taskIDMap[taskName].deqOpID;
+									if (opJ <= 0) {
 #ifdef GRAPHDEBUG
-									cout << "DEBUG: Cannot find deq op of task " << taskName << endl;
+										cout << "DEBUG: Cannot find deq op of task " << taskName << endl;
 #endif
-									continue;
-								}
-
-								int retOpValue2 = graph->opEdgeExists(opI, opJ);
-								if (retOpValue2 == 0) {
-									int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-									if (addEdgeRetValue == 1) {
-										flag = true;
-#ifdef GRAPHDEBUG
-										cout << "FIFO-ATOMIC edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																	   	   	   	   	   	   << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-									} else if (addEdgeRetValue == -1) {
-										cout << "ERROR: While adding FIFO-ATOMIC edge from " << opI << " to " << opJ << endl;
-										return -1;
+										continue;
 									}
-								} else if (retOpValue2 == -1) {
-									cout << "ERROR: While checking for op-edge (" << opI << ", " << opJ << ")\n";
+
+									IDType nodeI = opIDMap[opI].nodeID;
+									IDType nodeJ = opIDMap[opJ].nodeID;
+									if (nodeI <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opI << "\n";
+										return -1;
+									} else if (nodeJ <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+										return -1;
+									} else {
+										int retOpValue2 = graph->opEdgeExists(nodeI, nodeJ);
+										if (retOpValue2 == 0) {
+											int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+											if (addEdgeRetValue == 1) {
+												flag = true;
+#ifdef GRAPHDEBUG
+												cout << "FIFO-ATOMIC edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+													 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+											} else if (addEdgeRetValue == -1) {
+												cout << "ERROR: While adding FIFO-ATOMIC edge from " << nodeI << " to " << nodeJ << endl;
+												return -1;
+											}
+										} else if (retOpValue2 == -1) {
+											cout << "ERROR: While checking for op-edge (" << nodeI << ", " << nodeJ << ")\n";
+											return -1;
+										}
+									}
+								} else if (retOpValue1 == -1) {
+									cout << "ERROR: While checking for op-edge (" << nodeEnq << ", " << nodeTempEnq << ")\n";
 									return -1;
 								}
-							} else if (retOpValue1 == -1) {
-								cout << "ERROR: While checking for op-edge (" << enqOp << ", " << tempenqOp << ")\n";
-								return -1;
 							}
 						}
 					}
@@ -737,70 +804,96 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 							// NO-PRE does not apply if the two tasks are in different threads
 							if (opIDMap[i].threadID != enqToTaskEnqueued[tempenqOp].targetThread) continue;
 
-							int retOpValue1 = graph->opEdgeExists(i, tempenqOp);
-							if (retOpValue1 == 1) {
-								IDType opJ = taskIDMap[taskName].deqOpID;
-								if (opJ <= 0) {
+							IDType nodei = opIDMap[i].nodeID;
+							IDType nodeTempEnq = opIDMap[tempenqOp].nodeID;
+							if (nodei <= 0) {
+								cout << "ERROR: Invalid node ID for op " << i << "\n";
+								return -1;
+							} else if (nodeTempEnq <= 0) {
+								cout << "ERROR: Invalid node ID for op " << nodeTempEnq << "\n";
+								return -1;
+							} else {
+								int retOpValue1 = graph->opEdgeExists(nodei, nodeTempEnq);
+								if (retOpValue1 == 1) {
+									IDType opJ = taskIDMap[taskName].deqOpID;
+									if (opJ <= 0) {
 #ifdef GRAPHDEBUG
-									cout << "DEBUG: Cannot find deq op of task " << taskName << endl;
-									cout << "DEBUG: Skipping NOPRE edge from end op " << opI
-										 << " of task " << it->first << " to deq op of task " << taskName << "\n";
+										cout << "DEBUG: Cannot find deq op of task " << taskName << endl;
 #endif
 #ifdef EXTRARULES
-									cout << "DEBUG: Instead adding the edge to the first op of task "
-										 << taskName << "\n";
-									IDType firstBlockOfTask = taskIDMap[taskName].firstBlockID;
-									if (firstBlockOfTask <= 0) {
+										cout << "DEBUG: Instead adding the edge to the first op of task "
+											 << taskName << "\n";
+										IDType firstBlockOfTask = taskIDMap[taskName].firstBlockID;
+										if (firstBlockOfTask <= 0) {
 #ifdef GRAPHDEBUG
-										cout << "DEBUG: Cannot find first block of task " << taskName << "\n";
-										cout << "DEBUG: Skipping NOPRE edge from end op " << opI
-											 << " of task " << it->first << " to first op of task " << taskName
-											 << "\n";
-										continue;
-#endif
-									} else {
-										IDType firstOpOfBlock = blockIDMap[firstBlockOfTask].firstOpInBlock;
-										if (firstOpOfBlock <= 0) {
-#ifdef GRAPHDEBUG
-											cout << "DEBUG: Cannot find first op of block " << firstBlockOfTask
-												 << " - this is the first block of task " << taskName << "\n";
+											cout << "DEBUG: Cannot find first block of task " << taskName << "\n";
 											cout << "DEBUG: Skipping NOPRE edge from end op " << opI
-												 << " of task " << it->first << " to first op of task "
-												 << taskName << "\n";
+												 << " of task " << it->first << " to first op of task " << taskName
+												 << "\n";
 											continue;
 #endif
 										} else {
+											IDType firstOpOfBlock = blockIDMap[firstBlockOfTask].firstOpInBlock;
+											if (firstOpOfBlock <= 0) {
 #ifdef GRAPHDEBUG
-											cout << "DEBUG: Adding NOPRE edge from end op " << opI
-												 << " of task " << it->first << " to first op " << firstOpOfBlock
-												 << " of task " << taskName << "\n";
+												cout << "DEBUG: Cannot find first op of block " << firstBlockOfTask
+													 << " - this is the first block of task " << taskName << "\n";
+												cout << "DEBUG: Skipping NOPRE edge from end op " << opI
+													 << " of task " << it->first << " to first op of task "
+													 << taskName << "\n";
+												continue;
 #endif
-											opJ = firstOpOfBlock;
+											} else {
+#ifdef GRAPHDEBUG
+												cout << "DEBUG: Adding NOPRE edge from end op " << opI
+													 << " of task " << it->first << " to first op " << firstOpOfBlock
+													 << " of task " << taskName << "\n";
+#endif
+												opJ = firstOpOfBlock;
+											}
+										}
+#endif
+									}
+
+									if (opJ <= 0) {
+#ifdef GRAPHDEBUG
+										cout << "DEBUG: Skipping NOPRE edge from end op " << opI
+											 << " of task " << it->first << " to deq op of task " << taskName << "\n";
+#endif
+										continue;
+									}
+
+									IDType nodeI = opIDMap[opI].nodeID;
+									IDType nodeJ = opIDMap[opJ].nodeID;
+									if (nodeI <= 0 ) {
+										cout << "ERROR: Invalid node ID for op " << opI << "\n";
+										return -1;
+									} else if (nodeJ <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+										return -1;
+									} else {
+										int retOpValue2 = graph->opEdgeExists(nodeI, nodeJ);
+										if (retOpValue2 == 0) {
+											int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+											if (addEdgeRetValue == 1) {
+												flag = true;
+#ifdef GRAPHDEBUG
+												cout << "NO-PRE edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+													 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+											} else if (addEdgeRetValue == -1) {
+												cout << "ERROR: While adding NO-PRE edge from " << nodeI << " to " << nodeJ << endl;
+												return -1;
+											}
+										} else if (retOpValue2 == -1) {
+											cout << "ERROR: While checking for op-edge (" << nodeI << ", " << nodeJ << ")\n";
+											return -1;
 										}
 									}
-#endif
-								}
-
-								int retOpValue2 = graph->opEdgeExists(opI, opJ);
-								if (retOpValue2 == 0) {
-									int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-									if (addEdgeRetValue == 1) {
-										flag = true;
-#ifdef GRAPHDEBUG
-										cout << "NO-PRE edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																					  << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-									} else if (addEdgeRetValue == -1) {
-										cout << "ERROR: While adding NO-PRE edge from " << opI << " to " << opJ << endl;
-										return -1;
-									}
-								} else if (retOpValue2 == -1) {
-									cout << "ERROR: While checking for op-edge (" << opI << ", " << opJ << ")\n";
+								} else if (retOpValue1 == -1) {
+									cout << "ERROR: While checking for op-edge (" << nodei << ", " << nodeTempEnq << ")\n";
 									return -1;
 								}
-							} else if (retOpValue1 == -1) {
-								cout << "ERROR: While checking for op-edge (" << i << ", " << tempenqOp << ")\n";
-								return -1;
 							}
 						}
 					}
@@ -846,25 +939,35 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 
 				if (threadOfPauseOp != threadOfResetOp) {
 					opJ = resetOp;
-					int retValue = graph->opEdgeExists(opI, opJ);
-					if (retValue == 0) {
+					IDType nodeI = opIDMap[opI].nodeID;
+					IDType nodeJ = opIDMap[opJ].nodeID;
+					if (nodeI <= 0) {
+						cout << "ERROR: Invalid node ID for op " << opI << "\n";
+						return -1;
+					} else if (nodeJ <= 0) {
+						cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+						return -1;
+					} else {
+						int retValue = graph->opEdgeExists(nodeI, nodeJ);
+						if (retValue == 0) {
 #ifdef GRAPHDEBUG
-						cout << "DEBUG: Adding PAUSE-MT edge (" << opI << ", " << opJ << ")\n";
+							cout << "DEBUG: Adding PAUSE-MT edge (" << nodeI << ", " << nodeJ << ")\n";
 #endif
-						int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-						if (addEdgeRetValue == 1) {
-							flag = true;
+							int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+							if (addEdgeRetValue == 1) {
+								flag = true;
 #ifdef GRAPHDEBUG
-							cout << "PAUSE-MT edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																		    << " -- #block-edges " << graph->numOfBlockEdges << endl;
+								cout << "PAUSE-MT edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-						} else if (addEdgeRetValue == -1) {
-							cout << "ERROR: While adding PAUSE-MT edge from " << opI << " to " << opJ << endl;
+							} else if (addEdgeRetValue == -1) {
+								cout << "ERROR: While adding PAUSE-MT edge from " << nodeI << " to " << nodeJ << endl;
+								return -1;
+							}
+						} else if (retValue == -1) {
+							cout << "ERROR: While checking PAUSE-MT edge from " << nodeI << " to " << nodeJ << endl;
 							return -1;
 						}
-					} else if (retValue == -1) {
-						cout << "ERROR: While checking PAUSE-MT edge from " << opI << " to " << opJ << endl;
-						return -1;
 					}
 				} else {
 					std::string taskOfResetOp = opIDMap[resetOp].taskID;
@@ -878,25 +981,35 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							cout << "DEBUG: Skipping PAUSE-ST/MT for this task\n";
 #endif
 						} else {
-							int retValue = graph->opEdgeExists(opI, opJ);
-							if (retValue == 0) {
+							IDType nodeI = opIDMap[opI].nodeID;
+							IDType nodeJ = opIDMap[opJ].nodeID;
+							if (nodeI <= 0) {
+								cout << "ERROR: Invalid node ID for op " << opI << "\n";
+								return -1;
+							} else if (nodeJ <= 0) {
+								cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+								return -1;
+							} else {
+								int retValue = graph->opEdgeExists(nodeI, nodeJ);
+								if (retValue == 0) {
 #ifdef GRAPHDEBUG
-								cout << "DEBUG: Adding PAUSE-ST edge (" << opI << ", " << opJ << ")\n";
+									cout << "DEBUG: Adding PAUSE-ST edge (" << nodeI << ", " << nodeJ << ")\n";
 #endif
-								int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-								if (addEdgeRetValue == 1) {
-									flag = true;
+									int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+									if (addEdgeRetValue == 1) {
+										flag = true;
 #ifdef GRAPHDEBUG
-									cout << "PAUSE-ST edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																				    << " -- #block-edges " << graph->numOfBlockEdges << endl;
+										cout << "PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-								} else if (addEdgeRetValue == -1) {
-									cout << "ERROR: While adding PAUSE-ST edge from " << opI << " to " << opJ << endl;
+									} else if (addEdgeRetValue == -1) {
+										cout << "ERROR: While adding PAUSE-ST edge from " << nodeI << " to " << nodeJ << endl;
+										return -1;
+									}
+								} else if (retValue == -1) {
+									cout << "ERROR: While checking PAUSE-ST edge from " << nodeI << " to " << nodeJ << endl;
 									return -1;
 								}
-							} else if (retValue == -1) {
-								cout << "ERROR: While checking PAUSE-ST edge from " << opI << " to " << opJ << endl;
-								return -1;
 							}
 						}
 					} else if (taskOfResetOp.compare("") == 0) {
@@ -914,25 +1027,35 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 						cout << "DEBUG: Adding edge from pause op to reset op\n";
 
 						opJ = resetOp;
-						int retValue = graph->opEdgeExists(opI, opJ);
-						if (retValue == 0) {
+						IDType nodeI = opIDMap[opI].nodeID;
+						IDType nodeJ = opIDMap[opJ].nodeID;
+						if (nodeI <= 0) {
+							cout << "ERROR: Invalid node ID for op " << opI << "\n";
+							return -1;
+						} else if (nodeJ <= 0) {
+							cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+							return -1;
+						} else {
+							int retValue = graph->opEdgeExists(nodeI, nodeJ);
+							if (retValue == 0) {
 #ifdef GRAPHDEBUG
-							cout << "DEBUG: Adding PAUSE-ST edge (" << opI << ", " << opJ << ")\n";
+								cout << "DEBUG: Adding PAUSE-ST edge (" << nodeI << ", " << nodeJ << ")\n";
 #endif
-							int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-							if (addEdgeRetValue == 1) {
-								flag = true;
+								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+								if (addEdgeRetValue == 1) {
+									flag = true;
 #ifdef GRAPHDEBUG
-								cout << "PAUSE-ST edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																			    << " -- #block-edges " << graph->numOfBlockEdges << endl;
+									cout << "PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-							} else if (addEdgeRetValue == -1) {
-								cout << "ERROR: While adding PAUSE-ST edge from " << opI << " to " << opJ << endl;
+								} else if (addEdgeRetValue == -1) {
+									cout << "ERROR: While adding PAUSE-ST edge from " << nodeI << " to " << nodeJ << endl;
+									return -1;
+								}
+							} else if (retValue == -1) {
+								cout << "ERROR: While checking PAUSE-ST edge from " << nodeI << " to " << nodeJ << endl;
 								return -1;
 							}
-						} else if (retValue == -1) {
-							cout << "ERROR: While checking PAUSE-ST edge from " << opI << " to " << opJ << endl;
-							return -1;
 						}
 #else
 						cout << "DEBUG: Skipping PAUSE-ST edge for this task\n";
@@ -970,25 +1093,35 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 				opJ = resumeOp;
 
 				if (threadOfResetOp != threadOfResumeOp) {
-					int retValue = graph->opEdgeExists(opI, opJ);
-					if (retValue == 0) {
+					IDType nodeI = opIDMap[opI].nodeID;
+					IDType nodeJ = opIDMap[opJ].nodeID;
+					if (nodeI <= 0) {
+						cout << "ERROR: Invalid node ID for op " << opI << "\n";
+						return -1;
+					} else if (nodeJ <= 0) {
+						cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+						return -1;
+					} else {
+						int retValue = graph->opEdgeExists(nodeI, nodeJ);
+						if (retValue == 0) {
 #ifdef GRAPHDEBUG
-						cout << "DEBUG: Adding RESUME-MT edge (" << opI << ", " << opJ << ")\n";
+							cout << "DEBUG: Adding RESUME-MT edge (" << nodeI << ", " << nodeJ << ")\n";
 #endif
-						int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-						if (addEdgeRetValue == 1) {
-							flag = true;
+							int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+							if (addEdgeRetValue == 1) {
+								flag = true;
 #ifdef GRAPHDEBUG
-							cout << "RESUME-MT edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																		     << " -- #block-edges " << graph->numOfBlockEdges << endl;
+								cout << "RESUME-MT edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-						} else if (addEdgeRetValue == -1) {
-							cout << "ERROR: While adding RESUME-MT edge from " << opI << " to " << opJ << endl;
+							} else if (addEdgeRetValue == -1) {
+								cout << "ERROR: While adding RESUME-MT edge from " << nodeI << " to " << nodeJ << endl;
+								return -1;
+							}
+						} else if (retValue == -1) {
+							cout << "ERROR: While checking RESUME-MT edge from " << nodeI << " to " << nodeJ << endl;
 							return -1;
 						}
-					} else if (retValue == -1) {
-						cout << "ERROR: While checking RESUME-MT edge from " << opI << " to " << opJ << endl;
-						return -1;
 					}
 				} else {
 					std::string taskOfResetOp = opIDMap[resetOp].taskID;
@@ -1000,25 +1133,35 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							cout << "DEBUG: Cannot find end of task " << taskOfResetOp << "\n";
 							cout << "DEBUG: Skipping RESUME-ST/MT for this task\n";
 						} else {
-							int retValue = graph->opEdgeExists(opI, opJ);
-							if (retValue == 0) {
+							IDType nodeI = opIDMap[opI].nodeID;
+							IDType nodeJ = opIDMap[opJ].nodeID;
+							if (nodeI <= 0) {
+								cout << "ERROR: Invalid node ID for op " << opI << "\n";
+								return -1;
+							} else if (nodeJ <= 0) {
+								cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+								return -1;
+							} else {
+								int retValue = graph->opEdgeExists(nodeI, nodeJ);
+								if (retValue == 0) {
 #ifdef GRAPHDEBUG
-								cout << "DEBUG: Adding RESUME-ST edge (" << opI << ", " << opJ << ")\n";
+									cout << "DEBUG: Adding RESUME-ST edge (" << nodeI << ", " << nodeJ << ")\n";
 #endif
-								int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-								if (addEdgeRetValue == 1) {
-									flag = true;
+									int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+									if (addEdgeRetValue == 1) {
+										flag = true;
 #ifdef GRAPHDEBUG
-									cout << "RESUME-ST edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																				    << " -- #block-edges " << graph->numOfBlockEdges << endl;
+										cout << "RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-								} else if (addEdgeRetValue == -1) {
-									cout << "ERROR: While adding RESUME-ST edge from " << opI << " to " << opJ << endl;
+									} else if (addEdgeRetValue == -1) {
+										cout << "ERROR: While adding RESUME-ST edge from " << nodeI << " to " << nodeJ << endl;
+										return -1;
+									}
+								} else if (retValue == -1) {
+									cout << "ERROR: While checking RESUME-ST edge from " << nodeI << " to " << nodeJ << endl;
 									return -1;
 								}
-							} else if (retValue == -1) {
-								cout << "ERROR: While checking RESUME-ST edge from " << opI << " to " << opJ << endl;
-								return -1;
 							}
 						}
 					} else if (taskOfResetOp.compare("") == 0) {
@@ -1037,25 +1180,35 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 
 						opI = resetOp;
 						opJ = resumeOp;
-						int retValue = graph->opEdgeExists(opI, opJ);
-						if (retValue == 0) {
+						IDType nodeI = opIDMap[opI].nodeID;
+						IDType nodeJ = opIDMap[opJ].nodeID;
+						if (nodeI <= 0) {
+							cout << "ERROR: Invalid node ID for op " << opI << "\n";
+							return -1;
+						} else if (nodeJ <= 0) {
+							cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+							return -1;
+						} else {
+							int retValue = graph->opEdgeExists(nodeI, nodeJ);
+							if (retValue == 0) {
 #ifdef GRAPHDEBUG
-							cout << "DEBUG: Adding RESUME-ST edge (" << opI << ", " << opJ << ")\n";
+								cout << "DEBUG: Adding RESUME-ST edge (" << nodeI << ", " << nodeJ << ")\n";
 #endif
-							int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-							if (addEdgeRetValue == 1) {
-								flag = true;
+								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+								if (addEdgeRetValue == 1) {
+									flag = true;
 #ifdef GRAPHDEBUG
-								cout << "RESUME-ST edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																			    << " -- #block-edges " << graph->numOfBlockEdges << endl;
+									cout << "RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-							} else if (addEdgeRetValue == -1) {
-								cout << "ERROR: While adding RESUME-ST edge from " << opI << " to " << opJ << endl;
+								} else if (addEdgeRetValue == -1) {
+									cout << "ERROR: While adding RESUME-ST edge from " << nodeI << " to " << nodeJ << endl;
+									return -1;
+								}
+							} else if (retValue == -1) {
+								cout << "ERROR: While checking RESUME-ST edge from " << nodeI << " to " << nodeJ << endl;
 								return -1;
 							}
-						} else if (retValue == -1) {
-							cout << "ERROR: While checking RESUME-ST edge from " << opI << " to " << opJ << endl;
-							return -1;
 						}
 #else
 						cout << "DEBUG: Skipping RESUME-ST edge for this task\n";
@@ -1092,23 +1245,33 @@ int UAFDetector::add_WaitNotify_Edges() {
 		IDType opJ = it->second;
 
 		if (opI > 0 && opJ > 0) {
-			int retOpValue = graph->opEdgeExists(opI, opJ);
-            if (retOpValue == 0) {
-            	int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-                if (addEdgeRetValue == 1) {
-                	flag = true;
+			IDType nodeI = opIDMap[opI].nodeID;
+			IDType nodeJ = opIDMap[opJ].nodeID;
+			if (nodeI <= 0) {
+				cout << "ERROR: Invalid node ID for op " << opI << "\n";
+				return -1;
+			} else if (nodeJ <= 0) {
+				cout << "ERROR: Invalid node ID for op" << opJ << "\n";
+				return -1;
+			} else {
+				int retOpValue = graph->opEdgeExists(nodeI, nodeJ);
+				if (retOpValue == 0) {
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+					if (addEdgeRetValue == 1) {
+						flag = true;
 #ifdef GRAPHDEBUG
-                    cout << "NOTIFY-WAIT edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-                         << " -- #block-edges " << graph->numOfBlockEdges << endl;
+						cout << "NOTIFY-WAIT edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-                } else if (addEdgeRetValue == -1) {
-                    cout << "ERROR: While adding NOTIFY-WAIT edge from " << opI << " to " << opJ << endl;
-                    return -1;
-                }
-            } else if (retOpValue == -1) {
-            	cout << "ERROR: While checking NOTIFY-WAIT edge from " << opI << " to " << opJ << endl;
-            	return -1;
-            }
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding NOTIFY-WAIT edge from " << nodeI << " to " << nodeJ << endl;
+						return -1;
+					}
+				} else if (retOpValue == -1) {
+					cout << "ERROR: While checking NOTIFY-WAIT edge from " << nodeI << " to " << nodeJ << endl;
+					return -1;
+				}
+			}
 		} else {
             if (opI <= 0) {
             	cout << "ERROR: Found invalid notify op in notifyToWait\n";
@@ -1130,22 +1293,32 @@ int UAFDetector::add_WaitNotify_Edges() {
 			IDType opJ = *waitIt;
 
 			if (opI > 0 && opJ > 0) {
-				int retOpValue = graph->opEdgeExists(opI, opJ);
-				if (retOpValue == 0) {
-					int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-					if (addEdgeRetValue == 1) {
-						flag = true;
+				IDType nodeI = opIDMap[opI].nodeID;
+				IDType nodeJ = opIDMap[opJ].nodeID;
+				if (nodeI <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opI << "\n";
+					return -1;
+				} else if (nodeJ <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+					return -1;
+				} else {
+					int retOpValue = graph->opEdgeExists(nodeI, nodeJ);
+					if (retOpValue == 0) {
+						int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+						if (addEdgeRetValue == 1) {
+							flag = true;
 #ifdef GRAPHDEBUG
-						cout << "NOTIFYALL-WAIT edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+							cout << "NOTIFYALL-WAIT edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+								 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding NOTIFYALL-WAIT edge from " << opI << " to " << opJ << endl;
+						} else if (addEdgeRetValue == -1) {
+							cout << "ERROR: While adding NOTIFYALL-WAIT edge from " << nodeI << " to " << nodeJ << endl;
+							return -1;
+						}
+					} else if (retOpValue == -1) {
+						cout << "ERROR: While checking NOTIFYALL-WAIT edge from " << nodeI << " to " << nodeJ << endl;
 						return -1;
 					}
-				} else if (retOpValue == -1) {
-					cout << "ERROR: While checking NOTIFYALL-WAIT edge from " << opI << " to " << opJ << endl;
-					return -1;
 				}
 			} else {
 				if (opI <= 0) {
@@ -1227,43 +1400,63 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 					// If enqI and enqJ are the same, do not proceed
 					if (blockI == blockJ && enqI == enqJ) continue;
 
-					int retValue = graph->opEdgeExists(enqI, enqJ);
-					if (retValue == 1) {
-						std::string taskJ = enqToTaskEnqueued[enqJ].taskEnqueued;
+					IDType nodeEnqI = opIDMap[enqI].nodeID;
+					IDType nodeEnqJ = opIDMap[enqJ].nodeID;
+					if (nodeEnqI <= 0) {
+						cout << "ERROR: Invalid node ID for op " << enqI << "\n";
+						return -1;
+					} else if (nodeEnqJ <= 0) {
+						cout << "ERROR: Invalid node ID for op " << enqJ << "\n";
+						return -1;
+					} else {
+						int retValue = graph->opEdgeExists(nodeEnqI, nodeEnqJ);
+						if (retValue == 1) {
+							std::string taskJ = enqToTaskEnqueued[enqJ].taskEnqueued;
 #ifdef SANITYCHECK
-						assert(taskJ.compare("") != 0);
+							assert(taskJ.compare("") != 0);
 #endif
-						opJ = taskIDMap[taskJ].deqOpID;
+							opJ = taskIDMap[taskJ].deqOpID;
 #ifdef SANITYCHECK
-						if (opJ <= 0) {
-							cout << "DEBUG: Cannot find deq of task " << taskJ << endl;
-							cout << "DEBUG: Skipping FIFO-NESTED-1 edge from pause op " << opI << "\n";
-							continue;
-						}
-#endif
-						int edgeRetValue = graph->opEdgeExists(opI, opJ);
-						if (edgeRetValue == 0) {
-							int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-							if (addEdgeRetValue == 1) {
-								flag = true;
-#ifdef GRAPHDEBUG
-								cout << "FIFO-NESTED-1 edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																	     	 	 	 << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-							} else if (addEdgeRetValue == 0) {
-								cout << "ERROR: Edge (" << opI << ", " << opJ << ") was not present when checked but addOpEdge returns 0\n";
-								return -1;
-							} else if (addEdgeRetValue == -1) {
-								cout << "ERROR: While adding FIFO-NESTED-1 edge from " << opI << " to " << opJ << endl;
-								return -1;
+							if (opJ <= 0) {
+								cout << "DEBUG: Cannot find deq of task " << taskJ << endl;
+								cout << "DEBUG: Skipping FIFO-NESTED-1 edge from pause op " << opI << "\n";
+								continue;
 							}
-						} else if (edgeRetValue == -1) {
-							cout << "ERROR: While checking FIFO-NESTED-1 edge from " << opI << " to " << opJ << endl;
+#endif
+							IDType nodeI = opIDMap[opI].nodeID;
+							IDType nodeJ = opIDMap[opJ].nodeID;
+							if (nodeI <= 0) {
+								cout << "ERROR: Invalid node ID for op " << opI << "\n";
+								return -1;
+							} else if (nodeJ <= 0) {
+								cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+								return -1;
+							} else {
+								int edgeRetValue = graph->opEdgeExists(nodeI, nodeJ);
+								if (edgeRetValue == 0) {
+									int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+									if (addEdgeRetValue == 1) {
+										flag = true;
+#ifdef GRAPHDEBUG
+										cout << "FIFO-NESTED-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+									} else if (addEdgeRetValue == 0) {
+										cout << "ERROR: Edge (" << nodeI << ", " << nodeJ << ") was not present when checked but addOpEdge returns 0\n";
+										return -1;
+									} else if (addEdgeRetValue == -1) {
+										cout << "ERROR: While adding FIFO-NESTED-1 edge from " << nodeI << " to " << nodeJ << endl;
+										return -1;
+									}
+								} else if (edgeRetValue == -1) {
+									cout << "ERROR: While checking FIFO-NESTED-1 edge from " << nodeI << " to " << nodeJ << endl;
+									return -1;
+								}
+							}
+						} else if (retValue == -1) {
+							cout << "ERROR: While checking edge from " << nodeEnqI << " to " << nodeEnqJ << endl;
 							return -1;
 						}
-					} else if (retValue == -1) {
-						cout << "ERROR: While checking edge from " << enqI << " to " << enqJ << endl;
-						return -1;
 					}
 				}
 			}
@@ -1337,67 +1530,87 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 							// Rule applies only if enqJ posts to the same thread as end op opI
 							if (threadI != threadJ) continue;
 
-							int retValue = graph->opEdgeExists(opL, enqJ);
-							if (retValue == 1) {
-								std::string taskJ = enqToTaskEnqueued[enqJ].taskEnqueued;
+							IDType nodeL = opIDMap[opL].nodeID;
+							IDType nodeEnqJ = opIDMap[enqJ].nodeID;
+							if (nodeL <= 0) {
+								cout << "ERROR: Invalid node ID for op " << opL << "\n";
+								return -1;
+							} else if (nodeEnqJ <= 0) {
+								cout << "ERROR: Invalid node ID for op " << enqJ << "\n";
+								return -1;
+							} else {
+								int retValue = graph->opEdgeExists(nodeL, nodeEnqJ);
+								if (retValue == 1) {
+									std::string taskJ = enqToTaskEnqueued[enqJ].taskEnqueued;
 #ifdef SANITYCHECK
-								assert(taskJ.compare("") != 0);
+									assert(taskJ.compare("") != 0);
 #endif
-								opJ = taskIDMap[taskJ].deqOpID;
+									opJ = taskIDMap[taskJ].deqOpID;
 #ifdef SANITYCHECK
-								if (opJ <= 0) {
-									cout << "DEBUG: Cannot find deq of task " << taskJ << endl;
+									if (opJ <= 0) {
+										cout << "DEBUG: Cannot find deq of task " << taskJ << endl;
 #ifdef EXTRARULES
-									IDType firstBlockOfTask = taskIDMap[taskJ].firstBlockID;
-									if (firstBlockOfTask <= 0) {
-										cout << "DEBUG: Cannot find first block of task " << taskJ << "\n";
-										cout << "DEBUG: Skipping FIFO-NESTED-2 edge from " << opI
-											 << " to first op of task " << taskJ << "\n";
-									} else {
-										IDType firstOpOfTask = blockIDMap[firstBlockOfTask].firstOpInBlock;
-										if (firstOpOfTask <= 0) {
-											cout << "DEBUG: Cannot find first op of task " << taskJ << "\n";
+										IDType firstBlockOfTask = taskIDMap[taskJ].firstBlockID;
+										if (firstBlockOfTask <= 0) {
+											cout << "DEBUG: Cannot find first block of task " << taskJ << "\n";
 											cout << "DEBUG: Skipping FIFO-NESTED-2 edge from " << opI
 												 << " to first op of task " << taskJ << "\n";
 										} else {
-											opJ = firstOpOfTask;
-											cout << "DEBUG: Adding FIFO-NESTED-2 edge from " << opI
-												 << " to first op " << opJ << " of task " << taskJ << "\n";
+											IDType firstOpOfTask = blockIDMap[firstBlockOfTask].firstOpInBlock;
+											if (firstOpOfTask <= 0) {
+												cout << "DEBUG: Cannot find first op of task " << taskJ << "\n";
+												cout << "DEBUG: Skipping FIFO-NESTED-2 edge from " << opI
+													 << " to first op of task " << taskJ << "\n";
+											} else {
+												opJ = firstOpOfTask;
+												cout << "DEBUG: Adding FIFO-NESTED-2 edge from " << opI
+													 << " to first op " << opJ << " of task " << taskJ << "\n";
+											}
 										}
+#endif
 									}
 #endif
-								}
-#endif
-								if (opJ > 0) {
-									int edgeRetValue = graph->opEdgeExists(opI, opJ);
-									if (edgeRetValue == 0) {
-										int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-										if (addEdgeRetValue == 1) {
-											flag = true;
+									if (opJ > 0) {
+										IDType nodeI = opIDMap[opI].nodeID;
+										IDType nodeJ = opIDMap[opJ].nodeID;
+										if (nodeI <= 0) {
+											cout << "ERROR: Invalid node ID for op " << opI << "\n";
+											return -1;
+										} else if (nodeJ <= 0) {
+											cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+											return -1;
+										} else {
+											int edgeRetValue = graph->opEdgeExists(nodeI, nodeJ);
+											if (edgeRetValue == 0) {
+												int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+												if (addEdgeRetValue == 1) {
+													flag = true;
 #ifdef GRAPHDEBUG
-											cout << "FIFO-NESTED-2 edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+													cout << "FIFO-NESTED-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+														 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
-										} else if (addEdgeRetValue == 0) {
-											cout << "ERROR: Edge (" << opI << ", " << opJ << ") was not present when checked but addOpEdge returns 0\n";
-											return -1;
-										} else if (addEdgeRetValue == -1) {
-											cout << "ERROR: While adding FIFO-NESTED-2 edge from " << opI << " to " << opJ << endl;
-											return -1;
+												} else if (addEdgeRetValue == 0) {
+													cout << "ERROR: Edge (" << nodeI << ", " << nodeJ << ") was not present when checked but addOpEdge returns 0\n";
+													return -1;
+												} else if (addEdgeRetValue == -1) {
+													cout << "ERROR: While adding FIFO-NESTED-2 edge from " << nodeI << " to " << nodeJ << endl;
+													return -1;
+												}
+											} else if (edgeRetValue == -1) {
+												cout << "ERROR: While checking FIFO-NESTED-2 edge from " << nodeI << " to " << nodeJ << endl;
+												return -1;
+											}
 										}
-									} else if (edgeRetValue == -1) {
-										cout << "ERROR: While checking FIFO-NESTED-2 edge from " << opI << " to " << opJ << endl;
-										return -1;
-									}
-								} else {
+									} else {
 #ifdef GRAPHDEBUG
-									cout << "DEBUG: Cannot find deq op (or first op) of task " << taskJ << "\n";
-									cout << "DEBUG: Skipping FIFO-NESTED-2 edge from op " << opI << " to task " << taskJ << "\n";
+										cout << "DEBUG: Cannot find deq op (or first op) of task " << taskJ << "\n";
+										cout << "DEBUG: Skipping FIFO-NESTED-2 edge from op " << opI << " to task " << taskJ << "\n";
 #endif
+									}
+								} else if (retValue == -1) {
+									cout << "ERROR: While checking edge from " << nodeL << " to " << nodeEnqJ << endl;
+									return -1;
 								}
-							} else if (retValue == -1) {
-								cout << "ERROR: While checking edge from " << opL << " to " << enqJ << endl;
-								return -1;
 							}
 						}
 					}
@@ -1467,79 +1680,99 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 						// Rule applies only if enqJ posts to the same thread as resumeOp
 						if (threadI != threadJ) continue;
 
-						int retValue = graph->opEdgeExists(resumeOp, enqJ);
-						if (retValue == 1) {
+						IDType nodeResumeOp = opIDMap[resumeOp].nodeID;
+						IDType nodeEnqJ = opIDMap[enqJ].nodeID;
+						if (nodeResumeOp <= 0) {
+							cout << "ERROR: Invalid node ID for op " << resumeOp << "\n";
+							return -1;
+						} else if (nodeEnqJ <= 0) {
+							cout << "ERROR: Invalid node ID for op " << enqJ << "\n";
+							return -1;
+						} else {
+							int retValue = graph->opEdgeExists(nodeResumeOp, nodeEnqJ);
+							if (retValue == 1) {
 
-							if (prIt +1 == taskIDMap[it->first].pauseResumeResetSequence.end())
-								continue;
+								if (prIt +1 == taskIDMap[it->first].pauseResumeResetSequence.end())
+									continue;
 
-							opI = (prIt+1)->pauseOp;
+								opI = (prIt+1)->pauseOp;
 #ifdef SANITYCHECK
-							if (opI <= 0) {
-								cout << "DEBUG: Cannot find pause op after resume op " << resumeOp << endl;
-								cout << "DEBUG: Skipping FIFO-NESTED-GEN edge from resume op " << resumeOp << "\n";
-								continue;
-							}
+								if (opI <= 0) {
+									cout << "DEBUG: Cannot find pause op after resume op " << resumeOp << endl;
+									cout << "DEBUG: Skipping FIFO-NESTED-GEN edge from resume op " << resumeOp << "\n";
+									continue;
+								}
 #endif
 
-							std::string taskEnqueued = enqToTaskEnqueued[enqJ].taskEnqueued;
+								std::string taskEnqueued = enqToTaskEnqueued[enqJ].taskEnqueued;
 #ifdef SANITYCHECK
-							if (taskEnqueued.compare("") == 0) {
-								cout << "ERROR: Cannot find task enqueued in enq op " << enqJ << endl;
-								return -1;
-							}
+								if (taskEnqueued.compare("") == 0) {
+									cout << "ERROR: Cannot find task enqueued in enq op " << enqJ << endl;
+									return -1;
+								}
 #endif
-							opJ = taskIDMap[taskEnqueued].deqOpID;
+								opJ = taskIDMap[taskEnqueued].deqOpID;
 #ifdef SANITYCHECK
-							if (opJ <= 0) {
-								cout << "DEBUG: Cannot find deq op of task " << taskEnqueued << endl;
+								if (opJ <= 0) {
+									cout << "DEBUG: Cannot find deq op of task " << taskEnqueued << endl;
 #ifdef EXTRARULES
-								IDType firstBlockOfTask = taskIDMap[taskEnqueued].firstBlockID;
-								if (firstBlockOfTask <= 0) {
-									cout << "DEBUG: Cannot find first block of task " << taskEnqueued << "\n";
-									cout << "DEBUG: Skipping FIFO-NESTED-GEN from op " << opI << " to task "
-										 << taskEnqueued << "\n";
-								} else {
-									IDType firstOpOfTask = blockIDMap[firstBlockOfTask].firstOpInBlock;
-									if (firstOpOfTask <= 0) {
-										cout << "DEBUG: Cannot find first op of block " << firstBlockOfTask
-											 << " of task " << taskEnqueued << "\n";
+									IDType firstBlockOfTask = taskIDMap[taskEnqueued].firstBlockID;
+									if (firstBlockOfTask <= 0) {
+										cout << "DEBUG: Cannot find first block of task " << taskEnqueued << "\n";
 										cout << "DEBUG: Skipping FIFO-NESTED-GEN from op " << opI << " to task "
 											 << taskEnqueued << "\n";
 									} else {
-										opJ = firstOpOfTask;
-										cout << "DEBUG: Adding FIFO-NESTED-GEN edge from " << opI << " to "
-											 << opJ << "\n";
+										IDType firstOpOfTask = blockIDMap[firstBlockOfTask].firstOpInBlock;
+										if (firstOpOfTask <= 0) {
+											cout << "DEBUG: Cannot find first op of block " << firstBlockOfTask
+												 << " of task " << taskEnqueued << "\n";
+											cout << "DEBUG: Skipping FIFO-NESTED-GEN from op " << opI << " to task "
+												 << taskEnqueued << "\n";
+										} else {
+											opJ = firstOpOfTask;
+											cout << "DEBUG: Adding FIFO-NESTED-GEN edge from " << opI << " to "
+												 << opJ << "\n";
+										}
 									}
+#endif
 								}
 #endif
-							}
-#endif
-							if (opJ > 0) {
-								int edgeRetValue = graph->opEdgeExists(opI, opJ);
-								if (edgeRetValue == 0) {
-									int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-									if (addEdgeRetValue == 1) {
-										flag = true;
-#ifdef GRAPHDEBUG
-										cout << "FIFO-NESTED-GEN edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-									} else if (addEdgeRetValue == -1) {
-										cout << "ERROR: While adding FIFO-NESTED-GEN edge from " << opI << " to " << opJ << endl;
+								if (opJ > 0) {
+									IDType nodeI = opIDMap[opI].nodeID;
+									IDType nodeJ = opIDMap[opJ].nodeID;
+									if (nodeI <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opI << "\n";
 										return -1;
+									} else if (nodeJ <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+										return -1;
+									} else {
+										int edgeRetValue = graph->opEdgeExists(nodeI, nodeJ);
+										if (edgeRetValue == 0) {
+											int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+											if (addEdgeRetValue == 1) {
+												flag = true;
+#ifdef GRAPHDEBUG
+												cout << "FIFO-NESTED-GEN edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+													 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+											} else if (addEdgeRetValue == -1) {
+												cout << "ERROR: While adding FIFO-NESTED-GEN edge from " << nodeI << " to " << nodeJ << endl;
+												return -1;
+											}
+										} else if (edgeRetValue == -1) {
+											cout << "ERROR: While checking FIFO-NESTED-GEN edge from " << nodeI << " to " << nodeJ << endl;
+											return -1;
+										}
 									}
-								} else if (edgeRetValue == -1) {
-									cout << "ERROR: While checking FIFO-NESTED-GEN edge from " << opI << " to " << opJ << endl;
-									return -1;
+								} else {
+									cout << "DEBUG: Cannot find deq op (or first op) of task " << taskEnqueued << "\n";
+									cout << "DEBUG: Skipping FIFO-NESTED-GEN edge from op " << opI << "\n";
 								}
-							} else {
-								cout << "DEBUG: Cannot find deq op (or first op) of task " << taskEnqueued << "\n";
-								cout << "DEBUG: Skipping FIFO-NESTED-GEN edge from op " << opI << "\n";
+							} else if (retValue == -1) {
+								cout << "ERROR: While checking edge from " << resumeOp << " to " << enqJ << endl;
+								return -1;
 							}
-						} else if (retValue == -1) {
-							cout << "ERROR: While checking edge from " << resumeOp << " to " << enqJ << endl;
-							return -1;
 						}
 					}
 				}
@@ -1626,67 +1859,91 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 						if (threadK != threadL)
 							continue;
 
-						int retValue1 = graph->opEdgeExists(enqK, enqL);
-						if (retValue1 == 1) {
-							int retValue2 = graph->opEdgeExists(enqL, enqN);
-							if (retValue2 == 1) {
-								std::string taskEnqueuedInL = enqToTaskEnqueued[enqL].taskEnqueued;
+						IDType nodeEnqK = opIDMap[enqK].nodeID;
+						IDType nodeEnqL = opIDMap[enqL].nodeID;
+						IDType nodeEnqN = opIDMap[enqN].nodeID;
+						if (nodeEnqK <= 0) {
+							cout << "ERROR: Invalid node ID for op " << enqK << "\n";
+							return -1;
+						} else if (nodeEnqL <= 0) {
+							cout << "ERROR: Invalid node ID for op " << enqL << "\n";
+							return -1;
+						} else if (nodeEnqN <= 0) {
+							cout << "ERROR: Invalid node ID for op " << enqN << "\n";
+							return -1;
+						} else {
+							int retValue1 = graph->opEdgeExists(nodeEnqK, nodeEnqL);
+							if (retValue1 == 1) {
+								int retValue2 = graph->opEdgeExists(nodeEnqL, nodeEnqN);
+								if (retValue2 == 1) {
+									std::string taskEnqueuedInL = enqToTaskEnqueued[enqL].taskEnqueued;
 #ifdef SANITYCHECK
-								assert(taskEnqueuedInL.compare("") != 0);
+									assert(taskEnqueuedInL.compare("") != 0);
 #endif
-								opI = taskIDMap[taskEnqueuedInL].endOpID;
+									opI = taskIDMap[taskEnqueuedInL].endOpID;
 
-								if (opI <= 0) {
-									cout << "DEBUG: Cannot find end op of task " << taskEnqueuedInL << "\n";
+									if (opI <= 0) {
+										cout << "DEBUG: Cannot find end op of task " << taskEnqueuedInL << "\n";
 #ifdef EXTRARULES
-									IDType lastBlockOfTask = taskIDMap[taskEnqueuedInL].lastBlockID;
-									if (lastBlockOfTask <= 0) {
-										cout << "DEBUG: Cannot find last block of task " << taskEnqueuedInL << "\n";
-										cout << "DEBUG: Skipping ENQRESET-ST-1 edge for this task\n";
-									} else {
-										IDType lastOpOfTask = blockIDMap[lastBlockOfTask].lastOpInBlock;
-										if (lastOpOfTask <= 0) {
-											cout << "DEBUG: Cannot find last op of task " << taskEnqueuedInL << "\n";
+										IDType lastBlockOfTask = taskIDMap[taskEnqueuedInL].lastBlockID;
+										if (lastBlockOfTask <= 0) {
+											cout << "DEBUG: Cannot find last block of task " << taskEnqueuedInL << "\n";
 											cout << "DEBUG: Skipping ENQRESET-ST-1 edge for this task\n";
 										} else {
-											opI = lastOpOfTask;
-											cout << "DEBUG: Adding ENQRESET-ST-1 edge from " << opI << " to " << opJ << "\n";
+											IDType lastOpOfTask = blockIDMap[lastBlockOfTask].lastOpInBlock;
+											if (lastOpOfTask <= 0) {
+												cout << "DEBUG: Cannot find last op of task " << taskEnqueuedInL << "\n";
+												cout << "DEBUG: Skipping ENQRESET-ST-1 edge for this task\n";
+											} else {
+												opI = lastOpOfTask;
+												cout << "DEBUG: Adding ENQRESET-ST-1 edge from " << opI << " to " << opJ << "\n";
+											}
 										}
+#endif
 									}
-#endif
-								}
 
-								if (opI > 0) {
-									opJ = resumeOp;
+									if (opI > 0) {
+										opJ = resumeOp;
 
-									int retValue3 = graph->opEdgeExists(opI, opJ);
-									if (retValue3 == 0) {
-										int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-										if (addEdgeRetValue == 1) {
-											flag = true;
-#ifdef GRAPHDEBUG
-											cout << "ENQRESET-ST-1 edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-																	       << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-										} else if (addEdgeRetValue == -1) {
-											cout << "ERROR: While adding ENQRESET-ST-1 edge from " << opI << " to " << opJ << endl;
+										IDType nodeI = opIDMap[opI].nodeID;
+										IDType nodeJ = opIDMap[opJ].nodeID;
+										if (nodeI <= 0) {
+											cout << "ERROR: Invalid node ID for op " << opI << "\n";
 											return -1;
+										} else if (nodeJ <= 0) {
+											cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+											return -1;
+										} else {
+											int retValue3 = graph->opEdgeExists(nodeI, nodeJ);
+											if (retValue3 == 0) {
+												int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+												if (addEdgeRetValue == 1) {
+													flag = true;
+#ifdef GRAPHDEBUG
+													cout << "ENQRESET-ST-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+														 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+												} else if (addEdgeRetValue == -1) {
+													cout << "ERROR: While adding ENQRESET-ST-1 edge from " << nodeI << " to " << nodeJ << endl;
+													return -1;
+												}
+											} else if (retValue3 == -1) {
+												cout << "ERROR: While checking ENQRESET-ST-1 edge from " << nodeI << " to " << nodeJ << endl;
+												return -1;
+											}
 										}
-									} else if (retValue3 == -1) {
-										cout << "ERROR: While checking ENQRESET-ST-1 edge from " << opI << " to " << opJ << endl;
-										return -1;
+									} else {
+										cout << "DEBUG: Cannot find end op (or last op) of task " << taskEnqueuedInL << "\n";
+										cout << "DEBUG: Skipping ENQRESET-ST-1 edge from end of task " << taskEnqueuedInL << "\n";
 									}
-								} else {
-									cout << "DEBUG: Cannot find end op (or last op) of task " << taskEnqueuedInL << "\n";
-									cout << "DEBUG: Skipping ENQRESET-ST-1 edge from end of task " << taskEnqueuedInL << "\n";
+								} else if (retValue2 == -1) {
+									cout << "ERROR: While checking edge from " << nodeEnqL << " to " << nodeEnqN << endl;
+									return -1;
 								}
-							} else if (retValue2 == -1) {
-								cout << "ERROR: While checking edge from " << enqL << " to " << enqN << endl;
+							} else if (retValue1 == -1) {
+								cout << "ERROR: While checking edge from " << nodeEnqK << " to " << nodeEnqL << endl;
 								return -1;
 							}
-						} else if (retValue1 == -1) {
-							cout << "ERROR: While checking edge from " << enqK << " to " << enqL << endl;
-							return -1;
 						}
 					}
 				}
@@ -1826,143 +2083,173 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 #ifdef GRAPHDEBUG
 					cout << "DEBUG: checking op edge (" << opK << ", " << opL << ")\n";
 #endif
-					int retValue = graph->opEdgeExists(opK, opL);
-					if (retValue == 1) {
-						std::string taskL = enqToTaskEnqueued[opL].taskEnqueued;
+					IDType nodeK = opIDMap[opK].nodeID;
+					IDType nodeL = opIDMap[opL].nodeID;
+					if (nodeK <= 0) {
+						cout << "ERROR: Invalid node ID for op " << opK << "\n";
+						return -1;
+					} else if (nodeL <= 0) {
+						cout << "ERROR: Invalid node ID for op " << opL << "\n";
+						return -1;
+					} else {
+						int retValue = graph->opEdgeExists(nodeK, nodeL);
+						if (retValue == 1) {
+							std::string taskL = enqToTaskEnqueued[opL].taskEnqueued;
 #ifdef SANITYCHECK
-						if (taskL.compare("") == 0) {
-							cout << "ERROR: Cannot find task enqueued in enq op " << opL << "\n";
-							return -1;
-						}
+							if (taskL.compare("") == 0) {
+								cout << "ERROR: Cannot find task enqueued in enq op " << opL << "\n";
+								return -1;
+							}
 #endif
-						opJ = taskIDMap[taskL].deqOpID;
+							opJ = taskIDMap[taskL].deqOpID;
 
-						if (opJ <= 0) {
-							cout << "DEBUG: Cannot find deq of task " << taskL << "\n";
+							if (opJ <= 0) {
+								cout << "DEBUG: Cannot find deq of task " << taskL << "\n";
 #ifdef EXTRARULES
-							IDType firstBlockOfTask = taskIDMap[taskL].firstBlockID;
-							if (firstBlockOfTask <= 0) {
-								cout << "DEBUG: Cannot find first block of task " << taskL <<"\n";
-								cout << "DEBUG: Skipping ENQRESET-ST-2 edge to deq of task " << taskL << "\n";
-							} else {
-								IDType firstOpOfTask = blockIDMap[firstBlockOfTask].firstOpInBlock;
-								if (firstOpOfTask <= 0) {
-									cout << "DEBUG: Cannot find first op of block " << firstBlockOfTask
-										 << " of task " << taskL << "\n";
+								IDType firstBlockOfTask = taskIDMap[taskL].firstBlockID;
+								if (firstBlockOfTask <= 0) {
+									cout << "DEBUG: Cannot find first block of task " << taskL <<"\n";
 									cout << "DEBUG: Skipping ENQRESET-ST-2 edge to deq of task " << taskL << "\n";
 								} else {
-									opJ = firstOpOfTask;
-									cout << "DEBUG: Adding ENQRESET-ST-2 edge to first op " << opJ
-										 << " of task " << taskL << "\n";
+									IDType firstOpOfTask = blockIDMap[firstBlockOfTask].firstOpInBlock;
+									if (firstOpOfTask <= 0) {
+										cout << "DEBUG: Cannot find first op of block " << firstBlockOfTask
+											 << " of task " << taskL << "\n";
+										cout << "DEBUG: Skipping ENQRESET-ST-2 edge to deq of task " << taskL << "\n";
+									} else {
+										opJ = firstOpOfTask;
+										cout << "DEBUG: Adding ENQRESET-ST-2 edge to first op " << opJ
+											 << " of task " << taskL << "\n";
+									}
 								}
-							}
 #endif
-						}
+							}
 
-						// ENQRESET-ST-2
-						opI = taskIDMap[taskM].endOpID;
+							// ENQRESET-ST-2
+							opI = taskIDMap[taskM].endOpID;
 
-						if (opI <= 0) {
-							cout << "DEBUG: Cannot find end of task " << taskM << "\n";
+							if (opI <= 0) {
+								cout << "DEBUG: Cannot find end of task " << taskM << "\n";
 #ifdef EXTRARULES
-							IDType lastBlockOfTask = taskIDMap[taskM].lastBlockID;
-							if (lastBlockOfTask <= 0) {
-								cout << "DEBUG: Cannot find last block of task " << taskM << "\n";
-								cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task " << taskM << "\n";
-							} else {
-								IDType lastOpOfTask = blockIDMap[lastBlockOfTask].lastOpInBlock;
-								if (lastOpOfTask <= 0) {
-									cout << "DEBUG: Cannot find last op of task " << taskM << "\n";
+								IDType lastBlockOfTask = taskIDMap[taskM].lastBlockID;
+								if (lastBlockOfTask <= 0) {
+									cout << "DEBUG: Cannot find last block of task " << taskM << "\n";
 									cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task " << taskM << "\n";
 								} else {
-									opI = lastOpOfTask;
-									cout << "DEBUG: Adding ENQRESET-ST-2 edge from last op " << opI << " of task " << taskM << "\n";
+									IDType lastOpOfTask = blockIDMap[lastBlockOfTask].lastOpInBlock;
+									if (lastOpOfTask <= 0) {
+										cout << "DEBUG: Cannot find last op of task " << taskM << "\n";
+										cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task " << taskM << "\n";
+									} else {
+										opI = lastOpOfTask;
+										cout << "DEBUG: Adding ENQRESET-ST-2 edge from last op " << opI << " of task " << taskM << "\n";
+									}
 								}
+#endif
 							}
-#endif
-						}
 
-						if (opI > 0 && opJ > 0) {
+							if (opI > 0 && opJ > 0) {
 #ifdef GRAPHDEBUG
-							cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
+								cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
 #endif
-							int edgeRetValue = graph->opEdgeExists(opI, opJ);
-							if (edgeRetValue == 0) {
-								int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-								if (addEdgeRetValue == 1) {
-									flag = true;
-#ifdef GRAPHDEBUG
-									cout << "ENQRESET-ST-2 edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-								} else if (addEdgeRetValue == -1) {
-									cout << "ERROR: While adding ENQRESET-ST-2 edge from " << opI << " to " << opJ << endl;
+								IDType nodeI = opIDMap[opI].nodeID;
+								IDType nodeJ = opIDMap[opJ].nodeID;
+								if (nodeI <= 0) {
+									cout << "ERROR: Invalid node ID for op " << opI << "\n";
 									return -1;
+								} else if (nodeJ <= 0) {
+									cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+									return -1;
+								} else {
+									int edgeRetValue = graph->opEdgeExists(nodeI, nodeJ);
+									if (edgeRetValue == 0) {
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										if (addEdgeRetValue == 1) {
+											flag = true;
+#ifdef GRAPHDEBUG
+											cout << "ENQRESET-ST-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+										} else if (addEdgeRetValue == -1) {
+											cout << "ERROR: While adding ENQRESET-ST-2 edge from " << nodeI << " to " << nodeJ << endl;
+											return -1;
+										}
+									} else if (edgeRetValue == -1) {
+										cout << "ERROR: While checking ENQRESET-ST-2 edge from " << nodeI << " to " << nodeJ << endl;
+										return -1;
+									}
 								}
-							} else if (edgeRetValue == -1) {
-								cout << "ERROR: While checking ENQRESET-ST-2 edge from " << opI << " to " << opJ << endl;
-								return -1;
+							} else if (opI <= 0) {
+								cout << "DEBUG: Cannot find end of task " << taskM << "\n";
+								cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task\n";
+							} else if (opJ <= 0) {
+								cout << "DEBUG: Cannot find deq of task " << taskL << "\n";
+								cout << "DEBUG: Skipping ENQRESET-ST-2 edge from deq of task\n";
 							}
-						} else if (opI <= 0) {
-							cout << "DEBUG: Cannot find end of task " << taskM << "\n";
-							cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task\n";
-						} else if (opJ <= 0) {
-							cout << "DEBUG: Cannot find deq of task " << taskL << "\n";
-							cout << "DEBUG: Skipping ENQRESET-ST-2 edge from deq of task\n";
-						}
 
-						// ENQRESET-ST-3
-						std::string sharedVariable = it->first;
-						bool foundFlag = false;
-						for (vector<UAFDetector::pauseResumeResetTuple>::iterator prIt = taskIDMap[taskM].pauseResumeResetSequence.begin();
+							// ENQRESET-ST-3
+							std::string sharedVariable = it->first;
+							bool foundFlag = false;
+							for (vector<UAFDetector::pauseResumeResetTuple>::iterator prIt = taskIDMap[taskM].pauseResumeResetSequence.begin();
 								prIt != taskIDMap[taskM].pauseResumeResetSequence.end(); prIt++) {
-							if (prIt->resumeOp == opM) {
-								if (prIt+1 == taskIDMap[taskM].pauseResumeResetSequence.end())
-									continue;
-								IDType nextPause = (prIt+1)->pauseOp;
+								if (prIt->resumeOp == opM) {
+									if (prIt+1 == taskIDMap[taskM].pauseResumeResetSequence.end())
+										continue;
+									IDType nextPause = (prIt+1)->pauseOp;
 
-								if (nextPause <= 0) {
-									cout << "DEBUG: Cannot find next pause after the nesting loop of shared variable " << sharedVariable
-										 << " with pause " << prIt->pauseOp << ", resume " << prIt->resumeOp << ", reset " << prIt->resetOp
-										 << "\n";
-//									continue;
+									if (nextPause <= 0) {
+										cout << "DEBUG: Cannot find next pause after the nesting loop of shared variable " << sharedVariable
+											 << " with pause " << prIt->pauseOp << ", resume " << prIt->resumeOp << ", reset " << prIt->resetOp
+											 << "\n";
+//										continue;
+										break;
+									}
+
+									opI = nextPause;
+									foundFlag = true;
 									break;
 								}
-
-								opI = nextPause;
-								foundFlag = true;
-								break;
 							}
-						}
 
-						if (foundFlag && opJ > 0) {
+							if (foundFlag && opJ > 0) {
 #ifdef GRAPHDEBUG
-							cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
+								cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
 #endif
-							int edgeRetValue = graph->opEdgeExists(opI, opJ);
-							if (edgeRetValue == 0) {
-								int addEdgeRetValue = graph->addOpEdge(opI, opJ);
-								if (addEdgeRetValue == 1) {
-									flag = true;
-	#ifdef GRAPHDEBUG
-									cout << "ENQRESET-ST-3 edge (" << opI << ", " << opJ << ") -- #op-edges "   << graph->numOfOpEdges
-															     	 	 	   	   	     << " -- #block-edges " << graph->numOfBlockEdges << endl;
-	#endif
-								} else if (addEdgeRetValue == -1) {
-									cout << "ERROR: While adding ENQRESET-ST-3 edge from " << opI << " to " << opJ << endl;
+								IDType nodeI = opIDMap[opI].nodeID;
+								IDType nodeJ = opIDMap[opJ].nodeID;
+								if (nodeI <= 0) {
+									cout << "ERROR: Invalid node ID for op " << opI << "\n";
 									return -1;
+								} else if (nodeJ <= 0) {
+									cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+									return -1;
+								} else {
+									int edgeRetValue = graph->opEdgeExists(nodeI, nodeJ);
+									if (edgeRetValue == 0) {
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										if (addEdgeRetValue == 1) {
+											flag = true;
+	#ifdef GRAPHDEBUG
+											cout << "ENQRESET-ST-3 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+	#endif
+										} else if (addEdgeRetValue == -1) {
+											cout << "ERROR: While adding ENQRESET-ST-3 edge from " << nodeI << " to " << nodeJ << endl;
+											return -1;
+										}
+									} else if (edgeRetValue == -1) {
+										cout << "ERROR: While checking ENQRESET-ST-3 edge from " << nodeI << " to " << nodeJ << endl;
+										return -1;
+									}
 								}
-							} else if (edgeRetValue == -1) {
-								cout << "ERROR: While checking ENQRESET-ST-3 edge from " << opI << " to " << opJ << endl;
-								return -1;
+							} else if (opJ <= 0) {
+								cout << "DEBUG: Cannot find deq op (or first op) of task " << taskL << "\n";
+								cout << "DEBUG: Skipping ENQRESET-ST-3 edge from op " << opI << " to this task\n";
 							}
-						} else if (opJ <= 0) {
-							cout << "DEBUG: Cannot find deq op (or first op) of task " << taskL << "\n";
-							cout << "DEBUG: Skipping ENQRESET-ST-3 edge from op " << opI << " to this task\n";
+						} else if (retValue == -1) {
+							cout << "ERROR: While checking edge from " << nodeK << " to " << nodeL << endl;
+							return -1;
 						}
-					} else if (retValue == -1) {
-						cout << "ERROR: While checking edge from " << opK << " to " << opL << endl;
-						return -1;
 					}
 				}
 			}
@@ -2060,17 +2347,27 @@ int UAFDetector::addTransSTOrMTEdges() {
 				}
 #endif
 
-				int retValue = graph->opEdgeExists(tempOp1, tempOp2);
+				IDType nodeTempOp1 = opIDMap[tempOp1].nodeID;
+				IDType nodeTempOp2 = opIDMap[tempOp2].nodeID;
+				if (nodeTempOp1 <= 0) {
+					cout << "ERROR: Invalid node ID for op " << tempOp1 << "\n";
+					return -1;
+				}
+				if (nodeTempOp2 <= 0) {
+					cout << "ERROR: Invalid node ID for op " << tempOp2 << "\n";
+					return -1;
+				}
+				int retValue = graph->opEdgeExists(nodeTempOp1, nodeTempOp2);
 				if (retValue == 1) {
 #ifdef GRAPHDEBUG
 					cout << "DEBUG: TRANS-edge: Edge already exists from blockI: " << blockI
-						 << " (op " << tempOp1 << ") to blockJ: " << blockJ << " (op "
-						 << tempOp2 << ")\n";
+						 << " (node " << nodeTempOp1 << ") to blockJ: " << blockJ << " (node "
+						 << nodeTempOp2 << ")\n";
 #endif
 					continue;
 				}
 				else if (retValue == -1) {
-					cout << "ERROR: While checking op edge from " << tempOp1 << " to " << tempOp2 << endl;
+					cout << "ERROR: While checking node edge from " << nodeTempOp1 << " to " << nodeTempOp2 << endl;
 					return -1;
 				}
 
@@ -2095,59 +2392,98 @@ int UAFDetector::addTransSTOrMTEdges() {
 					IDType minOpInK = -1;
 					opJ = -1;
 
+					IDType nodeI = opIDMap[opI].nodeID;
+					if (nodeI <= 0) {
+						cout << "ERROR: Invalide nodeID for op " << opI << "\n";
+						return -1;
+					}
 					// Loop through adjacency list of opI
-					for (HBGraph::adjListNode* currNode = graph->opAdjList[opI].head; currNode != NULL; currNode = currNode->next) {
-						if (opIDMap[currNode->destination].blockID != blockK)
+					for (HBGraph::adjListNode* currNode = graph->opAdjList[nodeI].head; currNode != NULL; currNode = currNode->next) {
+						//if (opIDMap[currNode->destination].blockID != blockK)
+						IDType opDest = *(nodeIDMap[currNode->destination].opSet.begin());
+						if (opDest <= 0) {
+							cout << "ERROR: Invalid opSet for node " << currNode->destination << "\n";
+							return -1;
+						}
+						if (opIDMap[opDest].blockID != blockK)
 							continue;
-						if (minOpInK == -1 || minOpInK > currNode->destination) {
-							minOpInK = currNode->destination;
+						if (minOpInK == -1 || minOpInK > opDest) {
+							minOpInK = opDest;
 							// This is to remove multiple edges from opI to different ops in blockK
-							graph->removeOpEdge(currNode, opI, currNode->destination);
+							graph->removeOpEdge(currNode, nodeI, currNode->destination);
 						}
 					}
 
 					if (minOpInK > 0) {
+						IDType nodeMinK = opIDMap[minOpInK].nodeID;
+						if (nodeMinK <= 0) {
+							cout << "ERROR: Invalid node ID for op " << minOpInK << "\n";
+							return -1;
+						}
 						// Restore the edge from opI to the earliest op in blockK
-						addEdgeRetValue = graph->addOpEdge(opI, minOpInK);
+						addEdgeRetValue = graph->addOpEdge(nodeI, nodeMinK);
 #ifdef GRAPHDEBUGFULL
 						if (addEdgeRetValue == 1) {
-							cout << "Restored edge from " << opI << " to " << minOpInK << endl;
+							cout << "Restored edge from " << nodeI << " to " << nodeMinK << endl;
 						} else if (addEdgeRetValue == 0) {
-							cout << "Did not add restoration edge from " << opI << " to " << minOpInK << endl;
+							cout << "Did not add restoration edge from " << nodeI << " to " << nodeMinK << endl;
 						} else {
-							cout << "ERROR: While adding restoration edge from " << opI << " to " << minOpInK << endl;
+							cout << "ERROR: While adding restoration edge from " << nodeI << " to " << nodeMinK << endl;
 							return -1;
 						}
 #endif
 					}
+#ifdef GRAPHDEBUGFULL
+					//graph->printGraph();
+#endif
 
 					for (IDType tempOp = minOpInK; tempOp > 0 && tempOp <= blockIDMap[blockK].lastOpInBlock; tempOp = opIDMap[tempOp].nextOpInBlock) {
 						// Find the earliest op in blockJ such that there exists edge (tempOp, op)
 						IDType minOpInJ = -1;
 
-						// Loop through adjacency list of tempOp
-						for (HBGraph::adjListNode* currNode = graph->opAdjList[tempOp].head; currNode != NULL; currNode = currNode->next) {
-							if (opIDMap[currNode->destination].blockID != blockJ)
-								continue;
-							if (minOpInJ == -1 || minOpInJ > currNode->destination) {
-								minOpInJ = currNode->destination;
-								// This is to remove multiple edges from tempOp to different ops in blockJ
-								graph->removeOpEdge(currNode, tempOp, currNode->destination);
-							}
+						IDType nodeTempOp = opIDMap[tempOp].nodeID;
+						if (nodeTempOp <= 0) {
+							cout << "ERROR: Invalid node ID for op " << tempOp << "\n";
+							return -1;
 						}
-
-						if (minOpInJ > 0) {
-							// Restore the edge from tempOp to the earliest op in blockJ
-							addEdgeRetValue = graph->addOpEdge(tempOp, minOpInJ);
-#ifdef GRAPHDEBUGFULL
-							if (addEdgeRetValue == 1) {
-								cout << "Restored edge from " << tempOp << " to " << minOpInJ << endl;
-							} else if (addEdgeRetValue == 0) {
-								cout << "Did not add restoration edge from " << tempOp << " to " << minOpInJ << endl;
-							} else {
-								cout << "ERROR: While adding restoration edge from " << tempOp << " to " << minOpInJ << endl;
+						// Loop through adjacency list of tempOp
+						for (HBGraph::adjListNode* currNode = graph->opAdjList[nodeTempOp].head; currNode != NULL; currNode = currNode->next) {
+							//if (opIDMap[currNode->destination].blockID != blockJ)
+							IDType opDest = *(nodeIDMap[currNode->destination].opSet.begin());
+							if (opDest <= 0) {
+								cout << "ERROR: Invalid op ID for node " << currNode->destination << "\n";
 								return -1;
 							}
+							if (opIDMap[opDest].blockID != blockJ)
+								continue;
+							if (minOpInJ == -1 || minOpInJ > opDest) {
+								minOpInJ = opDest;
+								// This is to remove multiple edges from tempOp to different ops in blockJ
+								graph->removeOpEdge(currNode, nodeTempOp, currNode->destination);
+							}
+						}
+#ifdef GRAPHDEBUGFULL
+						//graph->printGraph();
+#endif
+
+						if (minOpInJ > 0) {
+							IDType nodeMinJ = opIDMap[minOpInJ].nodeID;
+							if (nodeMinJ <= 0) {
+								cout << "ERROR: Invalid node ID for op " << minOpInJ << "\n";
+								return -1;
+							}
+							// Restore the edge from tempOp to the earliest op in blockJ
+							addEdgeRetValue = graph->addOpEdge(nodeTempOp, nodeMinJ);
+#ifdef GRAPHDEBUGFULL
+							if (addEdgeRetValue == 1) {
+								cout << "Restored edge from " << nodeTempOp << " to " << nodeMinJ << endl;
+							} else if (addEdgeRetValue == 0) {
+								cout << "Did not add restoration edge from " << nodeTempOp << " to " << nodeMinJ << endl;
+							} else {
+								cout << "ERROR: While adding restoration edge from " << nodeTempOp << " to " << nodeMinJ << endl;
+								return -1;
+							}
+							//graph->printGraph();
 #endif
 
 							if (opJ == -1 || opJ > minOpInJ)
@@ -2156,19 +2492,24 @@ int UAFDetector::addTransSTOrMTEdges() {
 					}
 
 					if (opJ > 0) {
-						int retValue = graph->opEdgeExists(opI, opJ);
+						IDType nodeJ = opIDMap[opJ].nodeID;
+						if (nodeJ <= 0) {
+							cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+							return -1;
+						}
+						int retValue = graph->opEdgeExists(nodeI, nodeJ);
 						if (retValue == 0) {
-							addEdgeRetValue = graph->addOpEdge(opI, opJ);
+							addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
 							if (addEdgeRetValue == 1) {
 								flag = true;
 #ifdef SANITYCHECK
-								cout << "TRANS-ST/MT Edge (" << opI << ", " << opJ << ") -- #opEdges " << graph->numOfOpEdges
+								cout << "TRANS-ST/MT Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
 																			   << " -- #blockEdges " << graph->numOfBlockEdges << endl;
 #endif
 								if (opI == blockIDMap[blockI].lastOpInBlock && opJ == blockIDMap[blockJ].firstOpInBlock)
 									break;
 							} else if (addEdgeRetValue == -1) {
-								cout << "ERROR: While adding TRANS-ST/MT edge " << opI << " to " << opJ << endl;
+								cout << "ERROR: While adding TRANS-ST/MT edge " << nodeI << " to " << nodeJ << endl;
 								return -1;
 							}
 						}
@@ -2197,15 +2538,54 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 		IDType freeID = freeIt->first;
 		IDType allocID = freeIt->second.allocOpID;
 
+		IDType nodeFree = opIDMap[freeID].nodeID;
+		if (nodeFree <= 0) {
+			cout << "ERROR: Invalid node ID for op " << freeID << "\n";
+			return -1;
+		}
+
 		if (allocID == -1) {
 			cout << "DEBUG: Cannot find alloc for free op " << freeID << endl;
 //			continue;
+		}
+		IDType nodeAlloc = opIDMap[allocID].nodeID;
+		if (nodeAlloc <= 0) {
+			cout << "ERROR: Invalid node ID for op " << allocID << "\n";
+			return -1;
 		}
 #ifdef ACCESS
 		for (set<IDType>::iterator accessIt = freeIt->second.accessOps.begin(); accessIt != freeIt->second.accessOps.end(); accessIt++) {
 			IDType accessID = *accessIt;
 
-			if (graph->edgeExists(freeID, accessID) == 1) {
+			IDType nodeFree = opIDMap[freeID].nodeID;
+			IDType nodeAccess = opIDMap[accessID].nodeID;
+			if (nodeFree <= 0) {
+				cout << "ERROR: Invalid node ID for op " << freeID << "\n";
+				return -1;
+			}
+			if (nodeAccess <= 0) {
+				cout << "ERROR: Invalid node ID for access " << accessID << "\n";
+				return -1;
+			}
+			// If both ops are in the same node, we have TASK-PO/LOOP-PO between them
+			if (nodeFree == nodeAccess && freeID < accessID) {
+				cout << "Definite UAF between access op " << accessID << " (access at address " << accessSet[accessID].startingAddress
+					 << " in task " << opIDMap[accessID].taskID << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				uafCount++;
+				flag = true;
+				continue;
+			} else if (nodeFree == nodeAccess) {
+#ifdef RACEDEBUG
+				cout << "DEBUG: Free op " << freeID << " and access op " << accessID << " in the same node, but access before free\n";
+				cout << "DEBUG: Skipping this access while detecting races\n";
+#endif
+				continue;
+			}
+			if (graph->edgeExists(nodeFree, nodeAccess) == 1) {
 				cout << "Definite UAF between access op " << accessID << " (access at address " << accessSet[accessID].startingAddress
 					 << " in task " << opIDMap[accessID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2217,14 +2597,21 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 
-			if (graph->edgeExists(accessID, freeID) == 0) {
+			if (graph->edgeExists(nodeAccess, nodeFree) == 0) {
 
 #ifdef ADDITIONS
 				// Even if there is no edge between access and free,
 				// if there is an edge from alloc to access (alloc happens before access), and the alloc is in the same task as the access and the task is atomic, this is a false positive.
 				// This is true only if free is in the same thread as alloc and access.
-				if (graph->edgeExists(allocID, accessID) && opIDMap[allocID].taskID.compare(opIDMap[accessID].taskID) == 0
-					&& atomicTasks.find(opIDMap[allocID].taskID) != atomicTasks.end() && opIDMap[freeID].threadID == opIDMap[accessID].threadID)
+				bool edgeExists = false;
+				if (nodeAlloc == nodeAccess && allocID < accessID)
+					edgeExists = true;
+				else if (nodeAlloc != nodeAccess && graph->edgeExists(nodeAlloc, nodeAccess))
+					edgeExists = true;
+				if (edgeExists &&
+						opIDMap[allocID].taskID.compare(opIDMap[accessID].taskID) == 0 &&
+						atomicTasks.find(opIDMap[allocID].taskID) != atomicTasks.end() &&
+						opIDMap[freeID].threadID == opIDMap[accessID].threadID)
 					continue;
 #endif
 
@@ -2244,7 +2631,31 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 		for (set<IDType>::iterator readIt = freeIt->second.readOps.begin(); readIt != freeIt->second.readOps.end(); readIt++) {
 			IDType readID = *readIt;
 
-			if (graph->opEdgeExists(freeID, readID) == 1) {
+			IDType nodeRead = opIDMap[readID].nodeID;
+			if (nodeRead <= 0) {
+				cout << "ERROR: Invalid node ID for op " << readID << "\n";
+				return -1;
+			}
+			if (nodeFree == nodeRead && freeID < readID) {
+				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
+					 << " in task " << opIDMap[readID].taskID << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
+				if (allocID > 0) {
+					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID << ")\n";
+				}
+				uafCount++;
+				flag = true;
+				continue;
+			} else if (nodeFree == nodeRead) {
+#ifdef RACEDEBUG
+				cout << "DEBUG: Free op " << freeID << " and read op " << readID << " in the same node, but read before free\n";
+				cout << "DEBUG: Skipping this read while detecting races\n";
+#endif
+				continue;
+			}
+			if (graph->opEdgeExists(nodeFree, nodeRead) == 1) {
 				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
 					 << " in task " << opIDMap[readID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2258,14 +2669,20 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 
-			if (graph->opEdgeExists(readID, freeID) == 0) {
+			if (graph->opEdgeExists(nodeRead, nodeFree) == 0) {
 
 #ifdef ADDITIONS
 				if (allocID > 0) {
 					// Even if there is no edge between read and free,
 					// if there is an edge from alloc to read (alloc happens before read), and the alloc is in the same task as the read and the task is atomic, this is a false positive.
 					// This is true only if free is in the same thread as alloc and read.
-					if (graph->opEdgeExists(allocID, readID) && opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
+					bool edgeExists = false;
+					if (nodeAlloc == nodeRead && allocID < accessID)
+						edgeExists = true;
+					else if (nodeAlloc != nodeRead && graph->edgeExists(nodeAlloc, nodeRead))
+						edgeExists = true;
+					if (edgeExists &&
+							opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
 							&& taskIDMap[opIDMap[allocID].taskID].atomic && opIDMap[freeID].threadID == opIDMap[readID].threadID)
 						continue;
 				}
@@ -2287,7 +2704,29 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 		for (set<IDType>::iterator writeIt = freeIt->second.writeOps.begin(); writeIt != freeIt->second.writeOps.end(); writeIt++) {
 			IDType writeID = *writeIt;
 
-			if (graph->opEdgeExists(freeID, writeID) == 1) {
+			IDType nodeWrite = opIDMap[writeID].nodeID;
+			if (nodeWrite <= 0) {
+				cout << "ERROR: Invalid node ID for op " << writeID << "\n";
+				return -1;
+			}
+			if (nodeFree == nodeWrite && freeID < writeID) {
+				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress
+					 << " in task " << opIDMap[writeID].taskID << ") "
+					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+					 << " in task " << opIDMap[freeID].taskID << ")\n";
+				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+					 << allocSet[allocID].startingAddress << ")\n";
+				uafCount++;
+				flag = true;
+				continue;
+			} else if (nodeFree == nodeWrite) {
+#ifdef RACEDEBUG
+				cout << "DEBUG: Free op " << freeID << " and write op " << writeID << " in the same node, but write before free\n";
+				cout << "DEBUG: Skipping this write while detecting races\n";
+#endif
+				continue;
+			}
+			if (graph->opEdgeExists(nodeFree, nodeWrite) == 1) {
 				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress
 					 << " in task " << opIDMap[writeID].taskID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2299,14 +2738,20 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 				continue;
 			}
 
-			if (graph->opEdgeExists(writeID, freeID) == 0) {
+			if (graph->opEdgeExists(nodeWrite, nodeFree) == 0) {
 
 #ifdef ADDITIONS
 				if (allocID > 0) {
 					// Even if there is no edge between write and free,
 					// if there is an edge from alloc to write (alloc happens before write), and the alloc is in the same task as the write and the task is atomic, this is a false positive.
 					// This is true only if free is in the same thwrite as alloc and write.
-					if (graph->opEdgeExists(allocID, writeID) && opIDMap[allocID].taskID.compare(opIDMap[writeID].taskID) == 0
+					bool edgeExists = false;
+					if (nodeAlloc == nodeWrite && allocID < accessID)
+						edgeExists = true;
+					else if (nodeAlloc != nodeWrite && graph->edgeExists(nodeAlloc, nodeWrite))
+						edgeExists = true;
+					if (edgeExists &&
+							opIDMap[allocID].taskID.compare(opIDMap[writeID].taskID) == 0
 							&& taskIDMap[opIDMap[allocID].taskID].atomic && opIDMap[freeID].threadID == opIDMap[writeID].threadID)
 						continue;
 				}
@@ -2345,6 +2790,8 @@ IDType UAFDetector::findDataRaces(Logger &logger){
 
 			string writeAddress1 = writeSet[*writeIt].startingAddress;
 
+			IDType nodeWrite = opIDMap[*writeIt].nodeID;
+
 			// write-write races
 			for (set<IDType>::iterator write2It = allocIt->second.writeOps.begin(); write2It != allocIt->second.writeOps.end(); write2It++) {
 				if (*write2It == *writeIt) continue;
@@ -2352,7 +2799,22 @@ IDType UAFDetector::findDataRaces(Logger &logger){
 				string writeAddress2 = writeSet[*write2It].startingAddress;
 				if (writeAddress1.compare(writeAddress2) != 0) continue;
 
-				if (graph->opEdgeExists(*writeIt, *write2It) == 0 && graph->opEdgeExists(*write2It, *writeIt) == 0) {
+				IDType nodeWrite2 = opIDMap[*write2It].nodeID;
+				if (nodeWrite <= 0) {
+					cout << "ERROR: Invalid node ID for op " << *writeIt << "\n";
+					return -1;
+				}
+				if (nodeWrite2 <= 0) {
+					cout << "ERROR: Invalid node ID for op " << *write2It << "\n";
+					return -1;
+				}
+				if (nodeWrite == nodeWrite2) {
+#ifdef RACEDEBUG
+					cout << "DEBUG: Write ops " << *writeIt << " and " *write2It << " are in the same node, so no race\n";
+#endif
+					continue;
+				}
+				if (graph->opEdgeExists(nodeWrite, nodeWrite2) == 0 && graph->opEdgeExists(nodeWrite2, nodeWrite) == 0) {
 					cout << "Potential data race between write ops " << *writeIt << " (in task " << opIDMap[*writeIt].taskID
 						 << ") and " << *write2It << " (in task " << opIDMap[*write2It].taskID << ") on address "
 						 << writeAddress1 << endl;
@@ -2369,9 +2831,20 @@ IDType UAFDetector::findDataRaces(Logger &logger){
 				string readAddress = readSet[*readIt].startingAddress;
 				if (writeAddress1.compare(readAddress) != 0) continue;
 
-				if (graph->opEdgeExists(*writeIt, *readIt) == 0 && graph->opEdgeExists(*readIt, *writeIt) == 0) {
+				IDType nodeRead = opIDMap[*readIt].nodeID;
+				if (nodeRead <= 0) {
+					cout << "ERROR: Invalid node ID for op " << *readIt << "\n";
+					return -1;
+				}
+				if (nodeWrite == nodeRead) {
+#ifdef RACEDEBUG
+					cout << "DEBUG: Read op " << *readIt << " and write op " << *writeIt << " are in the same node, so no race\n";
+#endif
+					continue;
+				}
+				if (graph->opEdgeExists(nodeWrite, nodeRead) == 0 && graph->opEdgeExists(nodeRead, nodeWrite) == 0) {
 					cout << "Potential data race between read op " << *readIt << " (in task " << opIDMap[*readIt].taskID
-						 << ") and write op " << *writeIt << "( in task " << opIDMap[*writeIt].taskID << ") on address "
+						 << ") and write op " << *writeIt << "(in task " << opIDMap[*writeIt].taskID << ") on address "
 						 << readAddress << endl;
 					raceCount++;
 					flag = true;

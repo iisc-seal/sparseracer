@@ -38,6 +38,7 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 	}
 
 	opCount = 0;
+	nodeCount = 0;
 	blockCount = 0;
 	// The prefix regular expression
 	//prefixRegEx = " *";
@@ -168,9 +169,22 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 
 					if (match.compare("threadinit") == 0) {
 						// threadinit is the beginning of a block
+						nodeCount++;
 						blockCount++;
 						opdetails.blockID = blockCount;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
 
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
 #ifdef SANITYCHECK
 						// Sanity check: stack should be empty for threadID
 						assert(stackForThreadAndBlockOrder.isEmpty(threadID));
@@ -230,6 +244,21 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 						stackElement.blockID = blockCount;
 						stackForThreadAndBlockOrder.push(stackElement);
 					} else if (match.compare("threadexit") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Get the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)) {
 							cout << "WARNING: No previous op found for threadexit " << opCount
@@ -365,6 +394,21 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackForThreadAndBlockOrder.stackClear(threadID);
 						}
 					} else if (match.compare("enterloop") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for enterloop " << opCount
@@ -493,6 +537,21 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackForGlobalLoop.push(stackElement);
 						}
 					} else if (match.compare("exitloop") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for exitloop " << opCount
@@ -660,9 +719,23 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 
 							stackElement.blockID = blockCount;
 							stackForThreadAndBlockOrder.push(stackElement);
-//							stackForGlobalLoop.stackClear(threadID);
+							stackForGlobalLoop.stackClear(threadID);
 						}
 					} else if (match.compare("enq") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
 
 						// Obtain 2nd & 3rd argument (i.e task enqueued & target threadID) of enq op
 						string taskEnqueued;
@@ -1015,6 +1088,21 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							}
 						}
 					} else if (match.compare("deq") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain 2nd argument (i.e., task dequeued) of deq
 						string taskDequeued;
 						for (unsigned j=threadPos+1; j < matches.size(); j++) {
@@ -1265,6 +1353,21 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 #else
 					} else if (match.compare("pause") == 0) {
 #endif
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain 2nd & 3rd argument (i.e., current task & shared variable) of pause
 						string task, sharedVariable;
 						unsigned j;
@@ -1522,6 +1625,21 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							}
 						}
 					} else if (match.compare("reset") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain 2nd & 3rd argument (i.e., current task & shared variable) of reset
 						string sharedVariable;
 						unsigned j;
@@ -1899,6 +2017,21 @@ it++) {
 #else
 					} else if (match.compare("resume") == 0) {
 #endif
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain 2nd & 3rd argument (i.e., current task & shared variable) of resume
 						string task, sharedVariable;
 						unsigned j;
@@ -2264,6 +2397,21 @@ it++) {
 							}
 						}
 					} else if (match.compare("end") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain 2nd argument (i.e., current task) of end
 						string task;
 						for (unsigned j=threadPos+1; j < matches.size(); j++) {
@@ -2437,6 +2585,21 @@ it++) {
 							}
 						}
 					} else if (match.compare("fork") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain 2nd argument (i.e., target thread) of fork
 						IDType targetThread;
 						for (unsigned j=threadPos+1; j < matches.size(); j++) {
@@ -2759,6 +2922,21 @@ it++) {
 							}
 						}
 					} else if (match.compare("join") == 0) {
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain 2nd argument (i.e., target thread) of join
 						IDType targetThread;
 						for (unsigned j=threadPos+1; j < matches.size(); j++) {
@@ -3118,6 +3296,21 @@ it++) {
 						}
 						// Obtain the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
+							nodeCount++;
+							opdetails.nodeID = nodeCount;
+							stackElement.nodeID = nodeCount;
+
+							if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+								UAFDetector::setOfOps set;
+								set.opSet.insert(opCount);
+								detector.nodeIDMap[nodeCount] = set;
+							} else {
+								cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+								cout << "ERROR: Existing entry:\n";
+								detector.nodeIDMap[nodeCount].printDetails();
+								return -1;
+							}
+
 							cout << "WARNING: No previous op found for alloc " << opCount
 								 << " on stackForThreadOrder\n";
 
@@ -3213,16 +3406,80 @@ it++) {
 								if (firstOpInsideGlobalLoop) {
 									blockCount++;
 									opdetails.blockID = blockCount;
+
+									nodeCount++;
+									opdetails.nodeID = nodeCount;
+									stackElement.nodeID = nodeCount;
+
+									if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+										UAFDetector::setOfOps set;
+										set.opSet.insert(opCount);
+										detector.nodeIDMap[nodeCount] = set;
+									} else {
+										cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+										cout << "ERROR: Existing entry:\n";
+										detector.nodeIDMap[nodeCount].printDetails();
+										return -1;
+									}
+
 								} else {
 									opdetails.blockID = previousOpInThread.blockID;
 									opdetails.taskID = previousOpInThread.taskID;
 									opdetails.prevOpInBlock = previousOpInThread.opID;
+
+									if (previousOpInThread.opType.compare("alloc") == 0 ||
+											previousOpInThread.opType.compare("free") == 0 ||
+											previousOpInThread.opType.compare("read") == 0 ||
+											previousOpInThread.opType.compare("write") == 0) {
+										opdetails.nodeID = previousOpInThread.nodeID;
+
+										stackElement.nodeID = previousOpInThread.nodeID;
+
+										if (detector.nodeIDMap.find(previousOpInThread.nodeID) == detector.nodeIDMap.end()) {
+											cout << "ERROR: Cannot find entry for node " << previousOpInThread.nodeID << " in nodeIDMap\n";
+											return -1;
+										} else {
+											UAFDetector::setOfOps existingEntry = detector.nodeIDMap[previousOpInThread.nodeID];
+											existingEntry.opSet.insert(opCount);
+											detector.nodeIDMap.erase(detector.nodeIDMap.find(previousOpInThread.nodeID));
+											detector.nodeIDMap[previousOpInThread.nodeID] = existingEntry;
+										}
+									} else {
+										nodeCount++;
+										opdetails.nodeID = nodeCount;
+										stackElement.nodeID = nodeCount;
+
+										if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+											UAFDetector::setOfOps set;
+											set.opSet.insert(opCount);
+											detector.nodeIDMap[nodeCount] = set;
+										} else {
+											cout << "ERROR: Found duplicate entry for node " << nodeCount << " in nodeIDMap\n";
+											return -1;
+										}
+									}
 								}
 							} else {
 								// If this is the first op inside the nesting loop, then we are in a new block
 								blockCount++;
 								opdetails.blockID = blockCount;
 								opdetails.taskID = previousOpInTask.taskID;
+
+								nodeCount++;
+								opdetails.nodeID = nodeCount;
+								stackElement.nodeID = nodeCount;
+
+								if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+									UAFDetector::setOfOps set;
+									set.opSet.insert(opCount);
+									detector.nodeIDMap[nodeCount] = set;
+								} else {
+									cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+									cout << "ERROR: Existing entry:\n";
+									detector.nodeIDMap[nodeCount].printDetails();
+									return -1;
+								}
+
 							}
 
 							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
@@ -3512,6 +3769,22 @@ it++) {
 						}
 						// Obtain the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
+
+							nodeCount++;
+							opdetails.nodeID = nodeCount;
+							stackElement.nodeID = nodeCount;
+
+							if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+								UAFDetector::setOfOps set;
+								set.opSet.insert(opCount);
+								detector.nodeIDMap[nodeCount] = set;
+							} else {
+								cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+								cout << "ERROR: Existing entry:\n";
+								detector.nodeIDMap[nodeCount].printDetails();
+								return -1;
+							}
+
 							cout << "WARNING: No previous op found for free " << opCount
 								 << " on stackForThreadOrder\n";
 
@@ -3607,16 +3880,77 @@ it++) {
 								if (firstOpInsideGlobalLoop) {
 									blockCount++;
 									opdetails.blockID = blockCount;
+
+									nodeCount++;
+									opdetails.nodeID = nodeCount;
+									stackElement.nodeID = nodeCount;
+
+									if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+										UAFDetector::setOfOps set;
+										set.opSet.insert(opCount);
+										detector.nodeIDMap[nodeCount] = set;
+									} else {
+										cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+										cout << "ERROR: Existing entry:\n";
+										detector.nodeIDMap[nodeCount].printDetails();
+										return -1;
+									}
 								} else {
 									opdetails.blockID = previousOpInThread.blockID;
 									opdetails.taskID = previousOpInThread.taskID;
 									opdetails.prevOpInBlock = previousOpInThread.opID;
+									if (previousOpInThread.opType.compare("alloc") == 0 ||
+											previousOpInThread.opType.compare("free") == 0 ||
+											previousOpInThread.opType.compare("read") == 0 ||
+											previousOpInThread.opType.compare("write") == 0) {
+										opdetails.nodeID = previousOpInThread.nodeID;
+
+										stackElement.nodeID = previousOpInThread.nodeID;
+
+										if (detector.nodeIDMap.find(previousOpInThread.nodeID) == detector.nodeIDMap.end()) {
+											cout << "ERROR: Cannot find entry for node " << previousOpInThread.nodeID << " in nodeIDMap\n";
+											return -1;
+										} else {
+											UAFDetector::setOfOps existingEntry = detector.nodeIDMap[previousOpInThread.nodeID];
+											existingEntry.opSet.insert(opCount);
+											detector.nodeIDMap.erase(detector.nodeIDMap.find(previousOpInThread.nodeID));
+											detector.nodeIDMap[previousOpInThread.nodeID] = existingEntry;
+										}
+									} else {
+										nodeCount++;
+										opdetails.nodeID = nodeCount;
+										stackElement.nodeID = nodeCount;
+
+										if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+											UAFDetector::setOfOps set;
+											set.opSet.insert(opCount);
+											detector.nodeIDMap[nodeCount] = set;
+										} else {
+											cout << "ERROR: Found duplicate entry for node " << nodeCount << " in nodeIDMap\n";
+											return -1;
+										}
+									}
 								}
 							} else {
 								// If this is the first op inside the nesting loop, then we are in a new block
 								blockCount++;
 								opdetails.blockID = blockCount;
 								opdetails.taskID = previousOpInTask.taskID;
+
+								nodeCount++;
+								opdetails.nodeID = nodeCount;
+								stackElement.nodeID = nodeCount;
+
+								if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+									UAFDetector::setOfOps set;
+									set.opSet.insert(opCount);
+									detector.nodeIDMap[nodeCount] = set;
+								} else {
+									cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+									cout << "ERROR: Existing entry:\n";
+									detector.nodeIDMap[nodeCount].printDetails();
+									return -1;
+								}
 							}
 
 							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
@@ -3865,6 +4199,22 @@ it++) {
 						}
 						// Obtain the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
+
+							nodeCount++;
+							opdetails.nodeID = nodeCount;
+							stackElement.nodeID = nodeCount;
+
+							if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+								UAFDetector::setOfOps set;
+								set.opSet.insert(opCount);
+								detector.nodeIDMap[nodeCount] = set;
+							} else {
+								cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+								cout << "ERROR: Existing entry:\n";
+								detector.nodeIDMap[nodeCount].printDetails();
+								return -1;
+							}
+
 							cout << "WARNING: No previous op found for read " << opCount
 								 << " on stackForThreadOrder\n";
 
@@ -3961,16 +4311,77 @@ it++) {
 								if (firstOpInsideGlobalLoop) {
 									blockCount++;
 									opdetails.blockID = blockCount;
+
+									nodeCount++;
+									opdetails.nodeID = nodeCount;
+									stackElement.nodeID = nodeCount;
+
+									if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+										UAFDetector::setOfOps set;
+										set.opSet.insert(opCount);
+										detector.nodeIDMap[nodeCount] = set;
+									} else {
+										cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+										cout << "ERROR: Existing entry:\n";
+										detector.nodeIDMap[nodeCount].printDetails();
+										return -1;
+									}
 								} else {
 									opdetails.blockID = previousOpInThread.blockID;
 									opdetails.taskID = previousOpInThread.taskID;
 									opdetails.prevOpInBlock = previousOpInThread.opID;
+									if (previousOpInThread.opType.compare("alloc") == 0 ||
+											previousOpInThread.opType.compare("free") == 0 ||
+											previousOpInThread.opType.compare("read") == 0 ||
+											previousOpInThread.opType.compare("write") == 0) {
+										opdetails.nodeID = previousOpInThread.nodeID;
+
+										stackElement.nodeID = previousOpInThread.nodeID;
+
+										if (detector.nodeIDMap.find(previousOpInThread.nodeID) == detector.nodeIDMap.end()) {
+											cout << "ERROR: Cannot find entry for node " << previousOpInThread.nodeID << " in nodeIDMap\n";
+											return -1;
+										} else {
+											UAFDetector::setOfOps existingEntry = detector.nodeIDMap[previousOpInThread.nodeID];
+											existingEntry.opSet.insert(opCount);
+											detector.nodeIDMap.erase(detector.nodeIDMap.find(previousOpInThread.nodeID));
+											detector.nodeIDMap[previousOpInThread.nodeID] = existingEntry;
+										}
+									} else {
+										nodeCount++;
+										opdetails.nodeID = nodeCount;
+										stackElement.nodeID = nodeCount;
+
+										if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+											UAFDetector::setOfOps set;
+											set.opSet.insert(opCount);
+											detector.nodeIDMap[nodeCount] = set;
+										} else {
+											cout << "ERROR: Found duplicate entry for node " << nodeCount << " in nodeIDMap\n";
+											return -1;
+										}
+									}
 								}
 							} else {
 								// If this is the first op inside the nesting loop, then we are in a new block
 								blockCount++;
 								opdetails.blockID = blockCount;
 								opdetails.taskID = previousOpInTask.taskID;
+
+								nodeCount++;
+								opdetails.nodeID = nodeCount;
+								stackElement.nodeID = nodeCount;
+
+								if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+									UAFDetector::setOfOps set;
+									set.opSet.insert(opCount);
+									detector.nodeIDMap[nodeCount] = set;
+								} else {
+									cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+									cout << "ERROR: Existing entry:\n";
+									detector.nodeIDMap[nodeCount].printDetails();
+									return -1;
+								}
 							}
 
 							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
@@ -4220,6 +4631,22 @@ it++) {
 
 						// Obtain the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
+
+							nodeCount++;
+							opdetails.nodeID = nodeCount;
+							stackElement.nodeID = nodeCount;
+
+							if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+								UAFDetector::setOfOps set;
+								set.opSet.insert(opCount);
+								detector.nodeIDMap[nodeCount] = set;
+							} else {
+								cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+								cout << "ERROR: Existing entry:\n";
+								detector.nodeIDMap[nodeCount].printDetails();
+								return -1;
+							}
+
 							cout << "WARNING: No previous op found for write " << opCount
 								 << " on stackForThreadOrder\n";
 
@@ -4316,16 +4743,77 @@ it++) {
 								if (firstOpInsideGlobalLoop) {
 									blockCount++;
 									opdetails.blockID = blockCount;
+
+									nodeCount++;
+									opdetails.nodeID = nodeCount;
+									stackElement.nodeID = nodeCount;
+
+									if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+										UAFDetector::setOfOps set;
+										set.opSet.insert(opCount);
+										detector.nodeIDMap[nodeCount] = set;
+									} else {
+										cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+										cout << "ERROR: Existing entry:\n";
+										detector.nodeIDMap[nodeCount].printDetails();
+										return -1;
+									}
 								} else {
 									opdetails.blockID = previousOpInThread.blockID;
 									opdetails.taskID = previousOpInThread.taskID;
 									opdetails.prevOpInBlock = previousOpInThread.opID;
+									if (previousOpInThread.opType.compare("alloc") == 0 ||
+											previousOpInThread.opType.compare("free") == 0 ||
+											previousOpInThread.opType.compare("read") == 0 ||
+											previousOpInThread.opType.compare("write") == 0) {
+										opdetails.nodeID = previousOpInThread.nodeID;
+
+										stackElement.nodeID = previousOpInThread.nodeID;
+
+										if (detector.nodeIDMap.find(previousOpInThread.nodeID) == detector.nodeIDMap.end()) {
+											cout << "ERROR: Cannot find entry for node " << previousOpInThread.nodeID << " in nodeIDMap\n";
+											return -1;
+										} else {
+											UAFDetector::setOfOps existingEntry = detector.nodeIDMap[previousOpInThread.nodeID];
+											existingEntry.opSet.insert(opCount);
+											detector.nodeIDMap.erase(detector.nodeIDMap.find(previousOpInThread.nodeID));
+											detector.nodeIDMap[previousOpInThread.nodeID] = existingEntry;
+										}
+									} else {
+										nodeCount++;
+										opdetails.nodeID = nodeCount;
+										stackElement.nodeID = nodeCount;
+
+										if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+											UAFDetector::setOfOps set;
+											set.opSet.insert(opCount);
+											detector.nodeIDMap[nodeCount] = set;
+										} else {
+											cout << "ERROR: Found duplicate entry for node " << nodeCount << " in nodeIDMap\n";
+											return -1;
+										}
+									}
 								}
 							} else {
 								// If this is the first op inside the nesting loop, then we are in a new block
 								blockCount++;
 								opdetails.blockID = blockCount;
 								opdetails.taskID = previousOpInTask.taskID;
+
+								nodeCount++;
+								opdetails.nodeID = nodeCount;
+								stackElement.nodeID = nodeCount;
+
+								if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+									UAFDetector::setOfOps set;
+									set.opSet.insert(opCount);
+									detector.nodeIDMap[nodeCount] = set;
+								} else {
+									cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+									cout << "ERROR: Existing entry:\n";
+									detector.nodeIDMap[nodeCount].printDetails();
+									return -1;
+								}
 							}
 
 							if (detector.opIDMap.find(previousOpInThread.opID) == detector.opIDMap.end()) {
@@ -4505,6 +4993,22 @@ it++) {
 						}
 
 					} else if (match.compare("wait") == 0) {
+
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain two arguments of wait
 						IDType threadID;
 						std::string lockID;
@@ -4878,6 +5382,22 @@ it++) {
 							}
 						}
 					} else if (match.compare("notify") == 0) {
+
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain two arguments of notify
 						IDType threadID;
 						std::string lockID;
@@ -5203,6 +5723,22 @@ it++) {
 							}
 						}
 					} else if (match.compare("notifyall") == 0) {
+
+						nodeCount++;
+						opdetails.nodeID = nodeCount;
+						stackElement.nodeID = nodeCount;
+
+						if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
+							UAFDetector::setOfOps set;
+							set.opSet.insert(opCount);
+							detector.nodeIDMap[nodeCount] = set;
+						} else {
+							cout << "ERROR: Found duplicate entry for node " << nodeCount << "\n";
+							cout << "ERROR: Existing entry:\n";
+							detector.nodeIDMap[nodeCount].printDetails();
+							return -1;
+						}
+
 						// Obtain two arguments of notifyall
 						IDType threadID;
 						std::string lockID;
@@ -5617,6 +6153,7 @@ it++) {
 	cout << "No of free ops: " << detector.freeSet.size() << "\n";
 	cout << "No of read ops: " << detector.readSet.size() << "\n";
 	cout << "No of write ops: " << detector.writeSet.size() << "\n";
+	cout << "No of nodes: " << detector.nodeIDMap.size() << "\n";
 
 	cout << "\nOps: \n";
 	for (map<IDType, UAFDetector::opDetails>::iterator it = detector.opIDMap.begin(); it != detector.opIDMap.end(); it++) {
@@ -5694,10 +6231,17 @@ it++) {
 		it->second.printDetails();
 		cout << endl;
 	}
+	cout << "\nMap - nodes\n";
+	for (map<IDType, UAFDetector::setOfOps>::iterator it = detector.nodeIDMap.begin(); it != detector.nodeIDMap.end(); it++) {
+		cout << "Node: " << it->first << "\n";
+		it->second.printDetails();
+		cout << "\n";
+	}
 #endif
 
 	// Initialize HB Graph
-	detector.initGraph(opCount, blockCount);
+	//detector.initGraph(opCount, blockCount);
+	detector.initGraph(nodeCount, blockCount);
 
 	return 0;
 }

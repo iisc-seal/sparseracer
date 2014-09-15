@@ -36,6 +36,7 @@ public:
 		std::string taskID;
 		std::string opType;
 		IDType blockID;
+		IDType nodeID;
 
 		IDType nextOpInThread;
 		IDType nextOpInTask;
@@ -47,6 +48,7 @@ public:
 			taskID = "";
 			opType = "";
 			blockID = -1;
+			nodeID = -1;
 			nextOpInThread = -1;
 			nextOpInTask = -1;
 			nextOpInBlock = -1;
@@ -55,7 +57,7 @@ public:
 
 		void printOpDetails() {
 			cout << "threadID " << threadID << " taskID " << taskID
-				 << " blockID " << blockID << " opType " << opType << endl;
+				 << " blockID " << blockID << " opType " << opType << " node " << nodeID << "\n";
 			cout << "next-op-in-thread " << nextOpInThread << " next-op-in-task "
 				 << nextOpInTask << " next-op-in-block " << nextOpInBlock;
 		}
@@ -63,6 +65,21 @@ public:
 
 	// Maps operationID to its threadID, taskID and type.
 	map<IDType, opDetails> opIDMap;
+
+	class setOfOps {
+	public:
+		set<IDType> opSet;
+		setOfOps() {
+			opSet = set<IDType>();
+		}
+		void printDetails() {
+			for (set<IDType>::iterator it = opSet.begin(); it != opSet.end(); it++) {
+				cout << *it << " ";
+			}
+		}
+	};
+	// Maps node ID to set of opID
+	map<IDType, setOfOps> nodeIDMap;
 
 	// Stores pause-resume pair
 	class pauseResumeResetTuple {
@@ -350,18 +367,7 @@ public:
 	map<IDType, lockOpDetails> notifySet;
 	map<IDType, lockOpDetails> notifyAllSet;
 
-	class setOfOps {
-	public:
-		set<IDType> opSet;
-		setOfOps() {
-			opSet = set<IDType>();
-		}
-		void printDetails() {
-			for (set<IDType>::iterator it = opSet.begin(); it != opSet.end(); it++) {
-				cout << *it << " ";
-			}
-		}
-	};
+
 	// shared variable to set of notify ops
 	map<std::string, setOfOps> lockToNotify;
 	// shared variable to set of notifyall ops
@@ -423,7 +429,10 @@ private:
 
 public:
 	HBGraph();
-	HBGraph(IDType countOfOps, IDType countOfBlocks, map<IDType, UAFDetector::opDetails> opMap, map<IDType, UAFDetector::blockDetails> blockMap);
+	HBGraph(IDType countOfOps, IDType countOfBlocks,
+			map<IDType, UAFDetector::opDetails> opMap,
+			map<IDType, UAFDetector::blockDetails> blockMap,
+			map<IDType, UAFDetector::setOfOps> nodeMap);
 	virtual ~HBGraph();
 
 	IDType totalBlocks;
@@ -450,6 +459,7 @@ public:
 private:
 	map<IDType, UAFDetector::opDetails> opIDMap;
 	map<IDType, UAFDetector::blockDetails> blockIDMap;
+	map<IDType, UAFDetector::setOfOps> nodeIDMap;
 
 	bool blockEdgeExistsinList(IDType source, IDType destination) {
 		struct adjListNode* currNode;

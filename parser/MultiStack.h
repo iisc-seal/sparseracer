@@ -22,6 +22,7 @@ public:
 		std::string opType;
 		IDType opID;
 		IDType blockID;
+		IDType nodeID;
 		IDType threadID;
 		std::string taskID;
 	};

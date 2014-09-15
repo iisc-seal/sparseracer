@@ -39,7 +39,10 @@ private:
 
 public:
 	HBGraph();
-	HBGraph(IDType countOfOps, IDType countOfBlocks, map<IDType, UAFDetector::opDetails> opMap, map<IDType, UAFDetector::blockDetails> blockMap);
+	HBGraph(IDType countOfOps, IDType countOfBlocks,
+			map<IDType, UAFDetector::opDetails> opMap,
+			map<IDType, UAFDetector::blockDetails> blockMap,
+			map<IDType, UAFDetector::setOfOps> nodeMap);
 	virtual ~HBGraph();
 
 	long long totalBlocks;
@@ -65,6 +68,7 @@ public:
 private:
 	map<IDType, UAFDetector::opDetails> opIDMap;
 	map<IDType, UAFDetector::blockDetails> blockIDMap;
+	map<IDType, UAFDetector::setOfOps> nodeIDMap;
 
 	bool blockEdgeExistsinList(long long source, long long destination) {
 		struct adjListNode* currNode;
