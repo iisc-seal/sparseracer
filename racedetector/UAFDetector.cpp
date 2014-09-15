@@ -2009,8 +2009,14 @@ int UAFDetector::addTransSTOrMTEdges() {
 				// If blockK == blockJ, we are trying to infer the same edges from blockI to blockK/blockJ
 				// Redundant
 				// Similarly, other cases
-				if (blockI == blockK || blockK == blockJ || blockI == blockJ)
+				if (blockI == blockK || blockK == blockJ || blockI == blockJ) {
+#ifdef GRAPHDEBUG
+					cout << "DEBUG: TRANS-edge: blockI: " << blockI << " blockK: " << blockK
+						 << " blockJ: " << blockJ << "\n";
+					cout << "DEBUG: TRANS-edge: Inferring edge to same block\n";
+#endif
 					continue;
+				}
 
 				IDType threadI = it->second.threadID;
 				IDType threadK = blockIDMap[blockK].threadID;
@@ -2030,8 +2036,14 @@ int UAFDetector::addTransSTOrMTEdges() {
 					return -1;
 				}
 #endif
-				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ)))
+				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
+#ifdef GRAPHDEBUG
+					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
+						 << " threadJ: " << threadJ << "\n";
+					cout << "DEBUG: TRANS-edge: Violates thread criterion\n";
+#endif
 					continue;
+				}
 
 				IDType tempOp1, tempOp2;
 				tempOp1 = blockIDMap[blockI].lastOpInBlock;
@@ -2049,8 +2061,14 @@ int UAFDetector::addTransSTOrMTEdges() {
 #endif
 
 				int retValue = graph->opEdgeExists(tempOp1, tempOp2);
-				if (retValue == 1)
+				if (retValue == 1) {
+#ifdef GRAPHDEBUG
+					cout << "DEBUG: TRANS-edge: Edge already exists from blockI: " << blockI
+						 << " (op " << tempOp1 << ") to blockJ: " << blockJ << " (op "
+						 << tempOp2 << ")\n";
+#endif
 					continue;
+				}
 				else if (retValue == -1) {
 					cout << "ERROR: While checking op edge from " << tempOp1 << " to " << tempOp2 << endl;
 					return -1;
@@ -2063,11 +2081,13 @@ int UAFDetector::addTransSTOrMTEdges() {
 #ifdef SANITYCHECK
 				if (opI <= 0) {
 					cout << "ERROR: Cannot find last op of block " << blockI << endl;
-					continue;
+//					continue;
+					return -1;
 				}
 				if (firstOp <= 0) {
 					cout << "ERROR: Cannot find first op of block " << blockI << endl;
-					continue;
+//					continue;
+					return -1;
 				}
 #endif
 				while (opI > 0 && opI >= firstOp) {
