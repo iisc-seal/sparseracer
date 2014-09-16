@@ -720,6 +720,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackElement.blockID = blockCount;
 							stackForThreadAndBlockOrder.push(stackElement);
 							stackForGlobalLoop.stackClear(threadID);
+							stackForGlobalLoop.push(stackElement); // pushing exitloop
 						}
 					} else if (match.compare("enq") == 0) {
 						nodeCount++;
@@ -855,7 +856,7 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -1344,7 +1345,8 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackForNestingOrder.push(stackElement);
 
 							if (!stackForGlobalLoop.isEmpty(threadID)) {
-								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0)
+								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0 &&
+										stackForGlobalLoop.peek(threadID).opType.compare("exitloop") != 0)
 									stackForGlobalLoop.pop(threadID);
 							}
 						}
@@ -1620,7 +1622,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 							stackForNestingOrder.push(stackElement);
 
 							if (!stackForGlobalLoop.isEmpty(threadID)) {
-								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0)
+//								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0)
+								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0 &&
+										stackForGlobalLoop.peek(threadID).opType.compare("exitloop") != 0)
 									stackForGlobalLoop.pop(threadID);
 							}
 						}
@@ -1768,7 +1772,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -2392,7 +2397,9 @@ it++) {
 							stackForNestingOrder.push(stackElement);
 
 							if (!stackForGlobalLoop.isEmpty(threadID)) {
-								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0)
+//								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0)
+								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0 &&
+										stackForGlobalLoop.peek(threadID).opType.compare("exitloop") != 0)
 									stackForGlobalLoop.pop(threadID);
 							}
 						}
@@ -2580,7 +2587,9 @@ it++) {
 							stackForNestingOrder.stackClear(threadID, task);
 
 							if (!stackForGlobalLoop.isEmpty(threadID)) {
-								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0)
+//								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0)
+								while (stackForGlobalLoop.peek(threadID).opType.compare("enterloop") != 0 &&
+										stackForGlobalLoop.peek(threadID).opType.compare("exitloop") != 0)
 									stackForGlobalLoop.pop(threadID);
 							}
 						}
@@ -2706,7 +2715,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -3045,7 +3055,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -3391,7 +3402,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -3865,7 +3877,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -4296,7 +4309,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -4728,7 +4742,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -5179,7 +5194,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -5520,7 +5536,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
@@ -5861,7 +5878,8 @@ it++) {
 								if (stackForNestingOrder.isEmpty(threadID) && !stackForGlobalLoop.isEmpty(threadID)) {
 									// We are inside the global loop.
 									MultiStack::stackElementType topOfGlobalLoopStack = stackForGlobalLoop.peek(threadID);
-									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+//									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0)
+									if (topOfGlobalLoopStack.opType.compare("enterloop") == 0 || topOfGlobalLoopStack.opType.compare("exitloop") == 0)
 										firstOpInsideGlobalLoop = true;
 								} else if (!stackForNestingOrder.isEmpty(threadID)) {
 									cout << "ERROR: TaskOrder stack is empty but NestingOrder stack is not: for thread " << threadID << "\n";
