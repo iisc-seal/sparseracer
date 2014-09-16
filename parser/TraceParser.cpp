@@ -5107,10 +5107,10 @@ it++) {
 								waitset.opSet.insert(opCount);
 								detector.notifyAllToWaitSet[notifyAllOp] = waitset;
 							} else {
-								cout << "ERROR: Wait op already set for notifyall op " << notifyAllOp << "\n";
-								cout << "ERROR: Existing entry:\n";
-								detector.notifyAllToWaitSet[notifyAllOp].printDetails();
-								return -1;
+								UAFDetector::setOfOps existingEntry = detector.notifyAllToWaitSet[notifyAllOp];
+								existingEntry.opSet.insert(opCount);
+								detector.notifyAllToWaitSet.erase(detector.notifyAllToWaitSet.find(notifyAllOp));
+								detector.notifyAllToWaitSet[notifyAllOp] = existingEntry;
 							}
 						}
 

@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
 	cout << "map size: " << detectorObj.opIDMap.size() << endl;
 #endif
 
-//    return 0;
+    //return 0;
 	if (detectorObj.addEdges(logger) < 0) {
 		cout << "ERROR while constructing HB Graph\n";
 		return -1;
