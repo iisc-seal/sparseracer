@@ -134,7 +134,7 @@ int UAFDetector::addEdges(Logger &logger) {
 		}
 
 #ifdef GRAPHDEBUGFULL
-		if (retValue == 1)
+		//if (retValue == 1)
 			//graph->printGraph();
 #endif
 
@@ -2394,7 +2394,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 					IDType nodeI = opIDMap[opI].nodeID;
 					if (nodeI <= 0) {
-						cout << "ERROR: Invalide nodeID for op " << opI << "\n";
+						cout << "ERROR: Invalid nodeID for op " << opI << "\n";
 						return -1;
 					}
 					// Loop through adjacency list of opI
@@ -2410,6 +2410,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 						if (minOpInK == -1 || minOpInK > opDest) {
 							minOpInK = opDest;
 							// This is to remove multiple edges from opI to different ops in blockK
+							cout << "DEBUG: Removing edge from " << nodeI << " to " << currNode->destination << "\n";
 							graph->removeOpEdge(currNode, nodeI, currNode->destination);
 						}
 					}
@@ -2437,15 +2438,28 @@ int UAFDetector::addTransSTOrMTEdges() {
 					//graph->printGraph();
 #endif
 
+					IDType nodeTempOp = 0;
+					IDType prevNodeTempOp = 0;
+
 					for (IDType tempOp = minOpInK; tempOp > 0 && tempOp <= blockIDMap[blockK].lastOpInBlock; tempOp = opIDMap[tempOp].nextOpInBlock) {
 						// Find the earliest op in blockJ such that there exists edge (tempOp, op)
 						IDType minOpInJ = -1;
 
-						IDType nodeTempOp = opIDMap[tempOp].nodeID;
+						nodeTempOp = opIDMap[tempOp].nodeID;
 						if (nodeTempOp <= 0) {
 							cout << "ERROR: Invalid node ID for op " << tempOp << "\n";
 							return -1;
 						}
+
+						// The loop steps through the nextOp map of the block. Now that we have ops merged into nodes,
+						// the loop should really be stepping through nextNode map. To take care of that, I record the
+						// previous node analyzed.
+						if (prevNodeTempOp != 0) {
+							if (prevNodeTempOp == nodeTempOp)
+								continue;
+						}
+						prevNodeTempOp = nodeTempOp;
+
 						// Loop through adjacency list of tempOp
 						for (HBGraph::adjListNode* currNode = graph->opAdjList[nodeTempOp].head; currNode != NULL; currNode = currNode->next) {
 							//if (opIDMap[currNode->destination].blockID != blockJ)
@@ -2459,6 +2473,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 							if (minOpInJ == -1 || minOpInJ > opDest) {
 								minOpInJ = opDest;
 								// This is to remove multiple edges from tempOp to different ops in blockJ
+								cout << "DEBUG: Removing edge from " << nodeTempOp << " to " << currNode->destination << "\n";
 								graph->removeOpEdge(currNode, nodeTempOp, currNode->destination);
 							}
 						}
