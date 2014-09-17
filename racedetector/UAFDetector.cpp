@@ -2572,11 +2572,12 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger &logger){
 		if (allocID == -1) {
 			cout << "DEBUG: Cannot find alloc for free op " << freeID << endl;
 //			continue;
-		}
-		IDType nodeAlloc = opIDMap[allocID].nodeID;
-		if (nodeAlloc <= 0) {
-			cout << "ERROR: Invalid node ID for op " << allocID << "\n";
-			return -1;
+		} else {
+			IDType nodeAlloc = opIDMap[allocID].nodeID;
+			if (nodeAlloc <= 0) {
+				cout << "ERROR: Invalid node ID for op " << allocID << "\n";
+				return -1;
+			}
 		}
 #ifdef ACCESS
 		for (set<IDType>::iterator accessIt = freeIt->second.accessOps.begin(); accessIt != freeIt->second.accessOps.end(); accessIt++) {
