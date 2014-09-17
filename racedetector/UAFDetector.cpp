@@ -2387,16 +2387,26 @@ int UAFDetector::addTransSTOrMTEdges() {
 					return -1;
 				}
 #endif
+				IDType nodeI = 0;
+				IDType prevNodeI = 0;
+
 				while (opI > 0 && opI >= firstOp) {
 					// Find the earliest op in blockK such that there exists edge (opI, op)
 					IDType minOpInK = -1;
 					opJ = -1;
 
-					IDType nodeI = opIDMap[opI].nodeID;
+					nodeI = opIDMap[opI].nodeID;
 					if (nodeI <= 0) {
 						cout << "ERROR: Invalid nodeID for op " << opI << "\n";
 						return -1;
 					}
+
+					if (prevNodeI != 0) {
+						if (prevNodeI == nodeI)
+							continue;
+					}
+					prevNodeI = nodeI;
+
 					// Loop through adjacency list of opI
 					for (HBGraph::adjListNode* currNode = graph->opAdjList[nodeI].head; currNode != NULL; currNode = currNode->next) {
 						//if (opIDMap[currNode->destination].blockID != blockK)
