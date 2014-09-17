@@ -211,6 +211,7 @@ void HBGraph::removeOpEdge(HBGraph::adjListNode* currNode, IDType sourceNode, ID
 	}
 
 	opAdjMatrix[sourceNode][destinationNode] = false;
+	numOfOpEdges--;
 	delete currNode;
 }
 
