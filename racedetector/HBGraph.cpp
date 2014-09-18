@@ -51,22 +51,20 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks,
 		cout << "ERROR: Cannot allocate memory for blockAdjMatrix\n";
 	}
 
-	opAdjList = new HBGraph::adjListType [totalOps+1];
-	blockAdjList = new HBGraph::adjListType [totalBlocks+1];
+	opAdjList = new std::multiset<HBGraph::adjListNode> [totalOps+1];
+	blockAdjList = new std::multiset<HBGraph::adjListNode> [totalBlocks+1];
 
 	for (IDType i=1; i <= totalOps; i++) {
-		opAdjList[i].head = NULL;
 		opAdjMatrix[i] = (bool*) calloc((totalOps+1) , sizeof(bool));
 	}
 	for (IDType i=1; i <= totalBlocks; i++) {
-		blockAdjList[i].head = NULL;
 		blockAdjMatrix[i] = (bool*) calloc((totalBlocks+1) , sizeof(bool));
 
 		// There is always a self edge for each block since there are HB edges
 		// (program-order) within the block
 		blockAdjMatrix[i][i] = true;
-		HBGraph::adjListNode *currNode = HBGraph::createNewNode(i);
-		blockAdjList[i].head = currNode;
+		HBGraph::adjListNode blockNode(i);
+		blockAdjList[i].insert(blockNode);
 	}
 }
 
@@ -99,19 +97,40 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode) {
 	IDType i = opIDMap[sourceOp].nextOpInBlock;
 	IDType lastOp1 = blockIDMap[sourceBlock].lastOpInBlock;
 
+	IDType nodei = 0, prevnodei = 0;
+
 	while (i > 0 && i <= lastOp1) {
-		IDType j = blockIDMap[destinationBlock].firstOpInBlock;
-		while (j > 0 && j < destinationOp) {
-			IDType nodei = opIDMap[i].nodeID;
-			IDType nodej = opIDMap[j].nodeID;
-			if (nodei <= 0) {
-				cout << "ERROR: Invalid node ID for op " << i << "\n";
-				return -1;
+		nodei = opIDMap[i].nodeID;
+		if (nodei <= 0) {
+			cout << "ERROR: Invalid node ID for op " << i << "\n";
+			return -1;
+		}
+
+		if (prevnodei != 0) {
+			if (prevnodei == nodei) {
+				i = opIDMap[i].nextOpInBlock;
+				continue;
 			}
+		}
+		prevnodei = nodei;
+
+		IDType j = blockIDMap[destinationBlock].firstOpInBlock;
+		IDType nodej = 0, prevnodej = 0;
+		while (j > 0 && j < destinationOp) {
+			nodej = opIDMap[j].nodeID;
 			if (nodej <= 0) {
 				cout << "ERROR: Invalid node ID for op " << j << "\n";
 				return -1;
 			}
+
+			if (prevnodej != 0) {
+				if (prevnodej == nodej) {
+					j = opIDMap[j].nextOpInBlock;
+					continue;
+				}
+			}
+			prevnodej = nodej;
+
 			if (opEdgeExists(nodei, nodej))
 				// Required edge already implied transitively
 				return 0;
@@ -122,37 +141,28 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode) {
 		i = opIDMap[i].nextOpInBlock;
 	}
 
-	if (opEdgeExists(destinationNode, sourceNode) == 1) {
+	if (opEdgeExists(destinationNode, sourceNode, destinationBlock, sourceBlock) == 1) {
 		cout << "ERROR: Edge exists from " << destinationNode << " to " << sourceNode 	   << endl;
 		cout << "Trying to add edge from " << sourceNode		<< " to " << destinationNode << endl;
 		return -1;
 	}
 
+#if 0
 	int retBlockValue = blockEdgeExists(sourceBlock, destinationBlock);
 	if (retBlockValue == 0) {
 		blockAdjMatrix[sourceBlock][destinationBlock] = true;
 
-		struct adjListNode* destBlockNode = createNewNode(destinationBlock);
-		destBlockNode->next = blockAdjList[sourceBlock].head;
-
-		if (blockAdjList[sourceBlock].head != NULL)
-			blockAdjList[sourceBlock].head->prev = destBlockNode;
-
-		blockAdjList[sourceBlock].head = destBlockNode;
+		adjListNode destBlockNode(destinationBlock);
+		blockAdjList[sourceBlock].insert(destBlockNode);
 
 		numOfBlockEdges++;
 
-		int retOpValue = opEdgeExists(sourceNode, destinationNode);
+		int retOpValue = opEdgeExists(sourceNode, destinationNode, sourceBlock, destinationBlock);
 		if (retOpValue == 0) {
 			opAdjMatrix[sourceNode][destinationNode] = true;
 
-			struct adjListNode* destOpNode = createNewNode(destinationNode);
-			destOpNode->next = opAdjList[sourceNode].head;
-
-			if (opAdjList[sourceNode].head != NULL)
-				opAdjList[sourceNode].head->prev = destOpNode;
-
-			opAdjList[sourceNode].head = destOpNode;
+			adjListNode destOpNode(destinationNode, destinationBlock);
+			opAdjList[sourceNode].insert(destOpNode);
 
 			numOfOpEdges++;
 
@@ -162,17 +172,12 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode) {
 		else
 			return -1;
 	} else if (retBlockValue == 1) {
-		int retOpValue = opEdgeExists(sourceNode, destinationNode);
+		int retOpValue = opEdgeExists(sourceNode, destinationNode, sourceBlock, destinationBlock);
 		if (retOpValue == 0) {
 			opAdjMatrix[sourceNode][destinationNode] = true;
 
-			struct adjListNode* destOpNode = createNewNode(destinationNode);
-			destOpNode->next = opAdjList[sourceNode].head;
-
-			if (opAdjList[sourceNode].head != NULL)
-				opAdjList[sourceNode].head->prev = destOpNode;
-
-			opAdjList[sourceNode].head = destOpNode;
+			adjListNode destOpNode(destinationNode, destinationBlock);
+			opAdjList[sourceNode].insert(destOpNode);
 
 			numOfOpEdges++;
 
@@ -184,38 +189,81 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode) {
 	}
 	else
 		return -1;
+#endif
+
+	int retOpValue = opEdgeExists(sourceNode, destinationNode, sourceBlock, destinationBlock);
+	if (retOpValue == 0) {
+		opAdjMatrix[sourceNode][destinationNode] = true;
+
+		adjListNode destOpNode(destinationNode, destinationBlock);
+		opAdjList[sourceNode].insert(destOpNode);
+
+		numOfOpEdges++;
+
+		int retBlockValue = blockEdgeExists(sourceBlock, destinationBlock);
+		if (retBlockValue == 0) {
+			blockAdjMatrix[sourceBlock][destinationBlock] = true;
+
+			adjListNode destBlockNode(destinationBlock);
+			blockAdjList[sourceBlock].insert(destBlockNode);
+
+			numOfBlockEdges++;
+		} else if (retBlockValue == -1)
+			return -1;
+		return 1;
+	} else if (retOpValue == 1)
+		return 0;
+	else
+		return -1;
 
 	return -1;
 }
 
 // currNode is the adjListNode containing destinationOp in the adjacency list of sourceOp
-void HBGraph::removeOpEdge(HBGraph::adjListNode* currNode, IDType sourceNode, IDType destinationNode) {
-	assert(currNode != NULL);
+int HBGraph::removeOpEdge(IDType sourceNode, IDType destinationNode, IDType sourceBlock, IDType destinationBlock) {
 	assert(1 <= sourceNode && sourceNode <= totalOps);
 	assert(1 <= destinationNode && destinationNode <= totalOps);
 
-	if (currNode->next == NULL && currNode->prev == NULL) {
-		// This is the only node in the list.
-		// Set adjacency list of sourceNode to NULL
-		opAdjList[sourceNode].head = NULL;
-	} else if (currNode->next == NULL) {
-		// No node after this node in the list. Make the previous node point to NULL
-		currNode->prev->next = NULL;
-	} else if (currNode->prev == NULL) {
-		// This is the first node in the list. Make next node the head of adjacency list
-		currNode->next->prev = NULL;
-		opAdjList[sourceNode].head = currNode->next;
+	if (destinationBlock == 0) {
+		IDType destinationOp = *(nodeIDMap[destinationNode].opSet.begin());
+		if (destinationOp <= 0) {
+			cout << "ERROR: Invalid op for node ID " << destinationNode << "\n";
+			return -1;
+		}
+		destinationBlock = opIDMap[destinationOp].blockID;
+	}
+
+	adjListNode destNode(destinationNode, destinationBlock);
+	std::pair<std::multiset<adjListNode>::iterator, std::multiset<adjListNode>::iterator>
+		ret = opAdjList[sourceNode].equal_range(destNode);
+	if (ret.first != ret.second) {
+		std::multiset<adjListNode>::iterator it;
+		for (it = ret.first; it != ret.second; it++) {
+#ifdef SANITYCHECK
+			assert(it->blockID == destinationBlock);
+#endif
+			if (it->nodeID == destinationNode)
+				break;
+		}
+		if (it != ret.second)
+			opAdjList[sourceNode].erase(it);
+		else {
+			cout << "ERROR: Cannot find the op edge to remove\n";
+			cout << "ERROR: Edge: (" << sourceNode << ", " << destinationNode << ")\n";
+			return -1;
+		}
 	} else {
-		currNode->prev->next = currNode->next;
-		currNode->next->prev = currNode->prev;
+		cout << "ERROR: Cannot find the op edge to remove\n";
+		cout << "ERROR: Edge: (" << sourceNode << ", " << destinationNode << ")\n";
+		return -1;
 	}
 
 	opAdjMatrix[sourceNode][destinationNode] = false;
 	numOfOpEdges--;
-	delete currNode;
+	return 0;
 }
 
-int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode) {
+int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sourceBlock, IDType destinationBlock) {
 
 	assert(sourceNode > 0);
 	assert(destinationNode > 0);
@@ -227,13 +275,17 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode) {
 		cout << "ERROR: Invalid op ID for node " << sourceNode << "\n";
 		return -1;
 	}
-	IDType sourceBlock = opIDMap[sourceOp].blockID;
+	if (sourceBlock == 0)
+		sourceBlock = opIDMap[sourceOp].blockID;
+
 	IDType destinationOp = *(nodeIDMap[destinationNode].opSet.begin());
 	if (destinationOp <= 0) {
 		cout << "ERROR: Invalid op ID for node " << destinationNode << "\n";
 		return -1;
 	}
-	IDType destinationBlock = opIDMap[destinationOp].blockID;
+	if (destinationBlock == 0)
+		destinationBlock = opIDMap[destinationOp].blockID;
+
 	assert(sourceBlock > 0);
 	assert(destinationBlock > 0);
 
@@ -244,7 +296,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode) {
 		return 0;
 
 	// Check if there is an explicit edge in the opAdjMatrix and opAdjList
-	bool edgeExistsInList = opEdgeExistsinList(sourceNode, destinationNode);
+	bool edgeExistsInList = opEdgeExistsinList(sourceNode, destinationNode, sourceBlock, destinationBlock);
 	if (opAdjMatrix[sourceNode][destinationNode] == true && edgeExistsInList)
 		return 1;
 	else if (opAdjMatrix[sourceNode][destinationNode] == true && !edgeExistsInList) {
@@ -261,20 +313,38 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode) {
 		return 0;
 	else if (retValue == 1) {
 		IDType i = blockIDMap[sourceBlock].lastOpInBlock;
+		IDType nodei = 0, prevnodei = 0;
 		while (i > 0 && i >= sourceOp) {
+			nodei = opIDMap[i].nodeID;
+			if (nodei <= 0) {
+				cout << "ERROR: Invalid node ID for op " << i << "\n";
+				return -1;
+			}
+			if (prevnodei != 0) {
+				if (prevnodei == nodei) {
+					i = opIDMap[i].prevOpInBlock;
+					continue;
+				}
+			}
+			prevnodei = nodei;
+
 			IDType j = blockIDMap[destinationBlock].firstOpInBlock;
+			IDType nodej = 0, prevnodej = 0;
 			while (j > 0 && j <= destinationOp) {
 
-				IDType nodei = opIDMap[i].nodeID;
-				IDType nodej = opIDMap[j].nodeID;
-				if (nodei <= 0) {
-					cout << "ERROR: Invalid node ID for op " << i << "\n";
-					return -1;
-				}
+				nodej = opIDMap[j].nodeID;
 				if (nodej <= 0) {
 					cout << "ERROR: Invalid node ID for op " << j << "\n";
 					return -1;
 				}
+				if (prevnodej != 0) {
+					if (prevnodej == nodej) {
+						j = opIDMap[j].nextOpInBlock;
+						continue;
+					}
+				}
+				prevnodej = nodej;
+
 				edgeExistsInList = opEdgeExistsinList(nodei, nodej);
 				if (opAdjMatrix[nodei][nodej] == true && edgeExistsInList)
 					return 1;
@@ -324,22 +394,18 @@ void HBGraph::printGraph() {
 	cout << "\nBlock Edges:";
 	for (IDType i=1; i <= totalBlocks; i++) {
 		cout << endl << i << ": ";
-		struct adjListNode* currNode = blockAdjList[i].head;
-		while (currNode != NULL) {
-			cout << currNode->destination << "   ";
-			currNode = currNode->next;
-		}
+		for (std::multiset<adjListNode>::iterator it = blockAdjList[i].begin();
+				it != blockAdjList[i].end(); it++)
+			cout << it->blockID << " ";
 	}
 	cout << "\n";
 
 	cout << "\nOp Edges:";
 	for (IDType i=1; i <= totalOps; i++) {
 		cout << endl << i << ": ";
-		struct adjListNode* currNode = opAdjList[i].head;
-		while (currNode != NULL) {
-			cout << currNode->destination << "   ";
-			currNode = currNode->next;
-		}
+		for (std::multiset<adjListNode>::iterator it = opAdjList[i].begin();
+				it != opAdjList[i].end(); it++)
+			cout << it->nodeID << " ";
 	}
 	cout << "\n";
 }

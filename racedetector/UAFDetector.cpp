@@ -37,8 +37,8 @@ UAFDetector::UAFDetector()
 UAFDetector::~UAFDetector() {
 }
 
-void UAFDetector::initGraph(IDType countOfOps, IDType countOfNodes) {
-	graph = new HBGraph(countOfOps, countOfNodes, opIDMap, blockIDMap, nodeIDMap);
+void UAFDetector::initGraph(IDType countOfNodes, IDType countOfBlocks) {
+	graph = new HBGraph(countOfNodes, countOfBlocks, opIDMap, blockIDMap, nodeIDMap);
 	assert(graph != NULL);
 }
 
@@ -74,8 +74,8 @@ int UAFDetector::addEdges(Logger &logger) {
 	while (true) {
 		int retValue;
 
-#ifdef GRAPHDEBUGFULL
-		//graph->printGraph();
+#ifdef PRINTGRAPH
+		graph->printGraph();
 #endif
 
 		// FIFO-ATOMIC/NO-PRE
@@ -93,9 +93,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUGFULL
-		//if (retValue == 1)
-			//graph->printGraph();
+#ifdef PRINTGRAPH
+		if (retValue == 1)
+			graph->printGraph();
 #endif
 
 		// FIFO-NESTED-1/2/GEN Or ENQRESET-ST-1
@@ -113,9 +113,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUGFULL
-		//if (retValue == 1)
-			//graph->printGraph();
+#ifdef PRINTGRAPH
+		if (retValue == 1)
+			graph->printGraph();
 #endif
 
 		// ENQRESET-ST-2/3
@@ -133,9 +133,9 @@ int UAFDetector::addEdges(Logger &logger) {
 			return -1;
 		}
 
-#ifdef GRAPHDEBUGFULL
-		//if (retValue == 1)
-			//graph->printGraph();
+#ifdef PRINTGRAPH
+		if (retValue == 1)
+			graph->printGraph();
 #endif
 
 		// TRANS-ST/MT
@@ -158,8 +158,8 @@ int UAFDetector::addEdges(Logger &logger) {
 			edgeAdded = false;
 	}
 
-#ifdef GRAPHDEBUGFULL
-	//graph->printGraph();
+#ifdef PRINTGRAPH
+	graph->printGraph();
 #endif
 
 	cout << "Total op edges = " << graph->numOfOpEdges << endl;
@@ -647,8 +647,11 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 					cout << "DEBUG: Skipping FIFO-ATOMIC edge for task " << it->first << "\n";
 #endif
 				} else {
-					for (HBGraph::adjListNode* currNode = graph->blockAdjList[enqOpBlock].head; currNode != NULL; currNode = currNode->next) {
-						IDType tempBlock = currNode->destination;
+//					for (HBGraph::adjListNode* currNode = graph->blockAdjList[enqOpBlock].head; currNode != NULL; currNode = currNode->next) {
+					for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[enqOpBlock].begin();
+							blockIt != graph->blockAdjList[enqOpBlock].end(); blockIt++) {
+//						IDType tempBlock = currNode->destination;
+						IDType tempBlock = blockIt->blockID;
 						if (tempBlock <= 0) {
 #ifdef GRAPHDEBUG
 							cout << "DEBUG: Found invalid block edge from " << enqOpBlock << endl;
@@ -776,21 +779,28 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 				}
 #endif
 				if (blockI > 0) {
-					for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockI].head; currNode != NULL; currNode = currNode->next) {
+//					for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockI].head; currNode != NULL; currNode = currNode->next) {
+					for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockI].begin();
+							blockIt != graph->blockAdjList[blockI].end(); blockIt++) {
 #ifdef SANITYCHECK
-						assert(currNode->destination > 0);
+//						assert(currNode->destination > 0);
+						assert(blockIt->blockID);
 #endif
 
-						for (set<IDType>::iterator enqIt = blockIDMap[currNode->destination].enqSet.begin(); enqIt != blockIDMap[currNode->destination].enqSet.end(); enqIt++) {
+//						for (set<IDType>::iterator enqIt = blockIDMap[currNode->destination].enqSet.begin(); enqIt != blockIDMap[currNode->destination].enqSet.end(); enqIt++) {
+						for (set<IDType>::iterator enqIt = blockIDMap[blockIt->blockID].enqSet.begin();
+								enqIt != blockIDMap[blockIt->blockID].enqSet.end(); enqIt++) {
 #ifdef SANITYCHECK
 							assert(*enqIt > 0);
+
 #endif
 							IDType tempenqOp = *enqIt;
 
 							// If we are looking at enqs within the same block,
 							// make sure we do not have the same enq as both
 							// source and destination for the HB edge we check.
-							if (blockI == currNode->destination && i == tempenqOp) continue;
+//							if (blockI == currNode->destination && i == tempenqOp) continue;
+							if (blockI == blockIt->blockID && i == tempenqOp) continue;
 
 							string taskName = enqToTaskEnqueued[tempenqOp].taskEnqueued;
 							if (taskName.compare("") == 0) {
@@ -1373,12 +1383,16 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				cout << "ERROR: Cannot find block ID of op " << enqI << "\n";
 				return -1;
 			}
-			for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockI].head; currNode != NULL; currNode = currNode->next) {
+//			for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockI].head; currNode != NULL; currNode = currNode->next) {
+			for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockI].begin();
+					blockIt != graph->blockAdjList[blockI].end(); blockIt++) {
 #ifdef SANITYCHECK
-				assert(currNode->destination > 0);
+//				assert(currNode->destination > 0);
+				assert(blockIt->blockID > 0);
 #endif
 
-				IDType blockJ = currNode->destination;
+//				IDType blockJ = currNode->destination;
+				IDType blockJ = blockIt->blockID;
 
 				for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
 #ifdef SANITYCHECK
@@ -1506,12 +1520,16 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				IDType blockL = opIDMap[opL].blockID;
 				threadI = opIDMap[opI].threadID;
 				if (blockL > 0 && threadI > 0) {
-					for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockL].head; currNode != NULL; currNode = currNode->next) {
+//					for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockL].head; currNode != NULL; currNode = currNode->next) {
+					for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockL].begin();
+							blockIt != graph->blockAdjList[blockL].end(); blockIt++) {
 #ifdef SANITYCHECK
-						assert(currNode->destination > 0);
+//						assert(currNode->destination > 0);
+						assert(blockIt->blockID > 0);
 #endif
 
-						IDType blockJ = currNode->destination;
+//						IDType blockJ = currNode->destination;
+						IDType blockJ = blockIt->blockID;
 						for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
 #ifdef SANITYCHECK
 							assert(*enqIt > 0);
@@ -1657,12 +1675,16 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 #endif
 
 			if (blockOfResumeOp > 0 && threadI >= 0) {
-				for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockOfResumeOp].head; currNode != NULL; currNode = currNode->next) {
+//				for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockOfResumeOp].head; currNode != NULL; currNode = currNode->next) {
+				for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockOfResumeOp].begin();
+						blockIt != graph->blockAdjList[blockOfResumeOp].end(); blockIt++) {
 #ifdef SANITYCHECK
-					assert(currNode->destination > 0);
+//					assert(currNode->destination > 0);
+					assert(blockIt->blockID > 0);
 #endif
 
-					IDType blockJ = currNode->destination;
+//					IDType blockJ = currNode->destination;
+					IDType blockJ = blockIt->blockID;
 					for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
 #ifdef SANITYCHECK
 						assert(*enqIt > 0);
@@ -1832,12 +1854,16 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				if (threadK != threadN)
 					continue;
 
-				for (HBGraph::adjListNode *currNode = graph->blockAdjList[blockK].head; currNode != NULL; currNode = currNode->next) {
+//				for (HBGraph::adjListNode *currNode = graph->blockAdjList[blockK].head; currNode != NULL; currNode = currNode->next) {
+				for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
+						blockKIt != graph->blockAdjList[blockK].end(); blockKIt++) {
 #ifdef SANITYCHECK
-					assert(currNode->destination > 0);
+//					assert(currNode->destination > 0);
+					assert(blockKIt->blockID > 0);
 #endif
 
-					IDType blockJ = currNode->destination;
+//					IDType blockJ = currNode->destination;
+					IDType blockJ = blockKIt->blockID;
 					for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin();
 							enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
 #ifdef SANITYCHECK
@@ -2051,13 +2077,17 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 			}
 #endif
 
-			for (HBGraph::adjListNode *currNode = graph->blockAdjList[blockK].head;
-					currNode != NULL; currNode = currNode->next) {
+//			for (HBGraph::adjListNode *currNode = graph->blockAdjList[blockK].head;
+//					currNode != NULL; currNode = currNode->next) {
+			for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
+					blockKIt != graph->blockAdjList[blockK].end(); blockKIt++) {
 #ifdef SANITYCHECK
-				assert(currNode->destination > 0);
+//				assert(currNode->destination > 0);
+				assert(blockKIt->blockID > 0);
 #endif
 
-				IDType blockJ = currNode->destination;
+//				IDType blockJ = currNode->destination;
+				IDType blockJ = blockKIt->blockID;
 				for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end();
 						enqIt++) {
 #ifdef SANITYCHECK
@@ -2273,8 +2303,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 		assert(blockI > 0);
 #endif
 
-		for (HBGraph::adjListNode* tempNode1 = graph->blockAdjList[blockI].head; tempNode1 != NULL; tempNode1 = tempNode1->next) {
-			IDType blockK = tempNode1->destination;
+//		for (HBGraph::adjListNode* tempNode1 = graph->blockAdjList[blockI].head; tempNode1 != NULL; tempNode1 = tempNode1->next) {
+		for (std::multiset<HBGraph::adjListNode>::iterator blockIIt = graph->blockAdjList[blockI].begin();
+				blockIIt != graph->blockAdjList[blockI].end(); blockIIt++) {
+//			IDType blockK = tempNode1->destination;
+			IDType blockK = blockIIt->blockID;
 
 #ifdef SANITYCHECK
 			if (blockK <= 0) {
@@ -2283,8 +2316,19 @@ int UAFDetector::addTransSTOrMTEdges() {
 			}
 #endif
 
-			for (HBGraph::adjListNode* tempNode2 = graph->blockAdjList[blockK].head; tempNode2 != NULL; tempNode2 = tempNode2->next) {
-				IDType blockJ = tempNode2->destination;
+			if (blockI == blockK) {
+#ifdef GRAPHDEBUG
+				cout << "DEBUG: TRANS-edge: blockI: " << blockI << " blockK: " << blockK << "\n";
+				cout << "DEBUG: TRANS-edge: Inferring edge to same block\n";
+#endif
+				continue;
+			}
+
+//			for (HBGraph::adjListNode* tempNode2 = graph->blockAdjList[blockK].head; tempNode2 != NULL; tempNode2 = tempNode2->next) {
+			for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
+					blockKIt != graph->blockAdjList[blockK].end(); blockKIt++) {
+//				IDType blockJ = tempNode2->destination;
+				IDType blockJ = blockKIt->blockID;
 
 #ifdef SANITYCHECK
 				if (blockJ <= 0) {
@@ -2357,7 +2401,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 					cout << "ERROR: Invalid node ID for op " << tempOp2 << "\n";
 					return -1;
 				}
-				int retValue = graph->opEdgeExists(nodeTempOp1, nodeTempOp2);
+				int retValue = graph->opEdgeExists(nodeTempOp1, nodeTempOp2, blockI, blockJ);
 				if (retValue == 1) {
 #ifdef GRAPHDEBUG
 					cout << "DEBUG: TRANS-edge: Edge already exists from blockI: " << blockI
@@ -2408,20 +2452,31 @@ int UAFDetector::addTransSTOrMTEdges() {
 					prevNodeI = nodeI;
 
 					// Loop through adjacency list of opI
-					for (HBGraph::adjListNode* currNode = graph->opAdjList[nodeI].head; currNode != NULL; currNode = currNode->next) {
-						//if (opIDMap[currNode->destination].blockID != blockK)
-						IDType opDest = *(nodeIDMap[currNode->destination].opSet.begin());
-						if (opDest <= 0) {
-							cout << "ERROR: Invalid opSet for node " << currNode->destination << "\n";
-							return -1;
-						}
-						if (opIDMap[opDest].blockID != blockK)
-							continue;
-						if (minOpInK == -1 || minOpInK > opDest) {
-							minOpInK = opDest;
+//					for (HBGraph::adjListNode* currNode = graph->opAdjList[nodeI].head; currNode != NULL; currNode = currNode->next) {
+					HBGraph::adjListNode destNode(blockK);
+					std::pair<std::multiset<HBGraph::adjListNode>::iterator, std::multiset<HBGraph::adjListNode>::iterator> ret =
+							graph->opAdjList[nodeI].equal_range(destNode);
+					if (ret.first != ret.second) {
+						for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first; retIt != ret.second; retIt++) {
+							IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
+//						IDType opDest = *(nodeIDMap[currNode->destination].opSet.begin());
+//						if (opDest <= 0) {
+//							cout << "ERROR: Invalid opSet for node " << currNode->destination << "\n";
+//							return -1;
+//						}
+//						if (opIDMap[opDest].blockID != blockK)
+//							continue;
+							if (minOpInK == -1 || minOpInK > opDest) {
+								minOpInK = opDest;
 							// This is to remove multiple edges from opI to different ops in blockK
-							cout << "DEBUG: Removing edge from " << nodeI << " to " << currNode->destination << "\n";
-							graph->removeOpEdge(currNode, nodeI, currNode->destination);
+								cout << "DEBUG: Removing edge from " << nodeI << " to " << retIt->nodeID << "\n";
+								int retValue = graph->removeOpEdge(nodeI, retIt->nodeID);
+								if (retValue == -1) {
+									cout << "ERROR: While removing op edge from " << nodeI << " to " << retIt->nodeID
+										 << "\n";
+									return -1;
+								}
+							}
 						}
 					}
 
@@ -2444,8 +2499,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 						}
 #endif
 					}
-#ifdef GRAPHDEBUGFULL
-					//graph->printGraph();
+#ifdef PRINTGRAPH
+					graph->printGraph();
 #endif
 
 					IDType nodeTempOp = 0;
@@ -2471,6 +2526,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 						prevNodeTempOp = nodeTempOp;
 
 						// Loop through adjacency list of tempOp
+#if 0
 						for (HBGraph::adjListNode* currNode = graph->opAdjList[nodeTempOp].head; currNode != NULL; currNode = currNode->next) {
 							//if (opIDMap[currNode->destination].blockID != blockJ)
 							IDType opDest = *(nodeIDMap[currNode->destination].opSet.begin());
@@ -2480,15 +2536,23 @@ int UAFDetector::addTransSTOrMTEdges() {
 							}
 							if (opIDMap[opDest].blockID != blockJ)
 								continue;
-							if (minOpInJ == -1 || minOpInJ > opDest) {
-								minOpInJ = opDest;
-								// This is to remove multiple edges from tempOp to different ops in blockJ
-								cout << "DEBUG: Removing edge from " << nodeTempOp << " to " << currNode->destination << "\n";
-								graph->removeOpEdge(currNode, nodeTempOp, currNode->destination);
+#endif
+						HBGraph::adjListNode destNode(blockJ);
+						std::pair<std::multiset<HBGraph::adjListNode>::iterator, std::multiset<HBGraph::adjListNode>::iterator> ret =
+								graph->opAdjList[nodeTempOp].equal_range(destNode);
+						if (ret.first != ret.second) {
+							for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first; retIt != ret.second; retIt++) {
+								IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
+								if (minOpInJ == -1 || minOpInJ > opDest) {
+									minOpInJ = opDest;
+									// This is to remove multiple edges from tempOp to different ops in blockJ
+									cout << "DEBUG: Removing edge from " << nodeTempOp << " to " << retIt->nodeID << "\n";
+									graph->removeOpEdge(nodeTempOp, retIt->nodeID);
+								}
 							}
 						}
-#ifdef GRAPHDEBUGFULL
-						//graph->printGraph();
+#ifdef PRINTGRAPH
+						graph->printGraph();
 #endif
 
 						if (minOpInJ > 0) {
@@ -2508,7 +2572,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 								cout << "ERROR: While adding restoration edge from " << nodeTempOp << " to " << nodeMinJ << endl;
 								return -1;
 							}
-							//graph->printGraph();
+							graph->printGraph();
 #endif
 
 							if (opJ == -1 || opJ > minOpInJ)

@@ -11,6 +11,7 @@
 #include <iostream>
 #include <utility>
 #include <vector>
+#include <cassert>
 
 #include <config.h>
 #include <debugconfig.h>
@@ -408,24 +409,31 @@ private:
 
 class HBGraph {
 public:
-	struct adjListNode {
-		IDType destination;
-		struct adjListNode* next;
-		struct adjListNode* prev;
-	};
 
-private:
-	struct adjListType {
-		struct adjListNode* head;
-	};
+	class adjListNode {
+	public:
+		IDType nodeID;
+		IDType blockID;
 
-	struct adjListNode* createNewNode(IDType destination) {
-		struct adjListNode* newNode = new adjListNode;
-		newNode->destination = destination;
-		newNode->next = NULL;
-		newNode->prev = NULL;
-		return newNode;
-	}
+		adjListNode() {
+			nodeID = -1;
+			blockID = -1;
+		}
+
+		adjListNode(IDType block) {
+			nodeID = -1;
+			blockID = block;
+		}
+
+		adjListNode(IDType op, IDType block) {
+			nodeID = op;
+			blockID = block;
+		}
+
+		bool operator < (const adjListNode & param) const {
+			return (this->blockID < param.blockID);
+		}
+	};
 
 public:
 	HBGraph();
@@ -439,8 +447,9 @@ public:
 	IDType totalOps;
 	bool** opAdjMatrix;
 	bool** blockAdjMatrix;
-	struct adjListType* opAdjList;
-	struct adjListType* blockAdjList;
+	std::multiset<adjListNode>* opAdjList;
+	std::multiset<adjListNode>* blockAdjList;
+
 
 	unsigned long long numOfOpEdges;
 	unsigned long long numOfBlockEdges;
@@ -448,11 +457,11 @@ public:
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
 	int addOpEdge(IDType sourceOp, IDType destinationOp);
 	//int addBlockEdge(IDType sourceBlock, IDType destinationBlock);
-	void removeOpEdge(adjListNode* currNode, IDType sourceOp, IDType destinationOp);
+	int removeOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
 
 	// Return 1 if edge exists, 0 if not, -1 if adjMatrix and adjList are out of sync.
 	int blockEdgeExists(IDType sourceBlock, IDType destinationBlock);
-	int opEdgeExists(IDType sourceOp, IDType destinationOp);
+	int opEdgeExists(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
 
 	void printGraph();
 
@@ -462,25 +471,38 @@ private:
 	map<IDType, UAFDetector::setOfOps> nodeIDMap;
 
 	bool blockEdgeExistsinList(IDType source, IDType destination) {
-		struct adjListNode* currNode;
-		currNode = blockAdjList[source].head;
-		while (currNode != NULL) {
-			if (currNode->destination == destination)
-				return true;
-			currNode = currNode->next;
-		}
-		return false;
+		adjListNode destNode(destination);
+		std::multiset<adjListNode>::iterator it = blockAdjList[source].find(destNode);
+		if (it != blockAdjList[source].end()) {
+#ifdef SANITYCHECK
+			assert(it->blockID == destination);
+#endif
+			return true;
+		} else
+			return false;
 	}
 
-	bool opEdgeExistsinList(IDType sourceOp, IDType destinationOp) {
-		struct adjListNode* currNode;
-		currNode = opAdjList[sourceOp].head;
-		while (currNode != NULL) {
-			if (currNode->destination == destinationOp)
-				return true;
-			currNode = currNode->next;
+	bool opEdgeExistsinList(IDType source, IDType destination, IDType sourceBlock=0, IDType destinationBlock=0) {
+		// The arguments are nodes, not ops!
+		if (destinationBlock == 0) {
+			IDType destinationOp = *(nodeIDMap[destination].opSet.begin());
+			destinationBlock = opIDMap[destinationOp].blockID;
 		}
-		return false;
+		adjListNode destNode(destination, destinationBlock);
+		std::pair<std::multiset<adjListNode>::iterator, std::multiset<adjListNode>::iterator>
+			ret = opAdjList[source].equal_range(destNode);
+		if (ret.first != ret.second) {
+			for (std::multiset<adjListNode>::iterator it = ret.first; it != ret.second; it++) {
+#ifdef SANITYCHECK
+				assert(it->blockID == destinationBlock);
+#endif
+				if (it->nodeID == destination)
+					return true;
+			}
+			return false;
+		} else
+			return false;
+
 	}
 };
 
