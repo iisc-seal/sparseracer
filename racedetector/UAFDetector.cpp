@@ -2446,8 +2446,10 @@ int UAFDetector::addTransSTOrMTEdges() {
 					}
 
 					if (prevNodeI != 0) {
-						if (prevNodeI == nodeI)
+						if (prevNodeI == nodeI) {
+							opI = opIDMap[opI].prevOpInBlock;
 							continue;
+						}
 					}
 					prevNodeI = nodeI;
 

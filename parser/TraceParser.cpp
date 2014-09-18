@@ -21,20 +21,21 @@ using namespace std;
  * Takes as argument name of the tracefile
  * Creates regex for a valid operation.
  */
-TraceParser::TraceParser(char* traceFileName, Logger &logger) {
+TraceParser::TraceParser(char* traceFileName, Logger *logger) {
 	traceFile.open(traceFileName, ios_base::in);
 	cout << traceFileName << endl;
 	if (!traceFile.is_open()) {
 		cout << "Cannot open trace file\n";
-		logger.streamObject << "Cannot open trace file "
+		logger->streamObject << "Cannot open trace file "
 							<< traceFileName << endl;
-		logger.writeLog();
+		logger->writeLog();
+//		logger.writeLog();
 	}
 	else {
-		logger.streamObject << "Test string 1";
-		logger.writeLog();
-		logger.streamObject << "Test string 2";
-		logger.writeLog();
+//		logger.streamObject << "Test string 1";
+//		logger.writeLog();
+		logger->streamObject << "Test string 2";
+		logger->writeLog();
 	}
 
 	opCount = 0;
@@ -92,7 +93,7 @@ TraceParser::TraceParser(char* traceFileName, Logger &logger) {
 TraceParser::~TraceParser() {
 }
 
-int TraceParser::parse(UAFDetector &detector, Logger &logger) {
+int TraceParser::parse(UAFDetector &detector, Logger *logger) {
 	string line;
 	boost::regex reg;
 	boost::cmatch matches;
@@ -104,9 +105,9 @@ int TraceParser::parse(UAFDetector &detector, Logger &logger) {
 	catch (boost::regex_error& e) {
 		cout << finalRegEx << " is not a valid regular expression: \""
 			 << e.what() << "\"" << endl;
-		logger.streamObject << finalRegEx << " is not a valid regular expression: \""
+		logger->streamObject << finalRegEx << " is not a valid regular expression: \""
 							<< e.what() << "\"" << endl;
-		logger.writeLog();
+		logger->writeLog();
 		return -1;
 	}
 

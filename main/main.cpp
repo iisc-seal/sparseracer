@@ -14,21 +14,22 @@
 #include <debugconfig.h>
 
 int main(int argc, char* argv[]) {
-	if (argc < 2) {
+	if (argc < 3) {
 		cout << "ERROR: Missing input\n";
 		cout << "Input trace-file name as argument 1\n";
 		return -1;
 	}
 
-	string logFileName = "UAF.log";
+//	string logFileName = "UAF.log";
+	string logFileName = argv[2];
 
 	Logger logger(logFileName);
-	logger.initLog();
+//	logger.initLog();
 
-	TraceParser parser(argv[1], logger);
+	TraceParser parser(argv[1], &logger);
 	UAFDetector detectorObj;
 
-	if (parser.parse(detectorObj, logger) < 0) {
+	if (parser.parse(detectorObj, &logger) < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
 	}

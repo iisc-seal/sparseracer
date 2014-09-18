@@ -11,10 +11,13 @@
 
 Logger::Logger(string fileName) {
 	logFileName = fileName;
-	logFile.open(logFileName.c_str(), std::ofstream::out);
+	logFile.open(logFileName.c_str(), std::ios::out);
 
 	if (!logFile.is_open()) {
 		cout << "ERROR: Cannot open log file " << logFileName << endl;
+	} else {
+		cout << "DOne!";
+		logFile << "Done!\n";
 	}
 }
 
@@ -35,7 +38,7 @@ void Logger::initLog() {
 		cout << "ERROR: Deleting log file : " << logFileName << endl;
 	}
 	else {
-		logFile.open(logFileName.c_str(), std::ofstream::out);
+		logFile.open(logFileName.c_str(), std::ios::out);
 		if (!logFile.is_open())
 			cout << "ERROR: Cannot open log file " << logFileName << endl;
 	}
