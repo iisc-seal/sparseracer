@@ -1,4 +1,0 @@
-Thread 61 has enq op after threadexit
-61 is StorageI/O thread
-
-Removing the spurious enq and the task it enqueues
