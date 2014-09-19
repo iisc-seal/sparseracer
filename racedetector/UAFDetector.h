@@ -385,11 +385,12 @@ public:
 
 	void initGraph(IDType countOfOps, IDType countOfNodes);
 
-	int addEdges(Logger &logger);
+//	int addEdges(Logger &logger);
+	int addEdges();
 
-	IDType findUAFwithoutAlloc(Logger &logger);
+	IDType findUAFwithoutAlloc(Logger *logger);
 
-	IDType findDataRaces(Logger &logger);
+	IDType findDataRaces(Logger *logger);
 
 #ifdef GRAPHDEBUG
 	void printEdges();
@@ -455,7 +456,7 @@ public:
 	unsigned long long numOfBlockEdges;
 
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
-	int addOpEdge(IDType sourceOp, IDType destinationOp);
+	int addOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
 	//int addBlockEdge(IDType sourceBlock, IDType destinationBlock);
 	int removeOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
 

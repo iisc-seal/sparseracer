@@ -20,11 +20,13 @@
  */
 class TraceParser {
 public:
-	TraceParser(char* traceFileName, Logger *logger);
+//	TraceParser(string traceFileName, Logger *logger);
+	TraceParser(string traceFileName);
 	virtual ~TraceParser();
 
 	// checks whether each line from the trace file is a valid operation
-	int parse(UAFDetector &detector, Logger *logger);
+//	int parse(UAFDetector &detector, Logger *logger);
+	int parse(UAFDetector &detector);
 
 
 private:

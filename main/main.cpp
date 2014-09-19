@@ -14,22 +14,30 @@
 #include <debugconfig.h>
 
 int main(int argc, char* argv[]) {
-	if (argc < 3) {
+	if (argc < 2) {
 		cout << "ERROR: Missing input\n";
 		cout << "Input trace-file name as argument 1\n";
 		return -1;
 	}
 
-//	string logFileName = "UAF.log";
-	string logFileName = argv[2];
+	string traceFileName = argv[1];
 
-	Logger logger(logFileName);
-//	logger.initLog();
+	string uafFileName = traceFileName + ".uaf";
+	Logger uafLogger(uafFileName);
+//	uafLogger.initLog();
+	string raceFileName = traceFileName + ".race";
+	Logger raceLogger(raceFileName);
+//	raceLogger.initLog();
 
-	TraceParser parser(argv[1], &logger);
+//	string logFileName = traceFileName + ".log.dummy";
+//	Logger logger(logFileName);
+
+//	TraceParser parser(traceFileName, &logger);
+	TraceParser parser(traceFileName);
 	UAFDetector detectorObj;
 
-	if (parser.parse(detectorObj, &logger) < 0) {
+//	if (parser.parse(detectorObj, &logger) < 0) {
+	if (parser.parse(detectorObj) < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
 	}
@@ -39,13 +47,14 @@ int main(int argc, char* argv[]) {
 #endif
 
     //return 0;
-	if (detectorObj.addEdges(logger) < 0) {
+//	if (detectorObj.addEdges(logger) < 0) {
+	if (detectorObj.addEdges() < 0) {
 		cout << "ERROR while constructing HB Graph\n";
 		return -1;
 	}
 
 	cout << "\nFinding UAF\n";
-	int retfindUAF = detectorObj.findUAFwithoutAlloc(logger);
+	int retfindUAF = detectorObj.findUAFwithoutAlloc(&uafLogger);
 
 	if (retfindUAF == -1) {
 		cout << "ERROR: While finding UAF\n";
@@ -58,7 +67,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef DATARACE
 	cout << "\nFinding data races\n";
-	int retfindRace = detectorObj.findDataRaces(logger);
+	int retfindRace = detectorObj.findDataRaces(&raceLogger);
 
 	if (retfindRace == -1) {
 		cout << "ERROR: While finding Dataraces\n";

@@ -11,13 +11,10 @@
 
 Logger::Logger(string fileName) {
 	logFileName = fileName;
-	logFile.open(logFileName.c_str(), std::ios::out);
+	logFile.open(logFileName.c_str(), std::ios::trunc);
 
 	if (!logFile.is_open()) {
 		cout << "ERROR: Cannot open log file " << logFileName << endl;
-	} else {
-		cout << "DOne!";
-		logFile << "Done!\n";
 	}
 }
 
