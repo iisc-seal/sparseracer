@@ -178,6 +178,19 @@ int HBGraph::removeOpEdge(IDType sourceNode, IDType destinationNode, IDType sour
 	return 0;
 }
 
+int HBGraph::removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator first,
+		std::multiset<HBGraph::adjListNode>::iterator last,
+		IDType sourceNode, IDType destinationBlock) {
+	// Assuming this function is called with valid arguments
+	for (std::multiset<HBGraph::adjListNode>::iterator it = first; it != last; it++) {
+		opAdjMatrix[sourceNode][it->nodeID] = false;
+		numOfOpEdges--;
+	}
+
+	opAdjList[sourceNode].erase(first, last);
+	return 0;
+}
+
 int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sourceBlock, IDType destinationBlock) {
 
 	assert(sourceNode > 0);

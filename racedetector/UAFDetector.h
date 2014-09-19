@@ -459,6 +459,9 @@ public:
 	int addOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
 	//int addBlockEdge(IDType sourceBlock, IDType destinationBlock);
 	int removeOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
+	int removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator first,
+			std::multiset<HBGraph::adjListNode>::iterator last,
+			IDType sourceNode, IDType destinationBlock);
 
 	// Return 1 if edge exists, 0 if not, -1 if adjMatrix and adjList are out of sync.
 	int blockEdgeExists(IDType sourceBlock, IDType destinationBlock);

@@ -2323,7 +2323,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 				while (opI > 0 && opI >= firstOp) {
 					// Find the earliest op in blockK such that there exists edge (opI, op)
-					IDType minOpInK = -1;
+					IDType minOpInK = -1, minNodeInK = -1;
 					opJ = -1;
 
 					nodeI = opIDMap[opI].nodeID;
@@ -2355,6 +2355,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 #endif
 								if (minOpInK == -1 || minOpInK > opDest) {
 									minOpInK = opDest;
+									minNodeInK = retIt->nodeID;
+#if 0
 									// This is to remove multiple edges from opI to different ops in blockK
 									cout << "DEBUG: Removing edge from " << nodeI << " to " << retIt->nodeID << "\n";
 									int retValue = graph->removeOpEdge(nodeI, retIt->nodeID, blockI, blockK);
@@ -2363,24 +2365,29 @@ int UAFDetector::addTransSTOrMTEdges() {
 											 << "\n";
 										return -1;
 									}
+#endif
 								}
 							}
 
+							graph->removeOpEdgesToBlock(ret.first, ret.second, nodeI, blockK);
+
 							if (minOpInK > 0) {
-								IDType nodeMinK = opIDMap[minOpInK].nodeID;
-								if (nodeMinK <= 0) {
+								if (minNodeInK <= 0) {
 									cout << "ERROR: Invalid node ID for op " << minOpInK << "\n";
 									return -1;
 								}
 								// Restore the edge from opI to the earliest op in blockK
-								addEdgeRetValue = graph->addOpEdge(nodeI, nodeMinK);
+								addEdgeRetValue = graph->addOpEdge(nodeI, minNodeInK);
 #ifdef GRAPHDEBUGFULL
 								if (addEdgeRetValue == 1) {
-									cout << "Restored edge from " << nodeI << " to " << nodeMinK << endl;
+									cout << "Restored edge from " << nodeI
+										 << " to " << minNodeInK << "\n";
 								} else if (addEdgeRetValue == 0) {
-									cout << "Did not add restoration edge from " << nodeI << " to " << nodeMinK << endl;
+									cout << "Did not add restoration edge from "
+										 << nodeI << " to " << minNodeInK << "\n";
 								} else {
-									cout << "ERROR: While adding restoration edge from " << nodeI << " to " << nodeMinK << endl;
+									cout << "ERROR: While adding restoration edge from "
+										 << nodeI << " to " << minNodeInK << "\n";
 									return -1;
 								}
 #endif
@@ -2403,6 +2410,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 					if (minOpInK <= 0) {
 						cout << "DEBUG: Did not find any edge from op " << opI
+							 << " (node " << nodeI << ")"
 							 << " to any ops in block " << blockK << "\n";
 						opI = opIDMap[opI].prevOpInBlock;
 						continue;
@@ -2415,7 +2423,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 							tempOp > 0 && tempOp <= blockIDMap[blockK].lastOpInBlock;
 							tempOp = opIDMap[tempOp].nextOpInBlock) {
 						// Find the earliest op in blockJ such that there exists edge (tempOp, op)
-						IDType minOpInJ = -1;
+						IDType minOpInJ = -1, minNodeInJ = -1;
 
 						nodeTempOp = opIDMap[tempOp].nodeID;
 						if (nodeTempOp <= 0) {
@@ -2447,31 +2455,35 @@ int UAFDetector::addTransSTOrMTEdges() {
 #endif
 									if (minOpInJ == -1 || minOpInJ > opDest) {
 										minOpInJ = opDest;
+										minNodeInJ = retIt->nodeID;
+#if 0
 										// This is to remove multiple edges from tempOp to different ops in blockJ
 										cout << "DEBUG: Removing edge from " << nodeTempOp
 											 << " to " << retIt->nodeID << "\n";
 										graph->removeOpEdge(nodeTempOp, retIt->nodeID);
+#endif
 									}
 								}
+
+								graph->removeOpEdgesToBlock(ret.first, ret.second, nodeTempOp, blockJ);
 #ifdef PRINTGRAPH
 								graph->printGraph();
 #endif
 
 								if (minOpInJ > 0) {
-									IDType nodeMinJ = opIDMap[minOpInJ].nodeID;
-									if (nodeMinJ <= 0) {
+									if (minNodeInJ <= 0) {
 										cout << "ERROR: Invalid node ID for op " << minOpInJ << "\n";
 										return -1;
 									}
 									// Restore the edge from tempOp to the earliest op in blockJ
-									addEdgeRetValue = graph->addOpEdge(nodeTempOp, nodeMinJ);
+									addEdgeRetValue = graph->addOpEdge(nodeTempOp, minNodeInJ);
 #ifdef GRAPHDEBUGFULL
 									if (addEdgeRetValue == 1) {
-										cout << "Restored edge from " << nodeTempOp << " to " << nodeMinJ << endl;
+										cout << "Restored edge from " << nodeTempOp << " to " << minNodeInJ << endl;
 									} else if (addEdgeRetValue == 0) {
-										cout << "Did not add restoration edge from " << nodeTempOp << " to " << nodeMinJ << endl;
+										cout << "Did not add restoration edge from " << nodeTempOp << " to " << minNodeInJ << endl;
 									} else {
-										cout << "ERROR: While adding restoration edge from " << nodeTempOp << " to " << nodeMinJ << endl;
+										cout << "ERROR: While adding restoration edge from " << nodeTempOp << " to " << minNodeInJ << endl;
 										return -1;
 									}
 									graph->printGraph();
