@@ -2525,7 +2525,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 0;
 }
 
-IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
+IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
+		Logger *noNestingLogger, Logger *taskLogger, Logger *noTaskLogger) {
 
 	bool flag = false;
 	IDType uafCount = 0;
@@ -2544,7 +2545,6 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 
 		if (allocID == -1) {
 			cout << "DEBUG: Cannot find alloc for free op " << freeID << endl;
-//			continue;
 		} else {
 			IDType nodeAlloc = opIDMap[allocID].nodeID;
 			if (nodeAlloc <= 0) {
@@ -2644,10 +2644,50 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID << ")\n";
 				}
-				logger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
-									 << "\n";
-				logger->writeLog();
+
 				uafCount++;
+
+				allLogger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
+									 << "\n";
+				allLogger->writeLog();
+
+				std::string taskRead = opIDMap[readID].taskID;
+				std::string taskFree = opIDMap[freeID].taskID;
+				if (taskRead.compare("") != 0 && taskFree.compare("") != 0) {
+					taskLogger->streamObject << uafCount << ":\n"
+											 << "read: " << readID << " thread " << opIDMap[readID].threadID
+											 << " task " << taskRead << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					taskLogger->writeLog();
+
+					// It is not sufficient that the task of read is not atomic,
+					// we need the read to happen after the (first) nesting loop.
+					if (!taskIDMap[taskRead].atomic && taskIDMap[taskRead].firstPauseOpID < readID) {
+						nestingLogger->streamObject << uafCount << ":\n"
+												 << "read: " << readID << " thread " << opIDMap[readID].threadID
+												 << " task " << taskRead << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						nestingLogger->writeLog();
+					} else {
+						noNestingLogger->streamObject << uafCount << ":\n"
+												 << "read: " << readID << " thread " << opIDMap[readID].threadID
+												 << " task " << taskRead << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						noNestingLogger->writeLog();
+					}
+
+				} else {
+					noTaskLogger->streamObject << uafCount << ":\n"
+											 << "read: " << readID << " thread " << opIDMap[readID].threadID
+											 << " task " << taskRead << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					noTaskLogger->writeLog();
+				}
+
 				flag = true;
 				continue;
 			} else if (nodeFree == nodeRead) {
@@ -2666,9 +2706,47 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID << ")\n";
 				}
-				logger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
+				allLogger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
-				logger->writeLog();
+				allLogger->writeLog();
+
+				std::string taskRead = opIDMap[readID].taskID;
+				std::string taskFree = opIDMap[freeID].taskID;
+				if (taskRead.compare("") != 0 && taskFree.compare("") != 0) {
+					taskLogger->streamObject << uafCount << ":\n"
+											 << "read: " << readID << " thread " << opIDMap[readID].threadID
+											 << " task " << taskRead << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					taskLogger->writeLog();
+
+					// It is not sufficient that the task of read is not atomic,
+					// we need the read to happen after the (first) nesting loop.
+					if (!taskIDMap[taskRead].atomic && taskIDMap[taskRead].firstPauseOpID < readID) {
+						nestingLogger->streamObject << uafCount << ":\n"
+												 << "read: " << readID << " thread " << opIDMap[readID].threadID
+												 << " task " << taskRead << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						nestingLogger->writeLog();
+					} else {
+						noNestingLogger->streamObject << uafCount << ":\n"
+												 << "read: " << readID << " thread " << opIDMap[readID].threadID
+												 << " task " << taskRead << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						noNestingLogger->writeLog();
+					}
+
+				} else {
+					noTaskLogger->streamObject << uafCount << ":\n"
+											 << "read: " << readID << " thread " << opIDMap[readID].threadID
+											 << " task " << taskRead << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					noTaskLogger->writeLog();
+				}
+
 				uafCount++;
 				flag = true;
 				continue;
@@ -2700,9 +2778,47 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
 				}
-				logger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
+				allLogger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
-				logger->writeLog();
+				allLogger->writeLog();
+
+				std::string taskRead = opIDMap[readID].taskID;
+				std::string taskFree = opIDMap[freeID].taskID;
+				if (taskRead.compare("") != 0 && taskFree.compare("") != 0) {
+					taskLogger->streamObject << uafCount << ":\n"
+											 << "read: " << readID << " thread " << opIDMap[readID].threadID
+											 << " task " << taskRead << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					taskLogger->writeLog();
+
+					// It is not sufficient that the task of read is not atomic,
+					// we need the read to happen after the (first) nesting loop.
+					if (!taskIDMap[taskRead].atomic && taskIDMap[taskRead].firstPauseOpID < readID) {
+						nestingLogger->streamObject << uafCount << ":\n"
+												 << "read: " << readID << " thread " << opIDMap[readID].threadID
+												 << " task " << taskRead << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						nestingLogger->writeLog();
+					} else {
+						noNestingLogger->streamObject << uafCount << ":\n"
+												 << "read: " << readID << " thread " << opIDMap[readID].threadID
+												 << " task " << taskRead << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						noNestingLogger->writeLog();
+					}
+
+				} else {
+					noTaskLogger->streamObject << uafCount << ":\n"
+											 << "read: " << readID << " thread " << opIDMap[readID].threadID
+											 << " task " << taskRead << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					noTaskLogger->writeLog();
+				}
+
 				uafCount++;
 				flag = true;
 				continue;
@@ -2724,9 +2840,47 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
-				logger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
+				allLogger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
-				logger->writeLog();
+				allLogger->writeLog();
+
+				std::string taskWrite = opIDMap[writeID].taskID;
+				std::string taskFree = opIDMap[freeID].taskID;
+				if (taskWrite.compare("") != 0 && taskFree.compare("") != 0) {
+					taskLogger->streamObject << uafCount << ":\n"
+											 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+											 << " task " << taskWrite << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					taskLogger->writeLog();
+
+					// It is not sufficient that the task of read is not atomic,
+					// we need the read to happen after the (first) nesting loop.
+					if (!taskIDMap[taskWrite].atomic && taskIDMap[taskWrite].firstPauseOpID < writeID) {
+						nestingLogger->streamObject << uafCount << ":\n"
+												 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+												 << " task " << taskWrite << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						nestingLogger->writeLog();
+					} else {
+						noNestingLogger->streamObject << uafCount << ":\n"
+												 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+												 << " task " << taskWrite << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						noNestingLogger->writeLog();
+					}
+
+				} else {
+					noTaskLogger->streamObject << uafCount << ":\n"
+											 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+											 << " task " << taskWrite << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					noTaskLogger->writeLog();
+				}
+
 				uafCount++;
 				flag = true;
 				continue;
@@ -2744,9 +2898,47 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
-				logger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
+				allLogger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
-				logger->writeLog();
+				allLogger->writeLog();
+
+				std::string taskWrite = opIDMap[writeID].taskID;
+				std::string taskFree = opIDMap[freeID].taskID;
+				if (taskWrite.compare("") != 0 && taskFree.compare("") != 0) {
+					taskLogger->streamObject << uafCount << ":\n"
+											 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+											 << " task " << taskWrite << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					taskLogger->writeLog();
+
+					// It is not sufficient that the task of read is not atomic,
+					// we need the read to happen after the (first) nesting loop.
+					if (!taskIDMap[taskWrite].atomic && taskIDMap[taskWrite].firstPauseOpID < writeID) {
+						nestingLogger->streamObject << uafCount << ":\n"
+												 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+												 << " task " << taskWrite << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						nestingLogger->writeLog();
+					} else {
+						noNestingLogger->streamObject << uafCount << ":\n"
+												 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+												 << " task " << taskWrite << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						noNestingLogger->writeLog();
+					}
+
+				} else {
+					noTaskLogger->streamObject << uafCount << ":\n"
+											 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+											 << " task " << taskWrite << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					noTaskLogger->writeLog();
+				}
+
 				uafCount++;
 				flag = true;
 				continue;
@@ -2779,9 +2971,47 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
 				}
-				logger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
+				allLogger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
-				logger->writeLog();
+				allLogger->writeLog();
+
+				std::string taskWrite = opIDMap[writeID].taskID;
+				std::string taskFree = opIDMap[freeID].taskID;
+				if (taskWrite.compare("") != 0 && taskFree.compare("") != 0) {
+					taskLogger->streamObject << uafCount << ":\n"
+											 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+											 << " task " << taskWrite << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					taskLogger->writeLog();
+
+					// It is not sufficient that the task of read is not atomic,
+					// we need the read to happen after the (first) nesting loop.
+					if (!taskIDMap[taskWrite].atomic && taskIDMap[taskWrite].firstPauseOpID < writeID) {
+						nestingLogger->streamObject << uafCount << ":\n"
+												 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+												 << " task " << taskWrite << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						nestingLogger->writeLog();
+					} else {
+						noNestingLogger->streamObject << uafCount << ":\n"
+												 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+												 << " task " << taskWrite << "\n"
+												 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+												 << " task " << taskFree << "\n";
+						noNestingLogger->writeLog();
+					}
+
+				} else {
+					noTaskLogger->streamObject << uafCount << ":\n"
+											 << "write: " << writeID << " thread " << opIDMap[writeID].threadID
+											 << " task " << taskWrite << "\n"
+											 << "free: " << freeID << " thread " << opIDMap[freeID].threadID
+											 << " task " << taskFree << "\n";
+					noTaskLogger->writeLog();
+				}
+
 				uafCount++;
 				flag = true;
 				continue;
@@ -2797,7 +3027,8 @@ IDType  UAFDetector::findUAFwithoutAlloc(Logger *logger){
 }
 
 #ifndef ACCESS
-IDType UAFDetector::findDataRaces(Logger *logger){
+IDType UAFDetector::findDataRaces(Logger *allLogger, Logger *nestingLogger,
+		Logger *noNestingLogger, Logger *taskLogger, Logger *noTaskLogger) {
 
 	bool flag = false;
 	IDType raceCount = 0;
@@ -2835,10 +3066,48 @@ IDType UAFDetector::findDataRaces(Logger *logger){
 					cout << "Potential data race between write ops " << *writeIt << " (in task " << opIDMap[*writeIt].taskID
 						 << ") and " << *write2It << " (in task " << opIDMap[*write2It].taskID << ") on address "
 						 << writeAddress1 << endl;
-				logger->streamObject << *writeIt << " " << opIDMap[*writeIt].threadID << " " << *write2It << " " << opIDMap[*write2It].threadID
-									 << "\n";
-				logger->writeLog();
 					raceCount++;
+
+					allLogger->streamObject << *writeIt << " " << opIDMap[*writeIt].threadID << " " << *write2It << " " << opIDMap[*write2It].threadID
+									 << "\n";
+					allLogger->writeLog();
+
+					std::string task1 = opIDMap[*writeIt].taskID;
+					std::string task2 = opIDMap[*write2It].taskID;
+					if (task1.compare("") != 0 && task2.compare("") != 0) {
+						taskLogger->streamObject << raceCount << ":\n"
+												 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+												 << " task " << task1 << "\n"
+												 << "write: " << *write2It << " thread " << opIDMap[*write2It].threadID
+												 << " task " << task2 << "\n";
+						taskLogger->writeLog();
+
+						if ((!taskIDMap[task1].atomic && taskIDMap[task1].firstPauseOpID < *writeIt)
+								|| (!taskIDMap[task2].atomic && taskIDMap[task2].firstPauseOpID < *write2It)) {
+							nestingLogger->streamObject << raceCount << ":\n"
+													 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+													 << " task " << task1 << "\n"
+													 << "write: " << *write2It << " thread " << opIDMap[*write2It].threadID
+													 << " task " << task2 << "\n";
+							nestingLogger->writeLog();
+						} else {
+							noNestingLogger->streamObject << raceCount << ":\n"
+													 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+													 << " task " << task1 << "\n"
+													 << "write: " << *write2It << " thread " << opIDMap[*write2It].threadID
+													 << " task " << task2 << "\n";
+							noNestingLogger->writeLog();
+						}
+
+					} else {
+						noTaskLogger->streamObject << raceCount << ":\n"
+												 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+												 << " task " << task1 << "\n"
+												 << "write: " << *write2It << " thread " << opIDMap[*write2It].threadID
+												 << " task " << task2 << "\n";
+						noTaskLogger->writeLog();
+					}
+
 					flag = true;
 					continue;
 				}
@@ -2866,10 +3135,48 @@ IDType UAFDetector::findDataRaces(Logger *logger){
 					cout << "Potential data race between read op " << *readIt << " (in task " << opIDMap[*readIt].taskID
 						 << ") and write op " << *writeIt << "(in task " << opIDMap[*writeIt].taskID << ") on address "
 						 << readAddress << endl;
-					logger->streamObject << *writeIt << " " << opIDMap[*writeIt].threadID << " " << *readIt << " " << opIDMap[*readIt].threadID
-									 	 << "\n";
-					logger->writeLog();
 					raceCount++;
+
+					allLogger->streamObject << *writeIt << " " << opIDMap[*writeIt].threadID << " " << *readIt << " " << opIDMap[*readIt].threadID
+									 	 << "\n";
+					allLogger->writeLog();
+
+					std::string task1 = opIDMap[*writeIt].taskID;
+					std::string task2 = opIDMap[*readIt].taskID;
+					if (task1.compare("") != 0 && task2.compare("") != 0) {
+						taskLogger->streamObject << raceCount << ":\n"
+												 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+												 << " task " << task1 << "\n"
+												 << "read: " << *readIt << " thread " << opIDMap[*readIt].threadID
+												 << " task " << task2 << "\n";
+						taskLogger->writeLog();
+
+						if ((!taskIDMap[task1].atomic && taskIDMap[task1].firstPauseOpID < *writeIt)
+								|| (!taskIDMap[task2].atomic && taskIDMap[task2].firstPauseOpID < *readIt)) {
+							nestingLogger->streamObject << raceCount << ":\n"
+													 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+													 << " task " << task1 << "\n"
+													 << "read: " << *readIt << " thread " << opIDMap[*readIt].threadID
+													 << " task " << task2 << "\n";
+							nestingLogger->writeLog();
+						} else {
+							noNestingLogger->streamObject << raceCount << ":\n"
+													 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+													 << " task " << task1 << "\n"
+													 << "read: " << *readIt << " thread " << opIDMap[*readIt].threadID
+													 << " task " << task2 << "\n";
+							noNestingLogger->writeLog();
+						}
+
+					} else {
+						noTaskLogger->streamObject << raceCount << ":\n"
+												 << "write: " << *writeIt << " thread " << opIDMap[*writeIt].threadID
+												 << " task " << task1 << "\n"
+												 << "read: " << *readIt << " thread " << opIDMap[*readIt].threadID
+												 << " task " << task2 << "\n";
+						noTaskLogger->writeLog();
+					}
+
 					flag = true;
 					continue;
 				}

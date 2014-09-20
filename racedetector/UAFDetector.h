@@ -388,9 +388,11 @@ public:
 //	int addEdges(Logger &logger);
 	int addEdges();
 
-	IDType findUAFwithoutAlloc(Logger *logger);
+	IDType findUAF(Logger *allLogger, Logger *nestingLogger,
+			Logger *noNestingLogger, Logger *taskLogger, Logger *noTaskLogger);
 
-	IDType findDataRaces(Logger *logger);
+	IDType findDataRaces(Logger *allLogger, Logger *nestingLogger,
+			Logger *noNestingLogger, Logger *taskLogger, Logger *noTaskLogger);
 
 #ifdef GRAPHDEBUG
 	void printEdges();

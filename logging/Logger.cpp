@@ -25,8 +25,9 @@ Logger::~Logger() {
 //void Logger::writeLog(string message) {
 void Logger::writeLog() {
 	string message = streamObject.str();
-	logFile << message << endl;
-	streamObject.flush();
+	logFile << message;
+	streamObject.str("");
+	streamObject.clear();
 }
 
 void Logger::initLog() {
