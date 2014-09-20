@@ -1723,8 +1723,10 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 											cout << "FIFO-NESTED-GEN edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
+#ifdef GRAPHDEBUGFULL
 										} else if (addEdgeRetValue == 0) {
 											cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
 										} else if (addEdgeRetValue == -1) {
 											cout << "ERROR: While adding FIFO-NESTED-GEN edge from " << nodeI << " to " << nodeJ << endl;
 											return -1;
@@ -2157,8 +2159,10 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 										cout << "ENQRESET-ST-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
+#ifdef GRAPHDEBUGFULL
 									} else if (addEdgeRetValue == 0) {
 										cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
 									} else if (addEdgeRetValue == -1) {
 										cout << "ERROR: While adding ENQRESET-ST-2 edge from " << nodeI << " to " << nodeJ << endl;
 										return -1;
@@ -2222,8 +2226,10 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 										cout << "ENQRESET-ST-3 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 	#endif
+#ifdef GRAPHDEBUGFULL
 									} else if (addEdgeRetValue == 0) {
 										cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
 									} else if (addEdgeRetValue == -1) {
 										cout << "ERROR: While adding ENQRESET-ST-3 edge from " << nodeI << " to " << nodeJ << endl;
 										return -1;
