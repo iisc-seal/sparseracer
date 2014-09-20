@@ -2346,29 +2346,21 @@ int UAFDetector::addTransSTOrMTEdges() {
 							graph->opAdjList[nodeI].equal_range(destNode);
 
 					if (ret.first != ret.second) {
-						IDType count = std::distance(ret.first, ret.second);
-						if (count > 1) {
-							for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first; retIt != ret.second; retIt++) {
-								IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
+						IDType count = 0;
+						for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first;
+								retIt != ret.second; retIt++) {
+							count++;
+							IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
 #ifdef EXTRADEBUGINFO
-								cout << "DEBUG: opDest = " << opDest << "\n";
+							cout << "DEBUG: opDest = " << opDest << "\n";
 #endif
-								if (minOpInK == -1 || minOpInK > opDest) {
-									minOpInK = opDest;
-									minNodeInK = retIt->nodeID;
-#if 0
-									// This is to remove multiple edges from opI to different ops in blockK
-									cout << "DEBUG: Removing edge from " << nodeI << " to " << retIt->nodeID << "\n";
-									int retValue = graph->removeOpEdge(nodeI, retIt->nodeID, blockI, blockK);
-									if (retValue == -1) {
-										cout << "ERROR: While removing op edge from " << nodeI << " to " << retIt->nodeID
-											 << "\n";
-										return -1;
-									}
-#endif
-								}
+							if (minOpInK == -1 || minOpInK > opDest) {
+								minOpInK = opDest;
+								minNodeInK = retIt->nodeID;
 							}
+						}
 
+						if (count > 1) {
 							graph->removeOpEdgesToBlock(ret.first, ret.second, nodeI, blockK);
 
 							if (minOpInK > 0) {
@@ -2395,8 +2387,6 @@ int UAFDetector::addTransSTOrMTEdges() {
 #ifdef PRINTGRAPH
 							graph->printGraph();
 #endif
-						} else if (count == 1) {
-							minOpInK = *(nodeIDMap[ret.first->nodeID].opSet.begin());
 						} else if (count < 1) {
 							cout << "ERROR: While finding edges from op " << opI
 								 << " to ops in block " << blockK << "\n";
@@ -2445,26 +2435,21 @@ int UAFDetector::addTransSTOrMTEdges() {
 						std::pair<std::multiset<HBGraph::adjListNode>::iterator, std::multiset<HBGraph::adjListNode>::iterator> ret =
 								graph->opAdjList[nodeTempOp].equal_range(destNode);
 						if (ret.first != ret.second) {
-							IDType count = std::distance(ret.first, ret.second);
-							if (count > 1) {
-								for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first;
+							IDType count = 0;
+							for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first;
 									retIt != ret.second; retIt++) {
-									IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
+								count++;
+								IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
 #ifdef EXTRADEBUGINFO
-									cout << "DEBUG: opDest = " << opDest << "\n";
+								cout << "DEBUG: opDest = " << opDest << "\n";
 #endif
-									if (minOpInJ == -1 || minOpInJ > opDest) {
-										minOpInJ = opDest;
-										minNodeInJ = retIt->nodeID;
-#if 0
-										// This is to remove multiple edges from tempOp to different ops in blockJ
-										cout << "DEBUG: Removing edge from " << nodeTempOp
-											 << " to " << retIt->nodeID << "\n";
-										graph->removeOpEdge(nodeTempOp, retIt->nodeID);
-#endif
-									}
+								if (minOpInJ == -1 || minOpInJ > opDest) {
+									minOpInJ = opDest;
+									minNodeInJ = retIt->nodeID;
 								}
+							}
 
+							if (count > 1) {
 								graph->removeOpEdgesToBlock(ret.first, ret.second, nodeTempOp, blockJ);
 #ifdef PRINTGRAPH
 								graph->printGraph();
@@ -2489,9 +2474,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 									graph->printGraph();
 #endif
 								}
-							} else if (count == 1)
-								minOpInJ = *(nodeIDMap[ret.first->nodeID].opSet.begin());
-							else if (count < 1) {
+							} else if (count < 1) {
 								cout << "ERROR: While finding edges from op " << tempOp
 									 << " to ops in block " << blockJ << "\n";
 								cout << "ERROR: equal_range() gives a non-empty range, "
