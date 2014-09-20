@@ -2706,6 +2706,7 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID << ")\n";
 				}
+				uafCount++;
 				allLogger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
 				allLogger->writeLog();
@@ -2747,7 +2748,6 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					noTaskLogger->writeLog();
 				}
 
-				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2778,6 +2778,7 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
 				}
+				uafCount++;
 				allLogger->streamObject << readID << " " << opIDMap[readID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
 				allLogger->writeLog();
@@ -2819,7 +2820,6 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					noTaskLogger->writeLog();
 				}
 
-				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2840,6 +2840,7 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
+				uafCount++;
 				allLogger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
 				allLogger->writeLog();
@@ -2881,7 +2882,6 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					noTaskLogger->writeLog();
 				}
 
-				uafCount++;
 				flag = true;
 				continue;
 			} else if (nodeFree == nodeWrite) {
@@ -2898,6 +2898,7 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					 << " in task " << opIDMap[freeID].taskID << ")\n";
 				cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 					 << allocSet[allocID].startingAddress << ")\n";
+				uafCount++;
 				allLogger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
 				allLogger->writeLog();
@@ -2939,7 +2940,6 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					noTaskLogger->writeLog();
 				}
 
-				uafCount++;
 				flag = true;
 				continue;
 			}
@@ -2971,6 +2971,7 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
 						 << allocSet[allocID].startingAddress << ")\n";
 				}
+				uafCount++;
 				allLogger->streamObject << writeID << " " << opIDMap[writeID].threadID << " " << freeID << " " << opIDMap[freeID].threadID
 									 << "\n";
 				allLogger->writeLog();
@@ -3012,7 +3013,6 @@ IDType  UAFDetector::findUAF(Logger *allLogger, Logger *nestingLogger,
 					noTaskLogger->writeLog();
 				}
 
-				uafCount++;
 				flag = true;
 				continue;
 			}
