@@ -223,6 +223,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 	else if (sourceBlock == destinationBlock && sourceNode >= destinationNode)
 		return 0;
 
+#if 0
 	// Check if there is an explicit edge in the opAdjMatrix and opAdjList
 	bool edgeExistsInList = opEdgeExistsinList(sourceNode, destinationNode, sourceBlock, destinationBlock);
 	if (opAdjMatrix[sourceNode][destinationNode] == true && edgeExistsInList)
@@ -234,6 +235,10 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 		cout << "ERROR: Op-Edge (" << sourceNode << ", " << destinationNode << ") exists in opAdjList but not in opAdjMatrix\n";
 		return -1;
 	}
+#endif
+
+	if (opAdjMatrix[sourceNode][destinationNode])
+		return 1;
 
 	// Check if the edge is implied transitively
 	int retValue = blockEdgeExists(sourceBlock, destinationBlock);
@@ -273,6 +278,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 				}
 				prevnodej = nodej;
 
+#if 0
 				edgeExistsInList = opEdgeExistsinList(nodei, nodej);
 				if (opAdjMatrix[nodei][nodej] == true && edgeExistsInList)
 					return 1;
@@ -283,6 +289,9 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 					cout << "ERROR: Op-Edge (" << nodei << ", " << nodej << ") exists in opAdjList but not in opAdjMatrix\n";
 					return -1;
 				}
+#endif
+				if (opAdjMatrix[nodei][nodej])
+					return 1;
 
 				j = opIDMap[j].nextOpInBlock;
 			}
@@ -303,6 +312,7 @@ int HBGraph::blockEdgeExists(IDType sourceBlock, IDType destinationBlock) {
 	assert(sourceBlock != destinationBlock);
 	assert(blockAdjMatrix[sourceBlock][destinationBlock] == true || blockAdjMatrix[sourceBlock][destinationBlock] == false);
 
+#if 0
 	bool edgeExistsInList = blockEdgeExistsinList(sourceBlock, destinationBlock);
 	if (blockAdjMatrix[sourceBlock][destinationBlock] == true && edgeExistsInList)
 		return 1;
@@ -313,7 +323,10 @@ int HBGraph::blockEdgeExists(IDType sourceBlock, IDType destinationBlock) {
 		cout << "ERROR: Block-Edge (" << sourceBlock << ", " << destinationBlock << ") exists in blockAdjList but not in blockAdjMatrix\n";
 		return -1;
 	}
+#endif
 
+	if (blockAdjMatrix[sourceBlock][destinationBlock])
+		return 1;
 	return 0;
 }
 
