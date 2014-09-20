@@ -2571,7 +2571,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 						addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
 						if (addEdgeRetValue == 1) {
 							flag = true;
-#ifdef SANITYCHECK
+#ifdef GRAPHDEBUG
 							cout << "TRANS-ST/MT Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
 								 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
 #endif
