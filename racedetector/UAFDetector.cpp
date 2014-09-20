@@ -14,6 +14,7 @@
 using namespace std;
 
 #define NILCallback "0x0"
+typedef std::multiset<HBGraph::adjListNode>::iterator nodeIterator;
 
 UAFDetector::UAFDetector()
 	:
@@ -163,8 +164,9 @@ int UAFDetector::addEdges() {
 	graph->printGraph();
 #endif
 
-	cout << "Total op edges = " << graph->numOfOpEdges << endl;
-	cout << "Total block edges = " << graph->numOfBlockEdges << endl;
+	cout << "Total op edges = " << graph->numOfOpEdges << "\n";
+	cout << "Total block edges = " << graph->numOfBlockEdges << "\n";
+	cout << "Total op edges removed = " << graph->numOfOpEdgesRemoved << "\n";
 	return 0;
 }
 
@@ -640,10 +642,8 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 					cout << "DEBUG: Skipping FIFO-ATOMIC edge for task " << it->first << "\n";
 #endif
 				} else {
-//					for (HBGraph::adjListNode* currNode = graph->blockAdjList[enqOpBlock].head; currNode != NULL; currNode = currNode->next) {
 					for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[enqOpBlock].begin();
 							blockIt != graph->blockAdjList[enqOpBlock].end(); blockIt++) {
-//						IDType tempBlock = currNode->destination;
 						IDType tempBlock = blockIt->blockID;
 						if (tempBlock <= 0) {
 #ifdef GRAPHDEBUGFULL
@@ -652,7 +652,8 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 							continue;
 						}
 
-						for (set<IDType>::iterator enqIt = blockIDMap[tempBlock].enqSet.begin(); enqIt != blockIDMap[tempBlock].enqSet.end(); enqIt++) {
+						for (set<IDType>::iterator enqIt = blockIDMap[tempBlock].enqSet.begin();
+								enqIt != blockIDMap[tempBlock].enqSet.end(); enqIt++) {
 							IDType tempenqOp = *enqIt;
 
 							// If we are looking at enqs within the same block,
@@ -2446,19 +2447,19 @@ int UAFDetector::addTransSTOrMTEdges() {
 								}
 								// Restore the edge from opI to the earliest op in blockK
 								addEdgeRetValue = graph->addOpEdge(nodeI, minNodeInK);
-#ifdef GRAPHDEBUGFULL
 								if (addEdgeRetValue == 1) {
+#ifdef GRAPHDEBUGFULL
 									cout << "Restored edge from " << nodeI
 										 << " to " << minNodeInK << "\n";
 								} else if (addEdgeRetValue == 0) {
 									cout << "Did not add restoration edge from "
 										 << nodeI << " to " << minNodeInK << "\n";
+#endif
 								} else {
 									cout << "ERROR: While adding restoration edge from "
 										 << nodeI << " to " << minNodeInK << "\n";
 									return -1;
 								}
-#endif
 							}
 #ifdef PRINTGRAPH
 							graph->printGraph();
@@ -2540,17 +2541,16 @@ int UAFDetector::addTransSTOrMTEdges() {
 									}
 									// Restore the edge from tempOp to the earliest op in blockJ
 									addEdgeRetValue = graph->addOpEdge(nodeTempOp, minNodeInJ);
-#ifdef GRAPHDEBUGFULL
 									if (addEdgeRetValue == 1) {
+#ifdef GRAPHDEBUGFULL
 										cout << "Restored edge from " << nodeTempOp << " to " << minNodeInJ << endl;
 									} else if (addEdgeRetValue == 0) {
 										cout << "Did not add restoration edge from " << nodeTempOp << " to " << minNodeInJ << endl;
+#endif
 									} else {
 										cout << "ERROR: While adding restoration edge from " << nodeTempOp << " to " << minNodeInJ << endl;
 										return -1;
 									}
-									graph->printGraph();
-#endif
 								}
 							} else if (count < 1) {
 								cout << "ERROR: While finding edges from op " << tempOp
@@ -3216,7 +3216,7 @@ IDType UAFDetector::findDataRaces(Logger *allLogger, Logger *nestingLogger,
 				if (graph->opEdgeExists(nodeWrite, nodeRead) == 0 && graph->opEdgeExists(nodeRead, nodeWrite) == 0) {
 					cout << "Potential data race between read op " << *readIt << " (in task " << opIDMap[*readIt].taskID
 						 << ") and write op " << *writeIt << "(in task " << opIDMap[*writeIt].taskID << ") on address "
-						 << readAddress << endl;
+						 << readAddress << "\n";
 					raceCount++;
 
 					allLogger->streamObject << *writeIt << " " << opIDMap[*writeIt].threadID << " " << *readIt << " " << opIDMap[*readIt].threadID

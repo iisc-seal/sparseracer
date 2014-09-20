@@ -456,6 +456,7 @@ public:
 
 	unsigned long long numOfOpEdges;
 	unsigned long long numOfBlockEdges;
+	unsigned long long numOfOpEdgesRemoved;
 
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
 	int addOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);

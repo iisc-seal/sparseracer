@@ -11,12 +11,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+typedef std::multiset<HBGraph::adjListNode>::iterator nodeIterator;
 
 HBGraph::HBGraph(){
 	totalBlocks = 0;
 	totalOps = 0;
 	numOfOpEdges = 0;
 	numOfBlockEdges = 0;
+	numOfOpEdgesRemoved = 0;
 	opIDMap = map<IDType, UAFDetector::opDetails>();
 	blockIDMap = map<IDType, UAFDetector::blockDetails>();
 	nodeIDMap = map<IDType, UAFDetector::setOfOps>();
@@ -36,6 +38,7 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks,
 
 	numOfOpEdges = 0;
 	numOfBlockEdges = 0;
+	numOfOpEdgesRemoved = 0;
 
 	opIDMap = opMap;
 	blockIDMap = blockMap;
@@ -175,6 +178,7 @@ int HBGraph::removeOpEdge(IDType sourceNode, IDType destinationNode, IDType sour
 
 	opAdjMatrix[sourceNode][destinationNode] = false;
 	numOfOpEdges--;
+	numOfOpEdgesRemoved++;
 	return 0;
 }
 
@@ -185,6 +189,7 @@ int HBGraph::removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator 
 	for (std::multiset<HBGraph::adjListNode>::iterator it = first; it != last; it++) {
 		opAdjMatrix[sourceNode][it->nodeID] = false;
 		numOfOpEdges--;
+		numOfOpEdgesRemoved++;
 	}
 
 	opAdjList[sourceNode].erase(first, last);
@@ -197,6 +202,9 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 	assert(destinationNode > 0);
 	assert(sourceNode != destinationNode);
 	assert(opAdjMatrix[sourceNode][destinationNode] == true || opAdjMatrix[sourceNode][destinationNode] == false);
+
+	if (opAdjMatrix[sourceNode][destinationNode])
+		return 1;
 
 	IDType sourceOp = *(nodeIDMap[sourceNode].opSet.begin());
 	if (sourceOp <= 0) {
@@ -223,23 +231,6 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 	else if (sourceBlock == destinationBlock && sourceNode >= destinationNode)
 		return 0;
 
-#if 0
-	// Check if there is an explicit edge in the opAdjMatrix and opAdjList
-	bool edgeExistsInList = opEdgeExistsinList(sourceNode, destinationNode, sourceBlock, destinationBlock);
-	if (opAdjMatrix[sourceNode][destinationNode] == true && edgeExistsInList)
-		return 1;
-	else if (opAdjMatrix[sourceNode][destinationNode] == true && !edgeExistsInList) {
-		cout << "ERROR: Op-Edge (" << sourceNode << ", " << destinationNode << ") exists in opAdjMatrix but not in opAdjList\n";
-		return -1;
-	} else if (opAdjMatrix[sourceNode][destinationNode] == false && edgeExistsInList) {
-		cout << "ERROR: Op-Edge (" << sourceNode << ", " << destinationNode << ") exists in opAdjList but not in opAdjMatrix\n";
-		return -1;
-	}
-#endif
-
-	if (opAdjMatrix[sourceNode][destinationNode])
-		return 1;
-
 	// Check if the edge is implied transitively
 	int retValue = blockEdgeExists(sourceBlock, destinationBlock);
 	if (retValue == 0)
@@ -247,6 +238,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 	else if (retValue == 1) {
 		IDType i = blockIDMap[sourceBlock].lastOpInBlock;
 		IDType nodei = 0, prevnodei = 0;
+		IDType prevminNode = -1;
 		while (i > 0 && i >= sourceOp) {
 			nodei = opIDMap[i].nodeID;
 			if (nodei <= 0) {
@@ -261,40 +253,57 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 			}
 			prevnodei = nodei;
 
-			IDType j = blockIDMap[destinationBlock].firstOpInBlock;
-			IDType nodej = 0, prevnodej = 0;
-			while (j > 0 && j <= destinationOp) {
-
-				nodej = opIDMap[j].nodeID;
-				if (nodej <= 0) {
-					cout << "ERROR: Invalid node ID for op " << j << "\n";
-					return -1;
-				}
-				if (prevnodej != 0) {
-					if (prevnodej == nodej) {
-						j = opIDMap[j].nextOpInBlock;
-						continue;
+			HBGraph::adjListNode tempNode(destinationBlock);
+			std::pair<nodeIterator, nodeIterator> ret = opAdjList[nodei].equal_range(destinationBlock);
+			if (ret.first != ret.second) {
+				IDType count = 0;
+				IDType minNode = -1;
+				for (nodeIterator retIt = ret.first; retIt != ret.second; retIt++) {
+					if (minNode == -1 || minNode < retIt->nodeID) {
+						minNode = retIt->nodeID;
+						count++;
 					}
 				}
-				prevnodej = nodej;
 
-#if 0
-				edgeExistsInList = opEdgeExistsinList(nodei, nodej);
-				if (opAdjMatrix[nodei][nodej] == true && edgeExistsInList)
-					return 1;
-				else if (opAdjMatrix[nodei][nodej] == true && !edgeExistsInList) {
-					cout << "ERROR: Op-Edge (" << nodei << ", " << nodej << ") exists in opAdjMatrix but not in opAdjList\n";
-					return -1;
-				} else if (opAdjMatrix[nodei][nodej] == false && edgeExistsInList) {
-					cout << "ERROR: Op-Edge (" << nodei << ", " << nodej << ") exists in opAdjList but not in opAdjMatrix\n";
+				if (count > 1) {
+					removeOpEdgesToBlock(ret.first, ret.second, nodei, destinationBlock);
+					if (minNode > 0) {
+						int addEdgeRetValue = addOpEdge(nodei, minNode);
+						if (addEdgeRetValue == -1) {
+							cout << "ERROR: While adding restoration edge from "
+								 << nodei << " to " << minNode << "\n";
+							return -1;
+						}
+					}
+				} else if (count == 1) {
+					if (minNode < destinationNode)
+						return 1;
+				} else if (count < 1) {
+					cout << "ERROR: While finding edges from node " << nodei
+						 << " to nodes in block " << destinationBlock << "\n";
+					cout << "ERROR: equal_range() gives a non-empty range, but count < 1\n";
 					return -1;
 				}
-#endif
-				if (opAdjMatrix[nodei][nodej])
-					return 1;
 
-				j = opIDMap[j].nextOpInBlock;
+				if (prevnodei != 0 && prevminNode != -1) {
+					if (minNode != -1 && prevminNode > minNode) {
+						int removeEdgeRetValue =
+								removeOpEdge(prevnodei, prevminNode, sourceBlock, destinationBlock);
+						if (removeEdgeRetValue == -1) {
+							cout << "ERROR: While removing edge from node "
+								 << prevnodei << " to " << prevminNode << "\n";
+							return -1;
+						}
+					}
+
+					if (minNode < destinationNode)
+						return 1;
+
+					prevnodei = nodei;
+					prevminNode = minNode;
+				}
 			}
+
 			i = opIDMap[i].prevOpInBlock;
 		}
 
@@ -311,19 +320,6 @@ int HBGraph::blockEdgeExists(IDType sourceBlock, IDType destinationBlock) {
 	assert(destinationBlock > 0);
 	assert(sourceBlock != destinationBlock);
 	assert(blockAdjMatrix[sourceBlock][destinationBlock] == true || blockAdjMatrix[sourceBlock][destinationBlock] == false);
-
-#if 0
-	bool edgeExistsInList = blockEdgeExistsinList(sourceBlock, destinationBlock);
-	if (blockAdjMatrix[sourceBlock][destinationBlock] == true && edgeExistsInList)
-		return 1;
-	else if (blockAdjMatrix[sourceBlock][destinationBlock] == true && !edgeExistsInList) {
-		cout << "ERROR: Block-Edge (" << sourceBlock << ", " << destinationBlock << ") exists in blockAdjMatrix but not in blockAdjList\n";
-		return -1;
-	} else if (blockAdjMatrix[sourceBlock][destinationBlock] == false && edgeExistsInList) {
-		cout << "ERROR: Block-Edge (" << sourceBlock << ", " << destinationBlock << ") exists in blockAdjList but not in blockAdjMatrix\n";
-		return -1;
-	}
-#endif
 
 	if (blockAdjMatrix[sourceBlock][destinationBlock])
 		return 1;
