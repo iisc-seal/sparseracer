@@ -22,33 +22,9 @@ int main(int argc, char* argv[]) {
 
 	string traceFileName = argv[1];
 
-	string uafFileName = traceFileName + ".uaf.all";
-	Logger uafAllLogger(uafFileName);
-	string raceFileName = traceFileName + ".race.all";
-	Logger raceAllLogger(raceFileName);
-
-	uafFileName = traceFileName + ".uaf.withnesting";
-	Logger uafNestingLogger(uafFileName);
-	raceFileName = traceFileName + ".race.withnesting";
-	Logger raceNestingLogger(raceFileName);
-
-	uafFileName = traceFileName + ".uaf.withoutnesting";
-	Logger uafNoNestingLogger(uafFileName);
-	raceFileName = traceFileName + ".race.withoutnesting";
-	Logger raceNoNestingLogger(raceFileName);
-
-	uafFileName = traceFileName + ".uaf.withtask";
-	Logger uafTaskLogger(uafFileName);
-	raceFileName = traceFileName + ".race.withtask";
-	Logger raceTaskLogger(raceFileName);
-
-	uafFileName = traceFileName + ".uaf.withouttask";
-	Logger uafNoTaskLogger(uafFileName);
-	raceFileName = traceFileName + ".race.withouttask";
-	Logger raceNoTaskLogger(raceFileName);
-
 	TraceParser parser(traceFileName);
 	UAFDetector detectorObj;
+	detectorObj.initLog(traceFileName);
 
 	if (parser.parse(detectorObj) < 0) {
 		cout << "ERROR while parsing the trace\n";
@@ -66,9 +42,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	cout << "\nFinding UAF\n";
-	int retfindUAF = detectorObj.findUAF(&uafAllLogger,
-			&uafNestingLogger, &uafNoNestingLogger, &uafTaskLogger,
-			&uafNoTaskLogger);
+	int retfindUAF = detectorObj.findUAF();
 
 	if (retfindUAF == -1) {
 		cout << "ERROR: While finding UAF\n";
@@ -81,9 +55,7 @@ int main(int argc, char* argv[]) {
 
 #ifdef DATARACE
 	cout << "\nFinding data races\n";
-	int retfindRace = detectorObj.findDataRaces(&raceAllLogger,
-			&raceNestingLogger, &raceNoNestingLogger, &raceTaskLogger,
-			&raceNoTaskLogger);
+	int retfindRace = detectorObj.findDataRaces();
 
 	if (retfindRace == -1) {
 		cout << "ERROR: While finding Dataraces\n";

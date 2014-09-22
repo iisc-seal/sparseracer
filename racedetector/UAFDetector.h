@@ -25,6 +25,7 @@ class HBGraph;
 class UAFDetector {
 public:
 	UAFDetector();
+
 	virtual ~UAFDetector();
 	void ERRLOG(std::string error) {
 		cout << error << endl;
@@ -388,11 +389,11 @@ public:
 //	int addEdges(Logger &logger);
 	int addEdges();
 
-	IDType findUAF(Logger *allLogger, Logger *nestingLogger,
-			Logger *noNestingLogger, Logger *taskLogger, Logger *noTaskLogger);
+	IDType findUAF();
 
-	IDType findDataRaces(Logger *allLogger, Logger *nestingLogger,
-			Logger *noNestingLogger, Logger *taskLogger, Logger *noTaskLogger);
+	IDType findDataRaces();
+
+	void initLog(std::string traceFileName);
 
 #ifdef GRAPHDEBUG
 	void printEdges();
@@ -408,6 +409,23 @@ private:
 	int add_FifoNested_1_2_Gen_EnqResetST_1_Edges();
 	int add_EnqReset_ST_2_3_Edges();
 	int addTransSTOrMTEdges();
+
+	unsigned long long uafCount, raceCount;
+
+	Logger uafAllLogger, raceAllLogger;
+	Logger uafNestingLogger, raceNestingLogger;
+	Logger uafNoNestingLogger, raceNoNestingLogger;
+	Logger uafTaskLogger, raceTaskLogger;
+	Logger uafNoTaskLogger, raceNoTaskLogger;
+
+	void log(IDType op1ID, IDType op2ID, std::string op1Type,
+			std::string op2Type, std::string raceType);
+
+	void logForLockSetAnalysis(IDType accessOpID, IDType freeOpID,
+			std::string raceType);
+
+	void logOtherInfo(IDType op1ID, IDType op2ID,
+			std::string op1Type, std::string op2Type, std::string raceType);
 };
 
 class HBGraph {

@@ -9,13 +9,17 @@
 #include <cstdio>
 #include <iostream>
 
-Logger::Logger(string fileName) {
+void Logger::init (string fileName) {
 	logFileName = fileName;
 	logFile.open(logFileName.c_str(), std::ios::trunc);
 
 	if (!logFile.is_open()) {
 		cout << "ERROR: Cannot open log file " << logFileName << endl;
 	}
+}
+
+Logger::Logger() {
+
 }
 
 Logger::~Logger() {
