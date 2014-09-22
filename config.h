@@ -24,6 +24,9 @@
 // To find data races also
  #define DATARACE
 
+// To find unique races
+// #define UNIQUERACE
+
 // To use extra rules
 // #define EXTRARULES
 

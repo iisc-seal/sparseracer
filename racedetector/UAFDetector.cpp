@@ -2609,9 +2609,13 @@ IDType  UAFDetector::findUAF() {
 
 	// Loop through freeIDMap, for each free, find use that no HB edge
 
+#ifdef UNIQUERACE
 	bool raceForFree;
+#endif
 	for (map<IDType, freeOpDetails>::iterator freeIt = freeIDMap.begin(); freeIt != freeIDMap.end(); freeIt++) {
+#ifdef UNIQUERACE
 		raceForFree = false;
+#endif
 		IDType freeID = freeIt->first;
 		IDType allocID = freeIt->second.allocOpID;
 
@@ -2654,9 +2658,12 @@ IDType  UAFDetector::findUAF() {
 				log(readID, freeID, "read", "free", "uaf");
 
 				flag = true;
+#ifdef UNIQUERACE
 				raceForFree = true;
 				break;
-//				continue;
+#else
+				continue;
+#endif
 			} else if (nodeFree == nodeRead) {
 #ifdef RACEDEBUG
 				cout << "DEBUG: Free op " << freeID << " and read op " << readID << " in the same node, but read before free\n";
@@ -2675,9 +2682,12 @@ IDType  UAFDetector::findUAF() {
 				}
 				log(readID, freeID, "read", "free", "uaf");
 				flag = true;
+#ifdef UNIQUERACE
 				raceForFree = true;
 				break;
-//				continue;
+#else
+				continue;
+#endif
 			}
 
 			if (graph->opEdgeExists(nodeRead, nodeFree) == 0) {
@@ -2710,14 +2720,19 @@ IDType  UAFDetector::findUAF() {
 				log(readID, freeID, "read", "free", "uaf");
 
 				flag = true;
+#ifdef UNIQUERACE
 				raceForFree = true;
 				break;
-//				continue;
+#else
+				continue;
+#endif
 			}
 		}
 
+#ifdef UNIQUERACE
 		if (raceForFree)
 			continue;
+#endif
 
 		for (set<IDType>::iterator writeIt = freeIt->second.writeOps.begin(); writeIt != freeIt->second.writeOps.end(); writeIt++) {
 			IDType writeID = *writeIt;
@@ -2738,9 +2753,12 @@ IDType  UAFDetector::findUAF() {
 				log(writeID, freeID, "read", "free", "uaf");
 
 				flag = true;
+#ifdef UNIQUERACE
 				raceForFree = true;
 				break;
-//				continue;
+#else
+				continue;
+#endif
 			} else if (nodeFree == nodeWrite) {
 #ifdef RACEDEBUG
 				cout << "DEBUG: Free op " << freeID << " and write op " << writeID << " in the same node, but write before free\n";
@@ -2759,8 +2777,12 @@ IDType  UAFDetector::findUAF() {
 				log(writeID, freeID, "read", "free", "uaf");
 
 				flag = true;
+#ifdef UNIQUERACE
 				raceForFree = true;
-//				continue;
+				break;
+#else
+				continue;
+#endif
 			}
 
 			if (graph->opEdgeExists(nodeWrite, nodeFree) == 0) {
@@ -2794,9 +2816,12 @@ IDType  UAFDetector::findUAF() {
 				log(writeID, freeID, "read", "free", "uaf");
 
 				flag = true;
+#ifdef UNIQUERACE
 				raceForFree = true;
 				break;
-//				continue;
+#else
+				continue;
+#endif
 			}
 		}
 	}
@@ -2812,9 +2837,13 @@ IDType UAFDetector::findDataRaces() {
 
 	bool flag = false;
 
+#ifdef UNIQUERACE
 	bool raceForAlloc;
+#endif
 	for (map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
+#ifdef UNIQUERACE
 		raceForAlloc = false;
+#endif
 		for (set<IDType>::iterator writeIt = allocIt->second.writeOps.begin(); writeIt != allocIt->second.writeOps.end(); writeIt++) {
 
 			string writeAddress1 = writeSet[*writeIt].startingAddress;
@@ -2851,14 +2880,19 @@ IDType UAFDetector::findDataRaces() {
 					log(*writeIt, *write2It, "write", "write", "race");
 
 					flag = true;
+#ifdef UNIQUERACE
 					raceForAlloc = true;
-//					continue;
 					break;
+#else
+					continue;
+#endif
 				}
 			}
 
+#ifdef UNIQUERACE
 			if (raceForAlloc)
 				break;
+#endif
 
 			// write-read / read-write races
 			for (set<IDType>::iterator readIt = allocIt->second.readOps.begin(); readIt != allocIt->second.readOps.end(); readIt++) {
@@ -2886,7 +2920,12 @@ IDType UAFDetector::findDataRaces() {
 					log(*readIt, *writeIt, "read", "write", "race");
 
 					flag = true;
+#ifdef UNIQUERACE
+					raceForAlloc = true;
+					break;
+#else
 					continue;
+#endif
 				}
 			}
 		}
