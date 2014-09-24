@@ -3046,8 +3046,8 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		std::string tempTaskID = "";
 
 		// op1
-		enqPathLogger->streamObject << "OP: " << op1ID << " " << op1ThreadID
-				<< "\n";
+		enqPathLogger->streamObject << "OP: " << op1ID << " " << op1TaskID
+				<< " " << op1ThreadID << "\n";
 		enqPathLogger->writeLog();
 
 		enqID = taskIDMap[op1TaskID].enqOpID;
@@ -3076,8 +3076,8 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		}
 
 		// op2
-		enqPathLogger->streamObject << "OP: " << op2ID << " " << op2ThreadID
-				<< "\n";
+		enqPathLogger->streamObject << "OP: " << op2ID << " " << op2TaskID
+				<< " " << op2ThreadID << "\n";
 		enqPathLogger->writeLog();
 
 		enqID = taskIDMap[op2TaskID].enqOpID;
