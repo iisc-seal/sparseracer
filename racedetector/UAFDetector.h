@@ -417,6 +417,7 @@ private:
 	Logger uafNoNestingLogger, raceNoNestingLogger;
 	Logger uafTaskLogger, raceTaskLogger;
 	Logger uafNoTaskLogger, raceNoTaskLogger;
+	Logger uafEnqPathLogger;
 
 	void log(IDType op1ID, IDType op2ID, std::string op1Type,
 			std::string op2Type, std::string raceType);
