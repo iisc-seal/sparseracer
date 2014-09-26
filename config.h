@@ -2,7 +2,7 @@
 // #define ACCESS
 
 // To use heuristics that prevent false positives
-// #define ADDITIONS
+ #define ADDITIONS
 
 // To process locks in the trace
 // #define LOCKS

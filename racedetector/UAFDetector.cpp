@@ -2609,6 +2609,8 @@ IDType  UAFDetector::findUAF() {
 
 	// Loop through freeIDMap, for each free, find use that no HB edge
 
+	IDType falsePositives = 0;
+
 #ifdef UNIQUERACE
 	bool raceForFree;
 #endif
@@ -2618,6 +2620,7 @@ IDType  UAFDetector::findUAF() {
 #endif
 		IDType freeID = freeIt->first;
 		IDType allocID = freeIt->second.allocOpID;
+		IDType nodeAlloc = -1;
 
 		IDType nodeFree = opIDMap[freeID].nodeID;
 		if (nodeFree <= 0) {
@@ -2630,7 +2633,7 @@ IDType  UAFDetector::findUAF() {
 			cout << "DEBUG: Cannot find alloc for free op " << freeID << endl;
 #endif
 		} else {
-			IDType nodeAlloc = opIDMap[allocID].nodeID;
+			nodeAlloc = opIDMap[allocID].nodeID;
 			if (nodeAlloc <= 0) {
 				cout << "ERROR: Invalid node ID for op " << allocID << "\n";
 				return -1;
@@ -2698,14 +2701,20 @@ IDType  UAFDetector::findUAF() {
 					// if there is an edge from alloc to read (alloc happens before read), and the alloc is in the same task as the read and the task is atomic, this is a false positive.
 					// This is true only if free is in the same thread as alloc and read.
 					bool edgeExists = false;
-					if (nodeAlloc == nodeRead && allocID < accessID)
+					if (nodeAlloc == nodeRead && allocID < readID)
 						edgeExists = true;
-					else if (nodeAlloc != nodeRead && graph->edgeExists(nodeAlloc, nodeRead))
+					else if (nodeAlloc != nodeRead && graph->opEdgeExists(nodeAlloc, nodeRead))
 						edgeExists = true;
 					if (edgeExists &&
 							opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
-							&& taskIDMap[opIDMap[allocID].taskID].atomic && opIDMap[freeID].threadID == opIDMap[readID].threadID)
-						continue;
+							&& taskIDMap[opIDMap[allocID].taskID].atomic) {
+						if (opIDMap[freeID].threadID == opIDMap[readID].threadID) {
+							falsePositives++;
+							continue;
+						} else {
+							// May be we should categorize these separately. Easy to reproduce
+						}
+					}
 				}
 #endif
 				cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
@@ -2793,14 +2802,20 @@ IDType  UAFDetector::findUAF() {
 					// if there is an edge from alloc to write (alloc happens before write), and the alloc is in the same task as the write and the task is atomic, this is a false positive.
 					// This is true only if free is in the same thwrite as alloc and write.
 					bool edgeExists = false;
-					if (nodeAlloc == nodeWrite && allocID < accessID)
+					if (nodeAlloc == nodeWrite && allocID < writeID)
 						edgeExists = true;
-					else if (nodeAlloc != nodeWrite && graph->edgeExists(nodeAlloc, nodeWrite))
+					else if (nodeAlloc != nodeWrite && graph->opEdgeExists(nodeAlloc, nodeWrite))
 						edgeExists = true;
 					if (edgeExists &&
 							opIDMap[allocID].taskID.compare(opIDMap[writeID].taskID) == 0
-							&& taskIDMap[opIDMap[allocID].taskID].atomic && opIDMap[freeID].threadID == opIDMap[writeID].threadID)
-						continue;
+							&& taskIDMap[opIDMap[allocID].taskID].atomic) {
+						if (opIDMap[freeID].threadID == opIDMap[writeID].threadID) {
+							falsePositives++;
+							continue;
+						} else {
+
+						}
+					}
 				}
 #endif
 
@@ -2826,9 +2841,10 @@ IDType  UAFDetector::findUAF() {
 		}
 	}
 
-	if (flag)
+	if (flag) {
+		cout << "OUTPUT: False positives = " << falsePositives << "\n";
 		return uafCount;
-	else
+	} else
 		return 0;
 }
 
