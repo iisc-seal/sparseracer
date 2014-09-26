@@ -2987,6 +2987,9 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		noNestingLogger = &uafNoNestingLogger;
 		noTaskLogger = &uafNoTaskLogger;
 		enqPathLogger = &uafEnqPathLogger;
+
+		enqPathLogger->streamObject << "\nUAF " << uafCount << ":\n";
+		enqPathLogger->writeLog();
 	} else {
 		raceCount++;
 
@@ -2996,6 +2999,9 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		noNestingLogger = &raceNoNestingLogger;
 		noTaskLogger = &raceNoTaskLogger;
 		enqPathLogger = &raceEnqPathLogger;
+
+		enqPathLogger->streamObject << "\nRace " << raceCount << ":\n";
+		enqPathLogger->writeLog();
 	}
 
 	IDType op1ThreadID = opIDMap[op1ID].threadID;
@@ -3006,6 +3012,81 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	allLogger->streamObject << op1ID << " " << op1ThreadID
 			<< " " << op2ID << " " << op2ThreadID << "\n";
 	allLogger->writeLog();
+
+	// Finding the enq path
+	IDType enqID, threadID = -1;
+	std::string tempTaskID = "";
+
+	// op1
+	enqPathLogger->streamObject << "OP: " << op1ID << " " << op1TaskID
+			<< " " << op1ThreadID << "\n";
+	enqPathLogger->writeLog();
+
+	enqID = taskIDMap[op1TaskID].enqOpID;
+	if (enqID != -1) {
+		tempTaskID = opIDMap[enqID].taskID;
+		threadID = opIDMap[enqID].threadID;
+		enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
+			<< " " << threadID << "\n";
+	} else {
+		enqPathLogger->streamObject << "enq: " << enqID << "\n";
+	}
+	enqPathLogger->writeLog();
+
+	allLogger->streamObject << enqID << " ";
+
+	while (enqID != -1 && tempTaskID.compare("") != 0) {
+		enqID = taskIDMap[tempTaskID].enqOpID;
+		if (enqID != -1) {
+			tempTaskID = opIDMap[enqID].taskID;
+			threadID = opIDMap[enqID].threadID;
+			enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
+				<< " " << threadID << "\n";
+		} else {
+			enqPathLogger->streamObject << "enq: " << enqID << "\n";
+		}
+
+		allLogger->streamObject << enqID << " ";
+
+		enqPathLogger->writeLog();
+	}
+
+	allLogger->writeLog();
+
+	// op2
+	enqPathLogger->streamObject << "OP: " << op2ID << " " << op2TaskID
+			<< " " << op2ThreadID << "\n";
+	enqPathLogger->writeLog();
+
+	enqID = taskIDMap[op2TaskID].enqOpID;
+	if (enqID != -1) {
+		tempTaskID = opIDMap[enqID].taskID;
+		threadID = opIDMap[enqID].threadID;
+		enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
+			<< " " << threadID << "\n";
+	} else {
+		enqPathLogger->streamObject << "enq: " << enqID << "\n";
+	}
+	enqPathLogger->writeLog();
+	allLogger->streamObject << enqID << " ";
+	while (enqID != -1 && tempTaskID.compare("") != 0) {
+		enqID = taskIDMap[tempTaskID].enqOpID;
+		if (enqID != -1) {
+			tempTaskID = opIDMap[enqID].taskID;
+			threadID = opIDMap[enqID].threadID;
+			enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
+				<< " " << threadID << "\n";
+		} else {
+			enqPathLogger->streamObject << "enq: " << enqID << "\n";
+		}
+
+		enqPathLogger->writeLog();
+
+		allLogger->streamObject << enqID << " ";
+	}
+
+	allLogger->writeLog();
+
 	if (op1TaskID.compare("") != 0 && op2TaskID.compare("") != 0) {
 		taskLogger->streamObject << uafCount << ":\n"
 								 << op1Type << ": " << op1ID << " thread " << op1ThreadID
@@ -3041,12 +3122,6 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		noTaskLogger->writeLog();
 	}
 
-	if (raceType.compare("uaf") == 0)
-		enqPathLogger->streamObject << "\nUAF " << uafCount << ":\n";
-	else
-		enqPathLogger->streamObject << "\nRace " << raceCount << ":\n";
-
-	enqPathLogger->writeLog();
 	// Finding the enq path
 	IDType enqID, threadID = -1;
 	std::string tempTaskID = "";
