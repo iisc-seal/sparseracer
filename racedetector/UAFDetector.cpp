@@ -2612,11 +2612,13 @@ IDType  UAFDetector::findUAF() {
 	IDType falsePositives = 0;
 
 #ifdef UNIQUERACE
-	bool raceForFree;
+	bool raceForFree; // Flag to track if we saw a race for a given free
+	bool falsePositiveForFree; // Flag to track if we saw a false positive for a given free
 #endif
 	for (map<IDType, freeOpDetails>::iterator freeIt = freeIDMap.begin(); freeIt != freeIDMap.end(); freeIt++) {
 #ifdef UNIQUERACE
 		raceForFree = false;
+		falsePositiveForFree = false;
 #endif
 		IDType freeID = freeIt->first;
 		IDType allocID = freeIt->second.allocOpID;
@@ -2709,7 +2711,14 @@ IDType  UAFDetector::findUAF() {
 							opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
 							&& taskIDMap[opIDMap[allocID].taskID].atomic) {
 						if (opIDMap[freeID].threadID == opIDMap[readID].threadID) {
+#ifdef UNIQUERACE
+							if (!falsePositiveForFree) {
+								falsePositives++;
+								falsePositiveForFree = true;
+							}
+#else
 							falsePositives++;
+#endif
 							continue;
 						} else {
 							// May be we should categorize these separately. Easy to reproduce
@@ -2810,7 +2819,14 @@ IDType  UAFDetector::findUAF() {
 							opIDMap[allocID].taskID.compare(opIDMap[writeID].taskID) == 0
 							&& taskIDMap[opIDMap[allocID].taskID].atomic) {
 						if (opIDMap[freeID].threadID == opIDMap[writeID].threadID) {
+#ifdef UNIQUERACE
+							if (!falsePositiveForFree) {
+								falsePositives++;
+								falsePositiveForFree = true;
+							}
+#else
 							falsePositives++;
+#endif
 							continue;
 						} else {
 
@@ -3067,6 +3083,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		enqPathLogger->writeLog();
 	}
 
+	allLogger->streamObject << "\n";
 	allLogger->writeLog();
 
 	// op2
@@ -3101,6 +3118,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		allLogger->streamObject << enqID << " ";
 	}
 
+	allLogger->streamObject << "\n";
 	allLogger->writeLog();
 
 	if (op1TaskID.compare("") != 0 && op2TaskID.compare("") != 0) {
