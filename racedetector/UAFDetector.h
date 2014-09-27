@@ -22,6 +22,14 @@
 
 class HBGraph;
 
+enum RaceKind {
+	MULTITHREADED,
+	MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK,
+	SINGLETHREADED,
+	SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP,
+	UNKNOWN
+};
+
 class UAFDetector {
 public:
 	UAFDetector();
@@ -418,15 +426,12 @@ private:
 	Logger uafTaskLogger, raceTaskLogger;
 	Logger uafNoTaskLogger, raceNoTaskLogger;
 	Logger uafEnqPathLogger, raceEnqPathLogger;
+	Logger uafAllocMemopSameTaskLogger, raceAllocMemopSameTaskLogger;
+
+	RaceKind raceType;
 
 	void log(IDType op1ID, IDType op2ID, std::string op1Type,
-			std::string op2Type, std::string raceType);
-
-	void logForLockSetAnalysis(IDType accessOpID, IDType freeOpID,
-			std::string raceType);
-
-	void logOtherInfo(IDType op1ID, IDType op2ID,
-			std::string op1Type, std::string op2Type, std::string raceType);
+			std::string op2Type, bool uafOrRace);
 };
 
 class HBGraph {

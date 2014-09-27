@@ -10,6 +10,7 @@
 #include <parser/TraceParser.h>
 #include <racedetector/UAFDetector.h>
 #include <logging/Logger.h>
+#include <time.h>
 
 #include <debugconfig.h>
 
@@ -26,6 +27,7 @@ int main(int argc, char* argv[]) {
 	UAFDetector detectorObj;
 	detectorObj.initLog(traceFileName);
 
+	clock_t tStart = clock();
 	if (parser.parse(detectorObj) < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
@@ -35,12 +37,19 @@ int main(int argc, char* argv[]) {
 	cout << "map size: " << detectorObj.opIDMap.size() << endl;
 #endif
 
+	cout << "Time taken for parsing: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
+
     //return 0;
+
+	tStart = clock();
 	if (detectorObj.addEdges() < 0) {
 		cout << "ERROR while constructing HB Graph\n";
 		return -1;
 	}
 
+	cout << "Time taken for transitive closure: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
+
+	tStart = clock();
 	cout << "\nFinding UAF\n";
 	int retfindUAF = detectorObj.findUAF();
 
@@ -52,8 +61,10 @@ int main(int argc, char* argv[]) {
 	} else {
 		cout << "OUTPUT: Found " << retfindUAF << " UAFs\n";
 	}
+	cout << "Time taken for finding UAF: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
 
 #ifdef DATARACE
+	tStart = clock();
 	cout << "\nFinding data races\n";
 	int retfindRace = detectorObj.findDataRaces();
 
@@ -65,6 +76,7 @@ int main(int argc, char* argv[]) {
 	} else {
 		cout << "OUTPUT: Found " << retfindRace << " races\n";
 	}
+	cout << "Time taken for finding races: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
 #endif
 	return 0;
 }
