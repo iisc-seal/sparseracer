@@ -55,8 +55,9 @@ int main(int argc, char* argv[]) {
 	UAFDetector detectorObj;
 	detectorObj.initLog(traceFileName);
 
-	clock_t tStart = clock();
-	clock_t tEnd;
+	clock_t totalStart, totalEnd, tStart, tEnd;
+	totalStart = clock();
+	tStart = totalStart;
 	if (parser.parse(detectorObj) < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
@@ -109,5 +110,8 @@ int main(int argc, char* argv[]) {
 	tEnd = clock();
 	cout << "Time taken for finding races: " << convertTime(tStart, tEnd) << "\n";
 #endif
+
+	totalEnd = clock();
+	cout << "Total time taken: " << convertTime(totalStart, totalEnd) << "\n";
 	return 0;
 }
