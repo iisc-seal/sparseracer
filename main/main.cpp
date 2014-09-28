@@ -14,6 +14,34 @@
 
 #include <debugconfig.h>
 
+std::string convertTime(clock_t startTime, clock_t endTime) {
+	std::string time;
+	std::ostringstream stream;
+	unsigned long long elapsed_secs = (endTime - startTime)/CLOCKS_PER_SEC;
+
+	if (elapsed_secs == 0) {
+		double secs = (double) (endTime - startTime)/CLOCKS_PER_SEC;
+
+		double milliseconds = secs * 1000;
+
+		stream << milliseconds << "ms";
+		time = stream.str();
+	} else {
+		int hrs = elapsed_secs / 3600;
+		unsigned long long remaining = elapsed_secs % 3600;
+
+		int mins = remaining / 60;
+		remaining = remaining % 60;
+
+		int secs = remaining;
+
+		stream << hrs << "h" << mins << "m" << secs << "s";
+		time = stream.str();
+	}
+
+	return time;
+}
+
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
 		cout << "ERROR: Missing input\n";
@@ -28,6 +56,7 @@ int main(int argc, char* argv[]) {
 	detectorObj.initLog(traceFileName);
 
 	clock_t tStart = clock();
+	clock_t tEnd;
 	if (parser.parse(detectorObj) < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
@@ -36,8 +65,8 @@ int main(int argc, char* argv[]) {
 #ifdef TRACEDEBUG
 	cout << "map size: " << detectorObj.opIDMap.size() << endl;
 #endif
-
-	cout << "Time taken for parsing: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
+	tEnd = clock();
+	cout << "Time taken for parsing: " << convertTime(tStart, tEnd) << "\n";
 
     //return 0;
 
@@ -46,8 +75,8 @@ int main(int argc, char* argv[]) {
 		cout << "ERROR while constructing HB Graph\n";
 		return -1;
 	}
-
-	cout << "Time taken for transitive closure: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
+	tEnd = clock();
+	cout << "Time taken for transitive closure: " << convertTime(tStart, tEnd) << "\n";
 
 	tStart = clock();
 	cout << "\nFinding UAF\n";
@@ -61,7 +90,8 @@ int main(int argc, char* argv[]) {
 	} else {
 		cout << "OUTPUT: Found " << retfindUAF << " UAFs\n";
 	}
-	cout << "Time taken for finding UAF: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
+	tEnd = clock();
+	cout << "Time taken for finding UAF: " << convertTime(tStart, tEnd) << "\n";
 
 #ifdef DATARACE
 	tStart = clock();
@@ -76,7 +106,8 @@ int main(int argc, char* argv[]) {
 	} else {
 		cout << "OUTPUT: Found " << retfindRace << " races\n";
 	}
-	cout << "Time taken for finding races: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "\n";
+	tEnd = clock();
+	cout << "Time taken for finding races: " << convertTime(tStart, tEnd) << "\n";
 #endif
 	return 0;
 }
