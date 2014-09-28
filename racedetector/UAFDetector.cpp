@@ -3064,6 +3064,8 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 
 	Logger *taskLogger, *nestingLogger, *noNestingLogger, *noTaskLogger,
 		*allLogger, *enqPathLogger, *allocMemopInSameTaskLogger;
+	std::string raceTypeString;
+	unsigned long long int count;
 	if (uafOrRace) {
 		uafCount++;
 
@@ -3074,19 +3076,9 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		noTaskLogger = &uafNoTaskLogger;
 		enqPathLogger = &uafEnqPathLogger;
 		allocMemopInSameTaskLogger = &uafAllocMemopSameTaskLogger;
+		raceTypeString = "UAF";
+		count = uafCount;
 
-		taskLogger->streamObject << "\nUAF " << uafCount << ":\n";
-		taskLogger->writeLog();
-		nestingLogger->streamObject << "\nUAF " << uafCount << ":\n";
-		nestingLogger->writeLog();
-		noNestingLogger->streamObject << "\nUAF " << uafCount << ":\n";
-		noNestingLogger->writeLog();
-		noTaskLogger->streamObject << "\nUAF " << uafCount << ":\n";
-		noTaskLogger->writeLog();
-		enqPathLogger->streamObject << "\nUAF " << uafCount << ":\n";
-		enqPathLogger->writeLog();
-		allocMemopInSameTaskLogger->streamObject << "\nUAF " << uafCount << ":\n";
-		allocMemopInSameTaskLogger->writeLog();
 	} else {
 		raceCount++;
 
@@ -3097,19 +3089,8 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		noTaskLogger = &raceNoTaskLogger;
 		enqPathLogger = &raceEnqPathLogger;
 		allocMemopInSameTaskLogger = &raceAllocMemopSameTaskLogger;
-
-		taskLogger->streamObject << "\nRace " << raceCount << ":\n";
-		taskLogger->writeLog();
-		nestingLogger->streamObject << "\nRace " << raceCount << ":\n";
-		nestingLogger->writeLog();
-		noNestingLogger->streamObject << "\nRace " << raceCount << ":\n";
-		noNestingLogger->writeLog();
-		noTaskLogger->streamObject << "\nRace " << raceCount << ":\n";
-		noTaskLogger->writeLog();
-		enqPathLogger->streamObject << "\nRace " << raceCount << ":\n";
-		enqPathLogger->writeLog();
-		allocMemopInSameTaskLogger->streamObject << "\nRace " << raceCount << ":\n";
-		allocMemopInSameTaskLogger->writeLog();
+		raceTypeString = "Race";
+		count = raceCount;
 	}
 
 	IDType op1ThreadID = opIDMap[op1ID].threadID;
@@ -3125,6 +3106,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	IDType enqID, threadID = -1;
 	std::string tempTaskID = "";
 
+	enqPathLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 	// op1
 	enqPathLogger->streamObject << "OP: " << op1ID << " " << op1TaskID
 			<< " " << op1ThreadID << "\n";
@@ -3198,6 +3180,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	allLogger->writeLog();
 
 	if (op1TaskID.compare("") != 0 && op2TaskID.compare("") != 0) {
+		taskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 		taskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 								 << " task " << op1TaskID << "\n"
 								 << op2Type << ": "	<< op2ID << " thread " << op2ThreadID
@@ -3207,12 +3190,14 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		// It is not sufficient that the task of read/write (op1) is not atomic,
 		// we need the read to happen after the (first) nesting loop.
 		if (!taskIDMap[op1TaskID].atomic && taskIDMap[op1TaskID].firstPauseOpID < op1ID) {
+			nestingLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 			nestingLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 									 << " task " << op1TaskID << "\n"
 									 << op2Type << ": " << op2ID << " thread " << op2ThreadID
 									 << " task " << op2TaskID << "\n";
 			nestingLogger->writeLog();
 		} else {
+			noNestingLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 			noNestingLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 									 << " task " << op1TaskID << "\n"
 									 << op2Type << ": " << op2ID << " thread " << op2ThreadID
@@ -3221,6 +3206,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		}
 
 	} else {
+		noTaskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 		noTaskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 								 << " task " << op1TaskID << "\n"
 								 << op2Type << ": " << op2ID << " thread " << op2ThreadID
@@ -3229,6 +3215,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	}
 
 	if (raceType == MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK) {
+		allocMemopInSameTaskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 		allocMemopInSameTaskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 				<< " task " << op1TaskID << "\n"
 				<< op2Type << ": " << op2ID << " thread " << op2ThreadID << " task " << op2TaskID << "\n";
