@@ -23,11 +23,19 @@ namespace MemInstrument {
     Type *IntptrTy;
     LLVMContext *Context;
     Constant *Logger;
+    Constant *DispatchTracker;
+    /* std::set<std::string> dispatchFunctions = { */
+    /*   "NS_DispatchToCurrentThread",  */
+    /*   "nsThread::Dispatch", */
+    /*   "NS_DispatchToMainThread" */
+    /* }; */
 
   public:
     static char ID; // Pass identification, replacement for typeid
   RunnableInstrument() : ModulePass(ID) {ID = 0;}
     bool runOnModule(Module &M) override;
+    void InstrumentDispatch(BasicBlock::iterator &BI, std::string fName);
+    void instrumentEntryExits(Function *F, std::string demangledName);
     void instrumentEntry(Function *F, std::string demangledName);
     void instrumentExits(Function *F, std::vector<BasicBlock*> exitBlocks, std::string demangledName);
     void getAnalysisUsage(AnalysisUsage &AU) const override;

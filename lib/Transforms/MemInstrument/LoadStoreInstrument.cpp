@@ -209,8 +209,8 @@ namespace MemInstrument {
 
       if(dName.compare("")==0)
        if(!shouldInstrumentDirectory(getDirName(BI))  &&
-	  fName.find("assign_assuming_AddRef") == std::string::npos
-	  && fName.find("CheckAcquire") == std::string::npos )
+	  fName.find("assign_assuming_AddRef") == std::string::npos)
+	 //	  && fName.find("CheckAcquire") == std::string::npos )
 	  //!shouldInstrumentFile(getFileName(BI)))
 	 continue;
       

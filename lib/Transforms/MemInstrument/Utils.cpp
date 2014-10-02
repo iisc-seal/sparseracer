@@ -64,7 +64,7 @@ namespace MemInstrument {
       DILocation Loc(N);                      // DILocation is in DebugInfo.h
       std::string Line = std::to_string(Loc.getLineNumber());
       std::string File = Loc.getFilename().str();
-      std::string Dir = Loc.getDirectory().str();
+      std::string Dir = "";// Loc.getDirectory().str();
       return (Dir + "/" + File + ":" + Line + "(" + name + ")");
     }
     return name;
