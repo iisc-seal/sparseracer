@@ -5,6 +5,34 @@
 
 namespace MemInstrument {
 
+  std::set<std::string> FunctionBlacklist = {
+    "_Znwj,"               // new(unsigned int)
+    "_ZnwjRKSt9nothrow_t", // new(unsigned int, nothrow)
+    "_Znwm",               // new(unsigned long)
+    "_ZnwmRKSt9nothrow_t", // new(unsigned long, nothrow)
+    "_Znaj",               // new[](unsigned int)
+    "_ZnajRKSt9nothrow_t", // new[](unsigned int, nothrow)
+    "_Znam",               // new[](unsigned long)
+    "_ZnamRKSt9nothrow_t",  // new[](unsigned long, nothrow)
+    "malloc",
+    "valloc",
+    "realloc",
+    "calloc",
+    "_ZdlPv", // operator delete(void*)
+    "_ZdaPv", // operator delete[](void*)
+    "free",
+    "_ZdlPvRKSt9nothrow_t",  // delete(void*, nothrow)
+    "ZdaPvRKSt9nothrow_t",   // delete[](void*, nothrow)
+    "syslog",
+    "rInstrument",
+    "dispatchInstrument",
+    "mopInstrument",
+    "fInstrument",
+    "mopDealloc",
+    "mopAlloc"
+  };
+
+
   bool isPointerToPointer(const Value* V) {
     const Type* T = V->getType();
     return T->isPointerTy() && T->getContainedType(0)->isPointerTy();
@@ -65,7 +93,7 @@ namespace MemInstrument {
       std::string Line = std::to_string(Loc.getLineNumber());
       std::string File = Loc.getFilename().str();
       std::string Dir = "";// Loc.getDirectory().str();
-      return (Dir + "/" + File + ":" + Line + "(" + name + ")");
+      return (Dir + File + ":" + Line + "(" + name + ")");
     }
     return name;
   }
@@ -76,23 +104,33 @@ namespace MemInstrument {
     return false;
   }
 
-  bool shouldInstrumentFunction(std::string name){
-    char *funcs = getenv("INSTRUMENTFUNCS");
-    if(funcs == NULL)
+  bool shouldInstrumentFunction(Function* F, std::string name){
+    if(FunctionBlacklist.find(name) != FunctionBlacklist.end())
       return false;
-    std::string instrFuncs(funcs);
-    std::vector<std::string> wList = split(instrFuncs, ':');
+    //    char *funcs = getenv("INSTRUMENTFUNCS");
+    BasicBlock &Entry = F->getEntryBlock();
+    Instruction *First = Entry.begin();
+    std::string location = getSourceInfoAsString(First, "");
+    if(location.find("nsprpub") != std::string::npos || 
+       location.find("xpcom") != std::string::npos)
+      return false;
 
-    for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
-      std::size_t found = name.find(*it);
-      if (found != std::string::npos){
-	return true;
-      }
-    }
-    return false;
+    return true;
+    // if(funcs == NULL)
+    //   return false;
+    // std::string instrFuncs(funcs);
+    // std::vector<std::string> wList = split(instrFuncs, ':');
+
+    // for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
+    //   std::size_t found = name.find(*it);
+    //   if (found != std::string::npos){
+    // 	return true;
+    //   }
+    // }
+    // return false;
   }
 
-  bool shouldInstrumentDirectory(std::string name){
+  bool shouldInstrumentDirectory(std::string name){    
     char *dirs = getenv("INSTRUMENTDIRS");
     if(dirs == NULL)
       return false;

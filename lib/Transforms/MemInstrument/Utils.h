@@ -33,7 +33,7 @@ namespace MemInstrument {
 
   bool shouldInstrumentFunction(std::string name, std::set<std::string> whiteList);
 
-  bool shouldInstrumentFunction(std::string name);
+  bool shouldInstrumentFunction(Function* F, std::string name);
 
   bool shouldInstrumentDirectory(std::string name);
 

@@ -44,7 +44,7 @@ namespace MemInstrument {
       std::string FName = F->getName().str();
       //llvm::outs() << FName << "\n";
       //llvm::outs() << demangleFunctionName(FName) << "\n";
-      if(!shouldInstrumentFunction(FName))
+      if(!shouldInstrumentFunction(F, FName))
 	continue;
 
       //if (F->getName().str() == "free" || F->getName().str() == "printf") continue;
