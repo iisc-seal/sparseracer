@@ -20,6 +20,8 @@ using namespace llvm;
 namespace MemInstrument {
 
   bool isPointerToPointer(const Value* V);
+
+  bool startsWith(std::string bigString, std::string smallString);
   
   std::string getTypeAsString(Type* T);
 
@@ -33,7 +35,7 @@ namespace MemInstrument {
 
   bool shouldInstrumentFunction(std::string name, std::set<std::string> whiteList);
 
-  bool shouldInstrumentFunction(Function* F, std::string name);
+  bool shouldInstrumentFunction(Function* F, std::string name, std::set<std::string> skippedDirs);
 
   bool shouldInstrumentDirectory(std::string name);
 

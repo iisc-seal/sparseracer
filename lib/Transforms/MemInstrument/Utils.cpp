@@ -29,9 +29,33 @@ namespace MemInstrument {
     "mopInstrument",
     "fInstrument",
     "mopDealloc",
-    "mopAlloc"
+    "mopAlloc",
+    "utrie_get32_52",
+    "_Z15NS_IsMainThreadv",
+    "_ZN8JSString8rootKindEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE2EE9afterLoadEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE2EE10beforeLoadEv",
+    "_ZN11nsXPConnect9XPConnectEv",
+    "_ZN8JSObject8rootKindEv",
+    "_ZN12XPCJSRuntime3GetEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE1EE9afterLoadEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE1EE10beforeLoadEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE2EE9afterLoadEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE2EE10beforeLoadEv",
+    "mozPoisonValue",
+    "_ZN7mozilla3dom17FragmentOrElement15cycleCollection14GetParticipantEv",
+    "_ZN8JSString8rootKindEv",
+    "_ZN20nsGenericDOMDataNode15cycleCollection14GetParticipantEv",
+    "_ZN12nsXULElement15cycleCollection14GetParticipantEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE0EE9afterLoadEv",
+    "_ZN7mozilla6detail7BarrierILNS_14MemoryOrderingE0EE10beforeLoadEv",
+    "_ZN10nsNodeInfo15cycleCollection14GetParticipantEv",
+    "_ZN8JSString8rootKindEv"
   };
 
+  bool startsWith(std::string bigString, std::string smallString){
+    return (bigString.compare(0, smallString.length(), smallString) == 0);
+  }
 
   bool isPointerToPointer(const Value* V) {
     const Type* T = V->getType();
@@ -92,8 +116,8 @@ namespace MemInstrument {
       DILocation Loc(N);                      // DILocation is in DebugInfo.h
       std::string Line = std::to_string(Loc.getLineNumber());
       std::string File = Loc.getFilename().str();
-      std::string Dir = "";// Loc.getDirectory().str();
-      return (Dir + File + ":" + Line + "(" + name + ")");
+      std::string Dir = Loc.getDirectory().str();
+      return (Dir + ':' + File + ":" + Line + "(" + name + ")");
     }
     return name;
   }
@@ -104,17 +128,64 @@ namespace MemInstrument {
     return false;
   }
 
-  bool shouldInstrumentFunction(Function* F, std::string name){
-    if(FunctionBlacklist.find(name) != FunctionBlacklist.end())
+  bool shouldInstrumentFunction(Function* F, std::string name, std::set<std::string> skippedDirs){
+    if(FunctionBlacklist.find(name) != FunctionBlacklist.end()){
+      llvm::outs() << "Skipping " << name << "\n";
       return false;
+    }
+
+    if(name.find("__cxx") != std::string::npos || name.find("PR_") != std::string::npos){
+      llvm::outs() << "Skipping " << name << "\n";
+      return false;
+    }
     //    char *funcs = getenv("INSTRUMENTFUNCS");
     BasicBlock &Entry = F->getEntryBlock();
     Instruction *First = Entry.begin();
-    std::string location = getSourceInfoAsString(First, "");
-    if(location.find("nsprpub") != std::string::npos || 
-       location.find("xpcom") != std::string::npos)
-      return false;
+    std::string location = ""; // = getSourceInfoAsString(First, "");
+    for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I){
+      location = getSourceInfoAsString(&*I, "");
+      if(location != "")
+	break;
+    }
 
+    bool found = false;
+    for (std::set<std::string>::iterator it = skippedDirs.begin(); it != skippedDirs.end(); ++it){
+      if(location.find(*it) != std::string::npos){
+	found= true;
+	break;
+      }
+    }
+    if(found){
+      llvm::outs() << "Skipping " << name << "\n";
+      return false;
+    }
+    
+    // Avoid 'framework' directories
+    // if(location.find("nsprpub") != std::string::npos ||
+    //    location.find("xpcom") != std::string::npos ||
+    //    location.find("mfbt") != std::string::npos ||
+    //    location.find("mozglue") != std::string::npos ||
+    //    location.find("js/") != std::string::npos ||
+    //    location.find("db/") != std::string::npos ||
+    //    location.find("memory/") != std::string::npos ||
+    //    location.find("ipc") != std::string::npos ||
+    //    location.find("gfx/") != std::string::npos ||
+    //    location.find("layout/style") != std::string::npos ||
+    //    location.find("security") != std::string::npos
+    //    ){
+    //   llvm::outs() << "Skipping " << name << "\n";
+    //   return false;
+    // }
+      
+    if(location == ""){
+      llvm::outs() << "No location for " << name << "\n";
+      //return false;
+    }
+
+    if(name.find("PR_") != std::string::npos)
+      llvm::outs() << "Missed" << name << " at " << location << "\n";
+    
+    llvm::outs() << "Instrumenting " << name << " \n";
     return true;
     // if(funcs == NULL)
     //   return false;

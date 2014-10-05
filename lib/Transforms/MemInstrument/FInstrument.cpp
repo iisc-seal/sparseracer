@@ -13,10 +13,33 @@
 //===----------------------------------------------------------------------===//
 
 #include "FInstrument.h"
+#include <vector>
+#include <algorithm>
+#include <fstream>
 
 using namespace llvm;
 
 namespace MemInstrument {
+
+  void FInstrument::readBlacklist(){
+    std::string line;
+    std::ifstream skippedFunctionsFile ("/home/anirudh/blacklist.txt");
+    std::ifstream skippedDirsFile ("/home/anirudh/blacklistdirs.txt");
+    if (skippedFunctionsFile.is_open()){
+	while ( getline (skippedFunctionsFile,line) ){
+	    skipped.insert(line);
+	}
+	skippedFunctionsFile.close();
+    }
+    if (skippedDirsFile.is_open()){
+	while ( getline (skippedDirsFile,line) ){
+	    skippedDirs.insert(line);
+	}
+	skippedDirsFile.close();
+    }
+
+    llvm::outs() << "Populated skipped " << skipped.size() << "\n";
+  }
   // Hello2 - The second implementation with getAnalysisUsage implemented.
   bool FInstrument::runOnModule(Module &M) {
     
@@ -39,17 +62,88 @@ namespace MemInstrument {
 				   FunctionType::get(Type::getVoidTy(*Context), Params, false));
     //errs() << PrintF->getName() << "\n";
 
+    std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
+
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
-      if (F->isDeclaration()) continue;
       std::string FName = F->getName().str();
+      if (F->isDeclaration()) continue;
       //llvm::outs() << FName << "\n";
-      //llvm::outs() << demangleFunctionName(FName) << "\n";
-      if(!shouldInstrumentFunction(F, FName))
+
+      // Don't instrument functions to do with nsCOMPtr and nsRefPtr and nsCOMArray
+      // and cycle collection
+      if(startsWith(FName, "_ZN10nsCOMArray") ||
+	 startsWith(FName, "_ZNK10nsCOMArray") ||
+	 startsWith(FName, "_ZN13nsTArray") ||
+	 startsWith(FName, "_ZNK13nsTArray") ||
+	 startsWith(FName, "_ZNK8nsCOMPtr") ||
+	 startsWith(FName, "_ZN8nsCOMPtr") ||
+	 startsWith(FName, "_ZNK9nsAutoPtr") ||
+	 startsWith(FName, "_ZN9nsAutoPtr") ||
+	 startsWith(FName, "_ZNK8nsRefPtr") ||
+	 startsWith(FName, "_ZN8nsRefPtr") ||
+	 startsWith(FName, "_ZN15nsGetterAddRefs") ||
+	 startsWith(FName, "_ZN16already_AddRefed") ||
+	 startsWith(FName, "_ZN10nsDocument15cycleCollection")
+	 ){
+	llvm::outs() << "Skipping smart pointer function " << FName << "\n";
+	continue;
+      }
+
+      if(skipped.find(FName) != skipped.end()){
+	llvm::outs() << "Skipping already skipped function " << FName << "\n";
+	continue;
+      }
+      
+      std::string demangled = demangleFunctionName(FName);
+      if(demangleFunctionName(FName).find("js::") != std::string::npos){
+	llvm::outs() << "Skipping JS " << FName << "\n";
+	continue;
+      }
+
+      
+      std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(FName);
+      std::string dirName;
+      if(search != funcNameToDirName.end()) {
+        dirName = search->second;
+      }
+
+      bool found = false;
+      for (std::set<std::string>::iterator it = skippedDirs.begin(); it != skippedDirs.end(); ++it){
+	if(dirName.find(*it) != std::string::npos){
+	  found = true;
+	  break;
+	}
+      }
+      if(found){
+	llvm::outs() << "Early Skipping " << FName << "\n";
+	skipped.insert(FName);
+	continue;
+      }
+
+      // if(dirName.find("nsprpub") != std::string::npos ||
+      // 	 dirName.find("xpcom") != std::string::npos ||
+      // 	 dirName.find("mfbt") != std::string::npos ||
+      // 	 dirName.find("mozglue") != std::string::npos ||
+      // 	 dirName.find("js/") != std::string::npos ||
+      // 	 dirName.find("db/") != std::string::npos ||
+      // 	 dirName.find("memory/") != std::string::npos ||
+      // 	 dirName.find("ipc") != std::string::npos ||
+      // 	 dirName.find("gfx/") != std::string::npos ||
+      // 	 dirName.find("layout/style") != std::string::npos ||
+      // 	 dirName.find("security") != std::string::npos 
+      // 	 ){
+      // 	llvm::outs() << "Early Skipping " << FName << "\n";
+      // 	skipped.insert(FName);
+      // 	continue;
+      // }
+
+      if(!shouldInstrumentFunction(F, FName, skippedDirs))
 	continue;
 
       //if (F->getName().str() == "free" || F->getName().str() == "printf") continue;
       std::vector<BasicBlock*> exitBlocks;
-       
+
+      instrumented.insert(FName);
       FInstrument::instrumentEntry(F);
 
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
@@ -59,6 +153,17 @@ namespace MemInstrument {
       }
       FInstrument::instrumentExits(F, exitBlocks);
     }
+    
+    std::vector<std::string> v_intersection;
+ 
+    std::set_intersection(skipped.begin(), skipped.end(),
+                          instrumented.begin(), instrumented.end(),
+                          std::back_inserter(v_intersection));
+    if(!v_intersection.empty())
+      llvm::outs() << "Suspicious ";
+    for (std::vector<std::string>::iterator it = v_intersection.begin(); it != v_intersection.end(); ++it)
+      llvm::outs() << *it << ' ';
+    
     return false;
   }
     

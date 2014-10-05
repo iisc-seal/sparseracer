@@ -25,7 +25,10 @@ namespace MemInstrument {
     Constant *PrintFunc;
     Constant *PrintF;
     Constant *Logger;
-
+    std::set<std::string> skipped;
+    std::set<std::string> skippedDirs;
+    std::set<std::string> instrumented;
+    
     std::set<std::string> whiteList = {
       "nsHTMLEditor::ContentAppended",
       "nsHTMLEditor::ContentInserted",
@@ -39,8 +42,9 @@ namespace MemInstrument {
 
   public:
     static char ID; // Pass identification, replacement for typeid
-  FInstrument() : ModulePass(ID) {ID = 0;}
+  FInstrument() : ModulePass(ID) {ID = 0; readBlacklist();}
     bool runOnModule(Module &M) override;
+    void readBlacklist();
     void instrumentEntry(Function *F);
     void instrumentExits(Function *F, std::vector<BasicBlock*> exitBlocks);
     void getAnalysisUsage(AnalysisUsage &AU) const override;
