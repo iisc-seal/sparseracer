@@ -68,6 +68,12 @@ namespace MemInstrument {
       std::string FName = F->getName().str();
       if (F->isDeclaration()) continue;
       //llvm::outs() << FName << "\n";
+      
+      if(skipped.find(FName) != skipped.end()){
+	llvm::outs() << "Skipping already skipped function " << FName << "\n";
+	continue;
+      }
+
 
       // Don't instrument functions to do with nsCOMPtr and nsRefPtr and nsCOMArray
       // and cycle collection
@@ -85,21 +91,39 @@ namespace MemInstrument {
 	 startsWith(FName, "_ZN16already_AddRefed") ||
 	 startsWith(FName, "_ZN10nsDocument15cycleCollection")
 	 ){
+	skipped.insert(FName);
 	llvm::outs() << "Skipping smart pointer function " << FName << "\n";
 	continue;
       }
-
-      if(skipped.find(FName) != skipped.end()){
-	llvm::outs() << "Skipping already skipped function " << FName << "\n";
+     
+      // discard js and std functions, QueryInterface, AddRef, Release, cycle collection stuff
+      std::string demangled = demangleFunctionName(FName);
+      if(startsWith(demangled, "js::") || 
+	 FName.find("CCParticipant") != std::string::npos ||
+	 FName.find("cycleCollection") != std::string::npos ||
+	 endsWith(FName, "QueryInterfaceERK4nsIDPPv") || 
+	 endsWith(FName, "AddRefEv") ||
+	 endsWith(FName, "ReleaseEv") ||
+	 startsWith(demangled, "std::")){
+	skipped.insert(FName);
+	llvm::outs() << "Skipping JS/std::/QI " << FName << "\n";
 	continue;
       }
       
-      std::string demangled = demangleFunctionName(FName);
-      if(demangleFunctionName(FName).find("js::") != std::string::npos){
-	llvm::outs() << "Skipping JS " << FName << "\n";
+      // discard some frequent data structure access functions/other functions
+      if(startsWith(demangled, "nsAttrName::") ||
+	 startsWith(demangled, "nsAttrValue::") ||
+	 startsWith(demangled, "nsAttrAndChildArray::") ||
+	 startsWith(demangled, "nsIContent::GetID") ||
+	 startsWith(demangled, "nsJSContext::MaybePokeCC") ||
+	 startsWith(demangled, "mozilla::MillisecondsToMediaTime") ||
+	 startsWith(demangled, "mozilla::LinkedListElement") ||
+	 startsWith(demangled, "mozilla::BloomFilter")
+	 ){
+	skipped.insert(FName); 
+	llvm::outs() << "Skipping JS or std " << FName << "\n";
 	continue;
       }
-
       
       std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(FName);
       std::string dirName;
@@ -144,14 +168,35 @@ namespace MemInstrument {
       std::vector<BasicBlock*> exitBlocks;
 
       instrumented.insert(FName);
+      
+      if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
+	llvm::outs() << "Before: \n";
+	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+	  llvm::outs() << *I << "\n";
+      }
+
       FInstrument::instrumentEntry(F);
+
+      if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
+	llvm::outs() << "After Entry: \n";
+	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+	  llvm::outs() << *I << "\n";
+      }
 
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
 	if(isa<ReturnInst>(BB->getTerminator())){
 	  exitBlocks.push_back(BB);
 	}
       }
+
       FInstrument::instrumentExits(F, exitBlocks);
+      
+      if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
+	llvm::outs() << "After entry exit: \n";
+	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+	  llvm::outs() << *I << "\n";
+      }
+
     }
     
     std::vector<std::string> v_intersection;
@@ -170,9 +215,14 @@ namespace MemInstrument {
   void FInstrument::instrumentEntry(Function *F){
     FCounter++;
     //errs() << *F << "\n";
-    BasicBlock &Entry = F->getEntryBlock();
-    Instruction *First = Entry.begin();
-    IRBuilder<> IRB(First);
+    //IRBuilder<> IRB(F->getEntryBlock().getFirstNonPHI());
+    IRBuilder<> IRB(F->getEntryBlock().getFirstInsertionPt());
+    //BasicBlock &Entry = F->getEntryBlock();
+
+    // The following ran into trouble with functions that began with if/for
+    // Instruction *First = Entry.begin();
+    // IRBuilder<> IRB(First);
+
     // std::string name("Crap \n");
     //errs() << F->getName() << "\n";
     //errs() << F->getName().str() << "\n";

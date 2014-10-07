@@ -21,7 +21,9 @@ namespace MemInstrument {
 
   bool isPointerToPointer(const Value* V);
 
-  bool startsWith(std::string bigString, std::string smallString);
+  bool endsWith(const std::string &str, const std::string &suffix);
+
+  bool startsWith(const std::string &bigString, const std::string &smallString);
   
   std::string getTypeAsString(Type* T);
 

@@ -53,7 +53,12 @@ namespace MemInstrument {
     "_ZN8JSString8rootKindEv"
   };
 
-  bool startsWith(std::string bigString, std::string smallString){
+  bool endsWith(const std::string &str, const std::string &suffix){
+    return str.size() >= suffix.size() &&
+      str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+  }
+
+  bool startsWith(const std::string &bigString, const std::string &smallString){
     return (bigString.compare(0, smallString.length(), smallString) == 0);
   }
 
