@@ -1,3 +1,5 @@
+// To limit the number of nodes
+ #define NODELIMIT 15000
 // To use access ops rather than read/write ops
 // #define ACCESS
 

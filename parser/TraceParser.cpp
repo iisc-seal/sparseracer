@@ -6208,6 +6208,10 @@ it++) {
 	cout << "No of read ops: " << detector.readSet.size() << "\n";
 	cout << "No of write ops: " << detector.writeSet.size() << "\n";
 	cout << "No of nodes: " << detector.nodeIDMap.size() << "\n";
+	cout << "Node Limit: " << NODELIMIT << "\n";
+
+	if (detector.nodeIDMap.size() > NODELIMIT)
+		return -2;
 
 	cout << "\nOps: \n";
 	for (map<IDType, UAFDetector::opDetails>::iterator it = detector.opIDMap.begin(); it != detector.opIDMap.end(); it++) {

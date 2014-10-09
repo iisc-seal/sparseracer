@@ -58,7 +58,11 @@ int main(int argc, char* argv[]) {
 	clock_t totalStart, totalEnd, tStart, tEnd;
 	totalStart = clock();
 	tStart = totalStart;
-	if (parser.parse(detectorObj) < 0) {
+	int retParse = parser.parse(detectorObj);
+	if (retParse == -2) {
+		cout << "Giving up! More than 15k nodes\n";
+		return -1;
+	} else if (retParse < 0) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
 	}
