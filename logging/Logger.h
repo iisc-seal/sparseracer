@@ -19,7 +19,7 @@ public:
 	Logger();
 	virtual ~Logger();
 
-//	void writeLog(string message);
+	void writeLog(string message);
 	void writeLog();
 	void initLog();
 

@@ -26,7 +26,9 @@ Logger::~Logger() {
 	logFile.close();
 }
 
-//void Logger::writeLog(string message) {
+void Logger::writeLog(string message) {
+	logFile << message;
+}
 void Logger::writeLog() {
 	string message = streamObject.str();
 	logFile << message;

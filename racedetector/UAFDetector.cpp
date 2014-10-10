@@ -3098,8 +3098,11 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	std::string op1TaskID = opIDMap[op1ID].taskID;
 	std::string op2TaskID = opIDMap[op2ID].taskID;
 
+	string line1, line2, line3;
+
 	allLogger->streamObject << op1ID << " " << op1ThreadID
 			<< " " << op2ID << " " << op2ThreadID << "\n";
+	line1 = allLogger->streamObject.str();
 	allLogger->writeLog();
 
 	// Finding the enq path
@@ -3142,6 +3145,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	}
 
 	allLogger->streamObject << "\n";
+	line2 = allLogger->streamObject.str();
 	allLogger->writeLog();
 
 	// op2
@@ -3177,48 +3181,76 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	}
 
 	allLogger->streamObject << "\n";
+
+	line3 = allLogger->streamObject.str();
+
 	allLogger->writeLog();
 
 	if (op1TaskID.compare("") != 0 && op2TaskID.compare("") != 0) {
+#if 0
 		taskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 		taskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 								 << " task " << op1TaskID << "\n"
 								 << op2Type << ": "	<< op2ID << " thread " << op2ThreadID
 								 << " task " << op2TaskID << "\n";
 		taskLogger->writeLog();
+#endif
+		taskLogger->writeLog(line1);
+		taskLogger->writeLog(line2);
+		taskLogger->writeLog(line3);
 
 		// It is not sufficient that the task of read/write (op1) is not atomic,
 		// we need the read to happen after the (first) nesting loop.
 		if (!taskIDMap[op1TaskID].atomic && taskIDMap[op1TaskID].firstPauseOpID < op1ID) {
+#if 0
 			nestingLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 			nestingLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 									 << " task " << op1TaskID << "\n"
 									 << op2Type << ": " << op2ID << " thread " << op2ThreadID
 									 << " task " << op2TaskID << "\n";
 			nestingLogger->writeLog();
+#endif
+			nestingLogger->writeLog(line1);
+			nestingLogger->writeLog(line2);
+			nestingLogger->writeLog(line3);
 		} else {
+#if 0
 			noNestingLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 			noNestingLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 									 << " task " << op1TaskID << "\n"
 									 << op2Type << ": " << op2ID << " thread " << op2ThreadID
 									 << " task " << op2TaskID << "\n";
 			noNestingLogger->writeLog();
+#endif
+			noNestingLogger->writeLog(line1);
+			noNestingLogger->writeLog(line2);
+			noNestingLogger->writeLog(line3);
 		}
 
 	} else {
+#if 0
 		noTaskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 		noTaskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 								 << " task " << op1TaskID << "\n"
 								 << op2Type << ": " << op2ID << " thread " << op2ThreadID
 								 << " task " << op2TaskID << "\n";
 		noTaskLogger->writeLog();
+#endif
+		noTaskLogger->writeLog(line1);
+		noTaskLogger->writeLog(line2);
+		noTaskLogger->writeLog(line3);
 	}
 
 	if (raceType == MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK) {
+#if 0
 		allocMemopInSameTaskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 		allocMemopInSameTaskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
 				<< " task " << op1TaskID << "\n"
 				<< op2Type << ": " << op2ID << " thread " << op2ThreadID << " task " << op2TaskID << "\n";
 		allocMemopInSameTaskLogger->writeLog();
+#endif
+		allocMemopInSameTaskLogger->writeLog(line1);
+		allocMemopInSameTaskLogger->writeLog(line2);
+		allocMemopInSameTaskLogger->writeLog(line3);
 	}
 }
