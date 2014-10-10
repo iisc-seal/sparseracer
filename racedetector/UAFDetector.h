@@ -432,6 +432,8 @@ private:
 
 	void log(IDType op1ID, IDType op2ID, std::string op1Type,
 			std::string op2Type, bool uafOrRace);
+
+	std::string findPreviousTaskOfOp(IDType op);
 };
 
 class HBGraph {

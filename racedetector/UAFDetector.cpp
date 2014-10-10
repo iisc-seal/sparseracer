@@ -3058,6 +3058,27 @@ void UAFDetector::initLog(std::string traceFileName) {
 	raceAllocMemopSameTaskLogger.init(raceFileName);
 }
 
+std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
+	IDType blockID = opIDMap[op].blockID;
+	if (blockID == -1) {
+		cout << "ERROR: Cannot find blockID of op " << op << "\n";
+		return "";
+	}
+
+	while (blockIDMap[blockID].taskID.compare("") == 0) {
+		blockID = blockIDMap[blockID].prevBlockInThread;
+		if (blockID == -1)
+			break;
+	}
+
+	if (blockID == -1) {
+		cout << "DEBUG: Cannot find previous task of op\n";
+		return "";
+	}
+
+	return blockIDMap[blockID].taskID;
+}
+
 // uafOrRace: true if uaf, false if data race
 void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 		std::string op2Type, bool uafOrRace) {
@@ -3097,6 +3118,11 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, std::string op1Type,
 	IDType op2ThreadID = opIDMap[op2ID].threadID;
 	std::string op1TaskID = opIDMap[op1ID].taskID;
 	std::string op2TaskID = opIDMap[op2ID].taskID;
+
+	if (op1TaskID.compare("") == 0)
+		op1TaskID = findPreviousTaskOfOp(op1ID);
+	if (op2TaskID.compare("") == 0)
+		op2TaskID = findPreviousTaskOfOp(op2ID);
 
 	string line1, line2, line3;
 
