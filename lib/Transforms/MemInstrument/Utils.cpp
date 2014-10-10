@@ -212,10 +212,15 @@ namespace MemInstrument {
       return false;
     std::string instrDirs(dirs);
     std::vector<std::string> wList = split(instrDirs, ':');
-
+    //llvm::outs() << "Current " << name << "\n";
     for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
-      std::size_t found = name.find(*it);
-      if (found != std::string::npos){
+      // std::size_t found = name.find(*it);
+      // if (found != std::string::npos){
+      // 	return true;
+      // }
+      //llvm::outs() << "Matching against " << *it << "\n";
+      if(name.compare(*it) == 0){
+	//llvm::outs() << "Matched directory " << name << "\n";
 	return true;
       }
     }
