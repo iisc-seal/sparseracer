@@ -1271,6 +1271,9 @@ int UAFDetector::add_WaitNotify_Edges() {
 					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 					return -1;
 				} else {
+#ifdef GRAPHDEBUG
+					cout << "DEBUG: Adding edge from " << nodeI << " to " << nodeJ << "\n";
+#endif
 					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
 					if (addEdgeRetValue == 1) {
 						flag = true;

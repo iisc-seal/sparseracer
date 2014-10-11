@@ -100,7 +100,6 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, IDType sourceB
 
 	assert(sourceBlock > 0);
 	assert(destinationBlock > 0);
-	assert(sourceBlock != destinationBlock);
 
 
 	int retOpValue = opEdgeExists(sourceNode, destinationNode, sourceBlock, destinationBlock);
@@ -110,6 +109,8 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, IDType sourceB
 			cout << "Trying to add edge from " << sourceNode		<< " to " << destinationNode << endl;
 			return -1;
 		}
+
+		assert(sourceBlock != destinationBlock);
 
 		opAdjMatrix[sourceNode][destinationNode] = true;
 
