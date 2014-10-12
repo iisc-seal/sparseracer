@@ -430,8 +430,8 @@ private:
 
 	RaceKind raceType;
 
-	void log(IDType op1ID, IDType op2ID, std::string op1Type,
-			std::string op2Type, bool uafOrRace);
+	void log(IDType op1ID, IDType op2ID, IDType op1AllocID, IDType op2AllocID,
+			std::string op1Type, std::string op2Type, bool uafOrRace);
 
 	std::string findPreviousTaskOfOp(IDType op);
 };
