@@ -35,7 +35,6 @@ UAFDetector::UAFDetector()
 	graph = NULL;
 	raceCount = 0;
 	uafCount = 0;
-	raceType = UNKNOWN;
 }
 
 UAFDetector::~UAFDetector() {
@@ -2607,6 +2606,74 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 0;
 }
 
+void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
+	assert(race.op1 > 0 && race.op2 > 0);
+
+	race.op1Task = opIDMap[race.op1].taskID;
+	race.op2Task = opIDMap[race.op2].taskID;
+
+	if (race.op1Task.compare("") == 0 || race.op2Task.compare("") == 0) {
+		race.raceType = NOTASKRACE;
+		return;
+	}
+
+	if (opIDMap[race.op1].threadID != opIDMap[race.op1].threadID) {
+		race.raceType = MULTITHREADED;
+		return;
+	}
+
+	if ((!(taskIDMap[race.op1Task].atomic) || (taskIDMap[race.op1Task].parentTask.compare("") != 0))
+			&& (!(taskIDMap[race.op2Task].atomic) || (taskIDMap[race.op2Task].parentTask.compare("") != 0))) {
+		race.raceType = NESTED_NESTED;
+	} else if (!(taskIDMap[race.op1Task].atomic) || (taskIDMap[race.op1Task].parentTask.compare("") != 0)) {
+		race.raceType = NESTED_PRIMARY;
+	} else if (!(taskIDMap[race.op2Task].atomic) || (taskIDMap[race.op2Task].parentTask.compare("") != 0)) {
+		race.raceType = NESTED_PRIMARY;
+	}
+
+	IDType op1Deq = taskIDMap[race.op1Task].deqOpID;
+	IDType op2Deq = taskIDMap[race.op2Task].deqOpID;
+
+	if (op1Deq <= 0) {
+		cout << "ERROR: Cannot find deq of task " << race.op1Task << "\n";
+		return;
+	}
+	if (op2Deq <= 0) {
+		cout << "ERROR: Cannot find deq of task " << race.op2Task << "\n";
+		return;
+	}
+
+	IDType nodeDeq1 = opIDMap[op1Deq].nodeID;
+	IDType nodeDeq2 = opIDMap[op2Deq].nodeID;
+	if (nodeDeq1 <= 0) {
+		cout << "ERROR: Cannot find node for deq op " << op1Deq << "\n";
+		return;
+	}
+	if (nodeDeq2 <= 0) {
+		cout << "ERROR: Cannot find node for deq op " << op2Deq << "\n";
+		return;
+	}
+
+	if (graph->opEdgeExists(nodeDeq1, nodeDeq2)) {
+		race.raceType = NESTED_WITH_TASKS_ORDERED;
+	}
+
+	return;
+}
+
+void UAFDetector::insertRace(raceDetails race) {
+	if (allocToRaceMap.find(race.allocID) == allocToRaceMap.end()) {
+		std::vector<raceDetails> allocRaceVector;
+		allocRaceVector.push_back(race);
+		allocToRaceMap[race.allocID] = allocRaceVector;
+	} else {
+		std::vector<raceDetails> existingEntry = allocToRaceMap[race.allocID];
+		existingEntry.push_back(race);
+		allocToRaceMap.erase(allocToRaceMap.find(race.allocID));
+		allocToRaceMap[race.allocID] = existingEntry;
+	}
+}
+
 IDType  UAFDetector::findUAF() {
 
 	bool flag = false;
@@ -2620,7 +2687,6 @@ IDType  UAFDetector::findUAF() {
 	bool falsePositiveForFree; // Flag to track if we saw a false positive for a given free
 #endif
 	for (map<IDType, freeOpDetails>::iterator freeIt = freeIDMap.begin(); freeIt != freeIDMap.end(); freeIt++) {
-		raceType = UNKNOWN;
 #ifdef UNIQUERACE
 		raceForFree = false;
 		falsePositiveForFree = false;
@@ -2648,8 +2714,10 @@ IDType  UAFDetector::findUAF() {
 		}
 
 		for (set<IDType>::iterator readIt = freeIt->second.readOps.begin(); readIt != freeIt->second.readOps.end(); readIt++) {
-			raceType = UNKNOWN;
 			IDType readID = *readIt;
+
+			raceDetails uaf;
+			uaf.allocID = allocID;
 
 			IDType nodeRead = opIDMap[readID].nodeID;
 			if (nodeRead <= 0) {
@@ -2668,9 +2736,16 @@ IDType  UAFDetector::findUAF() {
 				}
 
 				// If free and read are in the same node, they are in the same thread
-				raceType = SINGLETHREADED;
+				uaf.op1 = readID;
+				uaf.op2 = freeID;
+				uaf.uafOrRace = true;
 
-				log(readID, freeID, allocID, "read", "free", true);
+				getRaceKind(uaf);
+				uaf.raceType = SINGLETHREADED;
+				insertRace(uaf);
+
+				uafCount++;
+//				log(readID, freeID, allocID, "read", "free", true);
 
 				flag = true;
 #ifdef UNIQUERACE
@@ -2697,12 +2772,15 @@ IDType  UAFDetector::findUAF() {
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
 
-				if (opIDMap[readID].threadID == opIDMap[freeID].threadID)
-					raceType = SINGLETHREADED;
-				else
-					raceType = MULTITHREADED;
+				uaf.op1 = readID;
+				uaf.op2 = freeID;
+				uaf.uafOrRace = true;
 
-				log(readID, freeID, allocID, "read", "free", true);
+				getRaceKind(uaf);
+				insertRace(uaf);
+
+				uafCount++;
+//				log(readID, freeID, allocID, "read", "free", true);
 				flag = true;
 #ifdef UNIQUERACE
 				raceForFree = true;
@@ -2713,6 +2791,11 @@ IDType  UAFDetector::findUAF() {
 			}
 
 			if (graph->opEdgeExists(nodeRead, nodeFree) == 0) {
+
+				uaf.op1 = readID;
+				uaf.op2 = freeID;
+				uaf.uafOrRace = true;
+				getRaceKind(uaf);
 
 #ifdef ADDITIONS
 				if (allocID > 0) {
@@ -2727,6 +2810,7 @@ IDType  UAFDetector::findUAF() {
 					if (edgeExists &&
 							opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
 							&& taskIDMap[opIDMap[allocID].taskID].atomic) {
+
 						if (opIDMap[freeID].threadID == opIDMap[readID].threadID) {
 #ifdef UNIQUERACE
 							if (!falsePositiveForFree) {
@@ -2736,12 +2820,12 @@ IDType  UAFDetector::findUAF() {
 #else
 							falsePositives++;
 #endif
-							raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
+							uaf.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
 
 							continue;
 						} else {
 							// May be we should categorize these separately. Easy to reproduce
-							raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
+							uaf.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
 						}
 					}
 				}
@@ -2756,7 +2840,10 @@ IDType  UAFDetector::findUAF() {
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
 
-				log(readID, freeID, allocID, "read", "free", true);
+				insertRace(uaf);
+
+				uafCount++;
+//				log(readID, freeID, allocID, "read", "free", true);
 
 				flag = true;
 #ifdef UNIQUERACE
@@ -2776,6 +2863,9 @@ IDType  UAFDetector::findUAF() {
 		for (set<IDType>::iterator writeIt = freeIt->second.writeOps.begin(); writeIt != freeIt->second.writeOps.end(); writeIt++) {
 			IDType writeID = *writeIt;
 
+			raceDetails uaf;
+			uaf.allocID = allocID;
+
 			IDType nodeWrite = opIDMap[writeID].nodeID;
 			if (nodeWrite <= 0) {
 				cout << "ERROR: Invalid node ID for op " << writeID << "\n";
@@ -2793,9 +2883,17 @@ IDType  UAFDetector::findUAF() {
 				}
 
 				// If free and read are in the same node, they are in the same thread
-				raceType = SINGLETHREADED;
+				uaf.op1 = writeID;
+				uaf.op2 = freeID;
+				uaf.uafOrRace = true;
+				getRaceKind(uaf);
+				uaf.raceType = SINGLETHREADED;
 
-				log(writeID, freeID, allocID, "read", "free", true);
+				insertRace(uaf);
+
+				uafCount++;
+
+//				log(writeID, freeID, allocID, "read", "free", true);
 
 				flag = true;
 #ifdef UNIQUERACE
@@ -2822,12 +2920,16 @@ IDType  UAFDetector::findUAF() {
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
 
-				if (opIDMap[writeID].threadID == opIDMap[freeID].threadID)
-					raceType = SINGLETHREADED;
-				else
-					raceType = MULTITHREADED;
+				uaf.op1 = writeID;
+				uaf.op2 = freeID;
+				uaf.uafOrRace = true;
 
-				log(writeID, freeID, allocID, "read", "free", true);
+				getRaceKind(uaf);
+				insertRace(uaf);
+
+//				log(writeID, freeID, allocID, "read", "free", true);
+
+				uafCount++;
 
 				flag = true;
 #ifdef UNIQUERACE
@@ -2840,11 +2942,16 @@ IDType  UAFDetector::findUAF() {
 
 			if (graph->opEdgeExists(nodeWrite, nodeFree) == 0) {
 
+				uaf.op1 = writeID;
+				uaf.op2 = freeID;
+				uaf.uafOrRace = true;
+				getRaceKind(uaf);
+
 #ifdef ADDITIONS
 				if (allocID > 0) {
 					// Even if there is no edge between write and free,
 					// if there is an edge from alloc to write (alloc happens before write), and the alloc is in the same task as the write and the task is atomic, this is a false positive.
-					// This is true only if free is in the same thwrite as alloc and write.
+					// This is true only if free is in the same thread as alloc and write.
 					bool edgeExists = false;
 					if (nodeAlloc == nodeWrite && allocID < writeID)
 						edgeExists = true;
@@ -2862,10 +2969,10 @@ IDType  UAFDetector::findUAF() {
 #else
 							falsePositives++;
 #endif
-							raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
+							uaf.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
 							continue;
 						} else {
-							raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
+							uaf.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
 						}
 					}
 				}
@@ -2881,7 +2988,9 @@ IDType  UAFDetector::findUAF() {
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
 
-				log(writeID, freeID, allocID, "read", "free", true);
+				insertRace(uaf);
+				uafCount++;
+//				log(writeID, freeID, allocID, "read", "free", true);
 
 				flag = true;
 #ifdef UNIQUERACE
@@ -2941,6 +3050,9 @@ IDType UAFDetector::findDataRaces() {
 #endif
 					continue;
 				}
+				UAFDetector::raceDetails dataRace;
+				dataRace.allocID = allocIt->first;
+
 				if (graph->opEdgeExists(nodeWrite, nodeWrite2) == 0 && graph->opEdgeExists(nodeWrite2, nodeWrite) == 0) {
 					cout << "Potential data race between write ops " << *writeIt << " (in task " << opIDMap[*writeIt].taskID
 						 << " in thread " << opIDMap[*writeIt].threadID
@@ -2948,12 +3060,15 @@ IDType UAFDetector::findDataRaces() {
 						 << " in thread " << opIDMap[*write2It].threadID << ") on address "
 						 << writeAddress1 << endl;
 
-					if (opIDMap[*writeIt].threadID == opIDMap[*write2It].threadID)
-						raceType = SINGLETHREADED;
-					else
-						raceType = MULTITHREADED;
+					dataRace.op1 = *writeIt;
+					dataRace.op2 = *write2It;
+					dataRace.uafOrRace = false;
 
-					log(*writeIt, *write2It, allocIt->first, "write", "write", false);
+					getRaceKind(dataRace);
+					insertRace(dataRace);
+					raceCount++;
+//					log(*writeIt, *write2It, allocIt->first, "write", "write", false);
+
 
 					flag = true;
 #ifdef UNIQUERACE
@@ -2988,6 +3103,9 @@ IDType UAFDetector::findDataRaces() {
 #endif
 					continue;
 				}
+				UAFDetector::raceDetails dataRace;
+				dataRace.allocID = allocIt->first;
+
 				if (graph->opEdgeExists(nodeWrite, nodeRead) == 0 && graph->opEdgeExists(nodeRead, nodeWrite) == 0) {
 					cout << "Potential data race between read op " << *readIt << " (in task " << opIDMap[*readIt].taskID
 						 << " in thread " << opIDMap[*readIt].threadID
@@ -2995,12 +3113,15 @@ IDType UAFDetector::findDataRaces() {
 						 << " in thread " << opIDMap[*writeIt].threadID << ") on address "
 						 << readAddress << "\n";
 
-					if (opIDMap[*writeIt].threadID == opIDMap[*readIt].threadID)
-						raceType = SINGLETHREADED;
-					else
-						raceType = MULTITHREADED;
+					dataRace.op1 = *writeIt;
+					dataRace.op2 = *readIt;
+					dataRace.uafOrRace = false;
 
-					log(*readIt, *writeIt, allocIt->first, "read", "write", false);
+					getRaceKind(dataRace);
+					insertRace(dataRace);
+
+					raceCount++;
+//					log(*readIt, *writeIt, allocIt->first, "read", "write", false);
 
 					flag = true;
 #ifdef UNIQUERACE
@@ -3030,6 +3151,7 @@ void UAFDetector::initLog(std::string traceFileName) {
 	std::string raceFileName = traceFileName + ".race.all";
 	raceAllLogger.init(raceFileName);
 
+#if 0
 	uafFileName = traceFileName + ".uaf.withnesting";
 	uafNestingLogger.init(uafFileName);
 	raceFileName = traceFileName + ".race.withnesting";
@@ -3044,6 +3166,7 @@ void UAFDetector::initLog(std::string traceFileName) {
 	uafTaskLogger.init(uafFileName);
 	raceFileName = traceFileName + ".race.withtask";
 	raceTaskLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.withouttask";
 	uafNoTaskLogger.init(uafFileName);
@@ -3059,6 +3182,26 @@ void UAFDetector::initLog(std::string traceFileName) {
 	uafAllocMemopSameTaskLogger.init(uafFileName);
 	raceFileName = traceFileName + ".race.allocmemopinsametask";
 	raceAllocMemopSameTaskLogger.init(raceFileName);
+
+	uafFileName = traceFileName + ".uaf.nestednested";
+	uafNestedNestedLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.nestednested";
+	raceNestedNestedLogger.init(raceFileName);
+
+	uafFileName = traceFileName + ".uaf.nestedprimary";
+	uafNestedPrimaryLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.nestedprimary";
+	raceNestedPrimaryLogger.init(raceFileName);
+
+	uafFileName = traceFileName + ".uaf.nestedordered";
+	uafNestedOrderedLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.nestedordered";
+	raceNestedOrderedLogger.init(raceFileName);
+
+	uafFileName = traceFileName + ".uaf.other";
+	uafOtherLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.other";
+	raceOtherLogger.init(raceFileName);
 }
 
 std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
@@ -3082,15 +3225,25 @@ std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
 	return blockIDMap[blockID].taskID;
 }
 
+void UAFDetector::log() {
+	cout << "Uniqued races (UAF+data race) total = " << allocToRaceMap.size() << "\n";
+
+	for (map<IDType, std::vector<UAFDetector::raceDetails> >::iterator allocIt = allocToRaceMap.begin();
+			allocIt != allocToRaceMap.end(); allocIt++) {
+		for (std::vector<UAFDetector::raceDetails>::iterator raceIt = allocIt->second.begin();
+				raceIt != allocIt->second.end(); raceIt++) {
+			log(raceIt->op1, raceIt->op2, raceIt->allocID,
+					raceIt->uafOrRace, raceIt->raceType);
+		}
+	}
+}
+
 // uafOrRace: true if uaf, false if data race
 void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
-		std::string op1Type, std::string op2Type,
-		bool uafOrRace) {
+		bool uafOrRace, RaceKind raceType) {
 
-	Logger *taskLogger, *nestingLogger, *noNestingLogger, *noTaskLogger,
-		*allLogger, *enqPathLogger, *allocMemopInSameTaskLogger;
+	Logger *allLogger, *enqPathLogger, *raceLogger;
 	std::string raceTypeString;
-	unsigned long long int count;
 
 	IDType allocThreadID = -1;
 	if (opAllocID > 0) {
@@ -3098,30 +3251,44 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	}
 
 	if (uafOrRace) {
-		uafCount++;
-
 		allLogger = &uafAllLogger;
-		taskLogger = &uafTaskLogger;
-		nestingLogger = &uafNestingLogger;
-		noNestingLogger = &uafNoNestingLogger;
-		noTaskLogger = &uafNoTaskLogger;
 		enqPathLogger = &uafEnqPathLogger;
-		allocMemopInSameTaskLogger = &uafAllocMemopSameTaskLogger;
-		raceTypeString = "UAF";
-		count = uafCount;
 
 	} else {
-		raceCount++;
-
 		allLogger = &raceAllLogger;
-		taskLogger = &raceTaskLogger;
-		nestingLogger = &raceNestingLogger;
-		noNestingLogger = &raceNoNestingLogger;
-		noTaskLogger = &raceNoTaskLogger;
 		enqPathLogger = &raceEnqPathLogger;
-		allocMemopInSameTaskLogger = &raceAllocMemopSameTaskLogger;
-		raceTypeString = "Race";
-		count = raceCount;
+	}
+
+	if (raceType == NESTED_NESTED) {
+		if (uafOrRace)
+			raceLogger = &uafNestedNestedLogger;
+		else
+			raceLogger = &raceNestedNestedLogger;
+	} else if (raceType == NESTED_PRIMARY) {
+		if (uafOrRace)
+			raceLogger = &uafNestedPrimaryLogger;
+		else
+			raceLogger = &raceNestedPrimaryLogger;
+	} else if (raceType == NESTED_WITH_TASKS_ORDERED) {
+		if (uafOrRace)
+			raceLogger = &uafNestedOrderedLogger;
+		else
+			raceLogger = &raceNestedOrderedLogger;
+	} else if (raceType == NOTASKRACE) {
+		if (uafOrRace)
+			raceLogger = &uafNoTaskLogger;
+		else
+			raceLogger = &raceNoTaskLogger;
+	} else if (raceType == MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK) {
+		if (uafOrRace)
+			raceLogger = &uafAllocMemopSameTaskLogger;
+		else
+			raceLogger = &raceAllocMemopSameTaskLogger;
+	} else {
+		if (uafOrRace)
+			raceLogger = &uafOtherLogger;
+		else
+			raceLogger = &raceOtherLogger;
 	}
 
 	IDType op1ThreadID = opIDMap[op1ID].threadID;
@@ -3148,7 +3315,6 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	IDType enqID, threadID = -1;
 	std::string tempTaskID = "";
 
-	enqPathLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
 	// op1
 	enqPathLogger->streamObject << "OP: " << op1ID << " " << op1TaskID
 			<< " " << op1ThreadID << "\n";
@@ -3225,81 +3391,9 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 
 	allLogger->writeLog();
 
-	if (op1TaskID.compare("") != 0 && op2TaskID.compare("") != 0) {
-#if 0
-		taskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
-		taskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
-								 << " task " << op1TaskID << "\n"
-								 << op2Type << ": "	<< op2ID << " thread " << op2ThreadID
-								 << " task " << op2TaskID << "\n";
-		taskLogger->writeLog();
-#endif
-		taskLogger->writeLog(line1);
-		taskLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
-		taskLogger->writeLog();
-		taskLogger->writeLog(line2);
-		taskLogger->writeLog(line3);
-
-		// It is not sufficient that the task of read/write (op1) is not atomic,
-		// we need the read to happen after the (first) nesting loop.
-		if (!taskIDMap[op1TaskID].atomic && taskIDMap[op1TaskID].firstPauseOpID < op1ID) {
-#if 0
-			nestingLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
-			nestingLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
-									 << " task " << op1TaskID << "\n"
-									 << op2Type << ": " << op2ID << " thread " << op2ThreadID
-									 << " task " << op2TaskID << "\n";
-			nestingLogger->writeLog();
-#endif
-			nestingLogger->writeLog(line1);
-			nestingLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
-			nestingLogger->writeLog();
-			nestingLogger->writeLog(line2);
-			nestingLogger->writeLog(line3);
-		} else {
-#if 0
-			noNestingLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
-			noNestingLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
-									 << " task " << op1TaskID << "\n"
-									 << op2Type << ": " << op2ID << " thread " << op2ThreadID
-									 << " task " << op2TaskID << "\n";
-			noNestingLogger->writeLog();
-#endif
-			noNestingLogger->writeLog(line1);
-			noNestingLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
-			noNestingLogger->writeLog();
-			noNestingLogger->writeLog(line2);
-			noNestingLogger->writeLog(line3);
-		}
-
-	} else {
-#if 0
-		noTaskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
-		noTaskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
-								 << " task " << op1TaskID << "\n"
-								 << op2Type << ": " << op2ID << " thread " << op2ThreadID
-								 << " task " << op2TaskID << "\n";
-		noTaskLogger->writeLog();
-#endif
-		noTaskLogger->writeLog(line1);
-		noTaskLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
-		noTaskLogger->writeLog();
-		noTaskLogger->writeLog(line2);
-		noTaskLogger->writeLog(line3);
-	}
-
-	if (raceType == MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK) {
-#if 0
-		allocMemopInSameTaskLogger->streamObject << "\n" << raceTypeString << " " << count << ":\n";
-		allocMemopInSameTaskLogger->streamObject << op1Type << ": " << op1ID << " thread " << op1ThreadID
-				<< " task " << op1TaskID << "\n"
-				<< op2Type << ": " << op2ID << " thread " << op2ThreadID << " task " << op2TaskID << "\n";
-		allocMemopInSameTaskLogger->writeLog();
-#endif
-		allocMemopInSameTaskLogger->writeLog(line1);
-		allocMemopInSameTaskLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
-		allocMemopInSameTaskLogger->writeLog();
-		allocMemopInSameTaskLogger->writeLog(line2);
-		allocMemopInSameTaskLogger->writeLog(line3);
-	}
+	raceLogger->writeLog(line1);
+	raceLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
+	raceLogger->writeLog();
+	raceLogger->writeLog(line2);
+	raceLogger->writeLog(line3);
 }

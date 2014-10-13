@@ -27,6 +27,10 @@ enum RaceKind {
 	MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK,
 	SINGLETHREADED,
 	SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP,
+	NESTED_NESTED,
+	NESTED_PRIMARY,
+	NESTED_WITH_TASKS_ORDERED,
+	NOTASKRACE,
 	UNKNOWN
 };
 
@@ -403,6 +407,8 @@ public:
 
 	void initLog(std::string traceFileName);
 
+	void log();
+
 #ifdef GRAPHDEBUG
 	void printEdges();
 #endif
@@ -427,13 +433,31 @@ private:
 	Logger uafNoTaskLogger, raceNoTaskLogger;
 	Logger uafEnqPathLogger, raceEnqPathLogger;
 	Logger uafAllocMemopSameTaskLogger, raceAllocMemopSameTaskLogger;
+	Logger uafNestedNestedLogger, raceNestedNestedLogger;
+	Logger uafNestedPrimaryLogger, raceNestedPrimaryLogger;
+	Logger uafNestedOrderedLogger, raceNestedOrderedLogger;
+	Logger uafOtherLogger, raceOtherLogger;
 
-	RaceKind raceType;
+	class raceDetails {
+	public:
+		IDType op1;
+		IDType op2;
+		std::string op1Task, op2Task;
+		IDType allocID;
+		bool uafOrRace; // true if uaf, false if race
+		RaceKind raceType;
+	};
+
+	map<IDType, std::vector<raceDetails> > allocToRaceMap;
+
+	void getRaceKind(raceDetails &race);
+
 
 	void log(IDType op1ID, IDType op2ID, IDType opAllocID,
-			std::string op1Type, std::string op2Type, bool uafOrRace);
+			bool uafOrRace, RaceKind raceType);
 
 	std::string findPreviousTaskOfOp(IDType op);
+	void insertRace(raceDetails race);
 };
 
 class HBGraph {

@@ -115,6 +115,8 @@ int main(int argc, char* argv[]) {
 	cout << "Time taken for finding races: " << convertTime(tStart, tEnd) << "\n";
 #endif
 
+	detectorObj.log();
+
 	totalEnd = clock();
 	cout << "Total time taken: " << convertTime(totalStart, totalEnd) << "\n";
 	return 0;
