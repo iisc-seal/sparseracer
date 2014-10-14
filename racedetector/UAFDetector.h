@@ -448,7 +448,7 @@ private:
 		bool uafOrRace; // true if uaf, false if race
 		RaceKind raceType;
 
-		bool operator < (const raceDetails & param) {
+		bool operator < (const raceDetails& param) const {
 			if (this->uafOrRace && !param.uafOrRace)
 				return true;
 			else if (!(this->uafOrRace) && param.uafOrRace)
