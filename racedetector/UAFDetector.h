@@ -425,6 +425,7 @@ private:
 	int addTransSTOrMTEdges();
 
 	unsigned long long uafCount, raceCount;
+	unsigned long long uniqueUafCount, uniqueRaceCount;
 
 	Logger uafAllLogger, raceAllLogger;
 	Logger uafNestingLogger, raceNestingLogger;
@@ -446,9 +447,19 @@ private:
 		IDType allocID;
 		bool uafOrRace; // true if uaf, false if race
 		RaceKind raceType;
+
+		bool operator < (const raceDetails & param) {
+			if (this->uafOrRace && !param.uafOrRace)
+				return true;
+			else if (!(this->uafOrRace) && param.uafOrRace)
+				return false;
+			else
+				return (this->raceType < param.raceType);
+		}
 	};
 
-	map<IDType, std::vector<raceDetails> > allocToRaceMap;
+//	map<IDType, std::vector<raceDetails> > allocToRaceMap;
+	map<IDType, std::multiset<raceDetails> > allocToRaceMap;
 
 	void getRaceKind(raceDetails &race);
 

@@ -2663,12 +2663,21 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 
 void UAFDetector::insertRace(raceDetails race) {
 	if (allocToRaceMap.find(race.allocID) == allocToRaceMap.end()) {
+#if 0
 		std::vector<raceDetails> allocRaceVector;
 		allocRaceVector.push_back(race);
 		allocToRaceMap[race.allocID] = allocRaceVector;
+#endif
+		std::multiset<raceDetails> allocRaceSet;
+		allocRaceSet.insert(race);
+		allocToRaceMap[race.allocID] = allocRaceSet;
 	} else {
+#if 0
 		std::vector<raceDetails> existingEntry = allocToRaceMap[race.allocID];
 		existingEntry.push_back(race);
+#endif
+		std::multiset<raceDetails> existingEntry = allocToRaceMap[race.allocID];
+		existingEntry.insert(race);
 		allocToRaceMap.erase(allocToRaceMap.find(race.allocID));
 		allocToRaceMap[race.allocID] = existingEntry;
 	}
@@ -3226,8 +3235,9 @@ std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
 }
 
 void UAFDetector::log() {
-	cout << "Uniqued races (UAF+data race) total = " << allocToRaceMap.size() << "\n";
+	cout << "#Allocation sites with races = " << allocToRaceMap.size() << "\n";
 
+#if 0
 	for (map<IDType, std::vector<UAFDetector::raceDetails> >::iterator allocIt = allocToRaceMap.begin();
 			allocIt != allocToRaceMap.end(); allocIt++) {
 		for (std::vector<UAFDetector::raceDetails>::iterator raceIt = allocIt->second.begin();
@@ -3236,6 +3246,150 @@ void UAFDetector::log() {
 					raceIt->uafOrRace, raceIt->raceType);
 		}
 	}
+#endif
+
+	// Find UAFs
+	uniqueUafCount = 0;
+	for (map<IDType, UAFDetector::allocOpDetails>::iterator allocIt = allocIDMap.begin();
+			allocIt != allocIDMap.end(); allocIt++) {
+		if (allocToRaceMap.find(allocIt->first) == allocToRaceMap.end())
+			continue;
+
+		bool foundNested = false;
+		raceDetails tempRace;
+		tempRace.uafOrRace = true;
+		tempRace.raceType = NESTED_WITH_TASKS_ORDERED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			ret = allocToRaceMap[allocIt->first].equal_range(tempRace);
+		if (ret.first != ret.second) {
+			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
+					raceIt != ret.second; raceIt++) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueUafCount++;
+				foundNested = true;
+				break;
+			}
+
+			if (foundNested)
+				continue;
+		}
+
+		foundNested = false;
+		tempRace.raceType = NESTED_NESTED;
+		ret = allocToRaceMap[allocIt->first].equal_range(tempRace);
+		if (ret.first != ret.second) {
+			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
+					raceIt != ret.second; raceIt++) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueUafCount++;
+				foundNested = true;
+				break;
+			}
+
+			if (foundNested)
+				continue;
+		}
+
+		foundNested = false;
+		tempRace.raceType = NESTED_PRIMARY;
+		ret = allocToRaceMap[allocIt->first].equal_range(tempRace);
+		if (ret.first != ret.second) {
+			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
+					raceIt != ret.second; raceIt++) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueUafCount++;
+				foundNested = true;
+				break;
+			}
+
+			if (foundNested)
+				continue;
+		}
+
+		std::multiset<raceDetails>::iterator firstRace = allocToRaceMap[allocIt->first].begin();
+		if (firstRace != allocToRaceMap[allocIt->first].end()) {
+			log (firstRace->op1, firstRace->op2, firstRace->allocID,
+					firstRace->uafOrRace, firstRace->raceType);
+			uniqueUafCount++;
+			continue;
+		}
+	}
+
+	// Find data races
+	uniqueRaceCount = 0;
+	for (map<IDType, UAFDetector::allocOpDetails>::iterator allocIt = allocIDMap.begin();
+			allocIt != allocIDMap.end(); allocIt++) {
+		if (allocToRaceMap.find(allocIt->first) == allocToRaceMap.end())
+			continue;
+
+		bool foundNested = false;
+		raceDetails tempRace;
+		tempRace.uafOrRace = false;
+		tempRace.raceType = NESTED_WITH_TASKS_ORDERED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			ret = allocToRaceMap[allocIt->first].equal_range(tempRace);
+		if (ret.first != ret.second) {
+			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
+					raceIt != ret.second; raceIt++) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueRaceCount++;
+				foundNested = true;
+				break;
+			}
+
+			if (foundNested)
+				continue;
+		}
+
+		foundNested = false;
+		tempRace.raceType = NESTED_NESTED;
+		ret = allocToRaceMap[allocIt->first].equal_range(tempRace);
+		if (ret.first != ret.second) {
+			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
+					raceIt != ret.second; raceIt++) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueRaceCount++;
+				foundNested = true;
+				break;
+			}
+
+			if (foundNested)
+				continue;
+		}
+
+		foundNested = false;
+		tempRace.raceType = NESTED_PRIMARY;
+		ret = allocToRaceMap[allocIt->first].equal_range(tempRace);
+		if (ret.first != ret.second) {
+			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
+					raceIt != ret.second; raceIt++) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueRaceCount++;
+				foundNested = true;
+				break;
+			}
+
+			if (foundNested)
+				continue;
+		}
+
+		std::multiset<raceDetails>::iterator firstRace = allocToRaceMap[allocIt->first].begin();
+		if (firstRace != allocToRaceMap[allocIt->first].end()) {
+			log (firstRace->op1, firstRace->op2, firstRace->allocID,
+					firstRace->uafOrRace, firstRace->raceType);
+			uniqueRaceCount++;
+			continue;
+		}
+	}
+
+	cout << "OUTPUT: #Unique UAFs: " << uniqueUafCount << "\n";
+	cout << "OUTPUT: #Unique Races: " << uniqueRaceCount << "\n";
 }
 
 // uafOrRace: true if uaf, false if data race
