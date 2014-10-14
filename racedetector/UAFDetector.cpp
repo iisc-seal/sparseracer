@@ -3235,7 +3235,7 @@ std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
 }
 
 void UAFDetector::log() {
-	cout << "#Allocation sites with races = " << allocToRaceMap.size() << "\n";
+	cout << "\n#Allocation sites with races = " << allocToRaceMap.size() << "\n";
 
 #if 0
 	for (map<IDType, std::vector<UAFDetector::raceDetails> >::iterator allocIt = allocToRaceMap.begin();
@@ -3309,12 +3309,24 @@ void UAFDetector::log() {
 				continue;
 		}
 
+#if 0
 		std::multiset<raceDetails>::iterator firstRace = allocToRaceMap[allocIt->first].begin();
 		if (firstRace != allocToRaceMap[allocIt->first].end()) {
 			log (firstRace->op1, firstRace->op2, firstRace->allocID,
 					firstRace->uafOrRace, firstRace->raceType);
 			uniqueUafCount++;
 			continue;
+		}
+#endif
+
+		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
+				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
+			if (raceIt->uafOrRace) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueUafCount++;
+				break;
+			}
 		}
 	}
 
@@ -3379,12 +3391,25 @@ void UAFDetector::log() {
 				continue;
 		}
 
+#if 0
 		std::multiset<raceDetails>::iterator firstRace = allocToRaceMap[allocIt->first].begin();
 		if (firstRace != allocToRaceMap[allocIt->first].end()) {
 			log (firstRace->op1, firstRace->op2, firstRace->allocID,
 					firstRace->uafOrRace, firstRace->raceType);
 			uniqueRaceCount++;
 			continue;
+		}
+#endif
+
+
+		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
+				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
+			if (!raceIt->uafOrRace) {
+				log (raceIt->op1, raceIt->op2, raceIt->allocID,
+						raceIt->uafOrRace, raceIt->raceType);
+				uniqueRaceCount++;
+				break;
+			}
 		}
 	}
 
