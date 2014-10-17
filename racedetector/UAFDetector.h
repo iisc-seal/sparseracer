@@ -30,6 +30,7 @@ enum RaceKind {
 	NESTED_NESTED,
 	NESTED_PRIMARY,
 	NESTED_WITH_TASKS_ORDERED,
+	NONATOMIC_WITH_OTHER,
 	NOTASKRACE,
 	UNKNOWN
 };
@@ -438,6 +439,7 @@ private:
 	Logger uafNestedPrimaryLogger, raceNestedPrimaryLogger;
 	Logger uafNestedOrderedLogger, raceNestedOrderedLogger;
 	Logger uafOtherLogger, raceOtherLogger;
+	Logger uafNonAtomicOtherLogger, raceNonAtomicOtherLogger;
 
 	class raceDetails {
 	public:

@@ -2624,14 +2624,24 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 		return;
 	}
 
+#if 0
 	if ((!(taskIDMap[race.op1Task].atomic) || (taskIDMap[race.op1Task].parentTask.compare("") != 0))
 			&& (!(taskIDMap[race.op2Task].atomic) || (taskIDMap[race.op2Task].parentTask.compare("") != 0))
+			&& (taskIDMap[race.op1Task].parentTask.compare(taskIDMap[race.op2Task].parentTask) == 0))
+#endif
+	if ((taskIDMap[race.op1Task].parentTask.compare("") != 0) && (taskIDMap[race.op2Task].parentTask.compare("") != 0)
 			&& (taskIDMap[race.op1Task].parentTask.compare(taskIDMap[race.op2Task].parentTask) == 0)) {
 		race.raceType = NESTED_NESTED;
-	} else if (!(taskIDMap[race.op1Task].parentTask.compare("") == 0) || (taskIDMap[race.op1Task].parentTask.compare("") != 0)) {
+	} else if (taskIDMap[race.op1Task].parentTask.compare("") != 0 &&
+			taskIDMap[race.op1Task].parentTask.compare(taskIDMap[race.op2Task].parentTask) != 0) {
 		race.raceType = NESTED_PRIMARY;
-	} else if (!(taskIDMap[race.op2Task].parentTask.compare("") == 0) || (taskIDMap[race.op2Task].parentTask.compare("") != 0)) {
+	} else if (taskIDMap[race.op2Task].parentTask.compare("") != 0 &&
+			taskIDMap[race.op2Task].parentTask.compare(taskIDMap[race.op1Task].parentTask) != 0) {
 		race.raceType = NESTED_PRIMARY;
+	} else if (!(taskIDMap[race.op1Task].atomic)) {
+		race.raceType = NONATOMIC_WITH_OTHER;
+	} else if (!(taskIDMap[race.op2Task].atomic)) {
+		race.raceType = NONATOMIC_WITH_OTHER;
 	}
 
 	IDType op1Deq = taskIDMap[race.op1Task].deqOpID;
@@ -3210,6 +3220,11 @@ void UAFDetector::initLog(std::string traceFileName) {
 	raceFileName = traceFileName + ".race.nestedordered";
 	raceNestedOrderedLogger.init(raceFileName);
 
+	uafFileName = traceFileName + ".uaf.nonatomicwithother";
+	uafNonAtomicOtherLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.nonatomicwithother";
+	raceNonAtomicOtherLogger.init(raceFileName);
+
 	uafFileName = traceFileName + ".uaf.other";
 	uafOtherLogger.init(uafFileName);
 	raceFileName = traceFileName + ".race.other";
@@ -3441,21 +3456,38 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		enqPathLogger = &raceEnqPathLogger;
 	}
 
+	bool nested = false;
+	IDType nestedTaskDeq = -1;
 	if (raceType == NESTED_NESTED) {
 		if (uafOrRace)
 			raceLogger = &uafNestedNestedLogger;
 		else
 			raceLogger = &raceNestedNestedLogger;
+		nested = true;
+		nestedTaskDeq = taskIDMap[opIDMap[op1ID].taskID].deqOpID;
 	} else if (raceType == NESTED_PRIMARY) {
 		if (uafOrRace)
 			raceLogger = &uafNestedPrimaryLogger;
 		else
 			raceLogger = &raceNestedPrimaryLogger;
+		nested = true;
+		IDType deq1 = -1;
+		IDType deq2 = -1;
+		if (taskIDMap[opIDMap[op1ID].taskID].parentTask.compare("") != 0)
+			deq1 = taskIDMap[taskIDMap[opIDMap[op1ID].taskID].parentTask].deqOpID;
+		if (taskIDMap[opIDMap[op2ID].taskID].parentTask.compare("") != 0)
+			deq2 = taskIDMap[taskIDMap[opIDMap[op2ID].taskID].parentTask].deqOpID;
+		if (deq1 == -1) nestedTaskDeq = deq2;
+		else if (deq2 == -1) nestedTaskDeq = deq1;
+		else if (deq1 < deq2) nestedTaskDeq = deq1;
+		else nestedTaskDeq = deq2;
+
 	} else if (raceType == NESTED_WITH_TASKS_ORDERED) {
 		if (uafOrRace)
 			raceLogger = &uafNestedOrderedLogger;
 		else
 			raceLogger = &raceNestedOrderedLogger;
+		nested = true;
 	} else if (raceType == NOTASKRACE) {
 		if (uafOrRace)
 			raceLogger = &uafNoTaskLogger;
@@ -3466,6 +3498,22 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			raceLogger = &uafAllocMemopSameTaskLogger;
 		else
 			raceLogger = &raceAllocMemopSameTaskLogger;
+	} else if (raceType == NONATOMIC_WITH_OTHER) {
+		if (uafOrRace)
+			raceLogger = &uafNonAtomicOtherLogger;
+		else
+			raceLogger = &raceNonAtomicOtherLogger;
+		nested = true;
+		IDType deq1 = -1;
+		IDType deq2 = -1;
+		if (!(taskIDMap[opIDMap[op1ID].taskID].atomic))
+			deq1 = taskIDMap[opIDMap[op1ID].taskID].deqOpID;
+		if (!(taskIDMap[opIDMap[op2ID].taskID].atomic))
+			deq2 = taskIDMap[opIDMap[op2ID].taskID].deqOpID;
+		if (deq1 == -1) nestedTaskDeq = deq2;
+		else if (deq2 == -1) nestedTaskDeq = deq1;
+		else if (deq1 < deq2) nestedTaskDeq = deq1;
+		else nestedTaskDeq = deq2;
 	} else {
 		if (uafOrRace)
 			raceLogger = &uafOtherLogger;
@@ -3578,4 +3626,8 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	raceLogger->writeLog();
 	raceLogger->writeLog(line2);
 	raceLogger->writeLog(line3);
+	if (nested) {
+		raceLogger->streamObject << nestedTaskDeq << "\n";
+		raceLogger->writeLog();
+	}
 }
