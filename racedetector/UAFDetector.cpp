@@ -35,6 +35,8 @@ UAFDetector::UAFDetector()
 	graph = NULL;
 	raceCount = 0;
 	uafCount = 0;
+	uniqueRaceCount = 0;
+	uniqueUafCount = 0;
 }
 
 UAFDetector::~UAFDetector() {
@@ -2623,11 +2625,12 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 	}
 
 	if ((!(taskIDMap[race.op1Task].atomic) || (taskIDMap[race.op1Task].parentTask.compare("") != 0))
-			&& (!(taskIDMap[race.op2Task].atomic) || (taskIDMap[race.op2Task].parentTask.compare("") != 0))) {
+			&& (!(taskIDMap[race.op2Task].atomic) || (taskIDMap[race.op2Task].parentTask.compare("") != 0))
+			&& (taskIDMap[race.op1Task].parentTask.compare(taskIDMap[race.op2Task].parentTask) == 0)) {
 		race.raceType = NESTED_NESTED;
-	} else if (!(taskIDMap[race.op1Task].atomic) || (taskIDMap[race.op1Task].parentTask.compare("") != 0)) {
+	} else if (!(taskIDMap[race.op1Task].parentTask.compare("") == 0) || (taskIDMap[race.op1Task].parentTask.compare("") != 0)) {
 		race.raceType = NESTED_PRIMARY;
-	} else if (!(taskIDMap[race.op2Task].atomic) || (taskIDMap[race.op2Task].parentTask.compare("") != 0)) {
+	} else if (!(taskIDMap[race.op2Task].parentTask.compare("") == 0) || (taskIDMap[race.op2Task].parentTask.compare("") != 0)) {
 		race.raceType = NESTED_PRIMARY;
 	}
 
