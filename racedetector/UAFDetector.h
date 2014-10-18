@@ -450,6 +450,14 @@ private:
 		bool uafOrRace; // true if uaf, false if race
 		RaceKind raceType;
 
+		raceDetails() {
+			op1 = -1; op2 = -1;
+			op1Task = ""; op2Task = "";
+			allocID = -1;
+			uafOrRace = true;
+			raceType = UNKNOWN;
+		}
+
 		bool operator < (const raceDetails& param) const {
 			if (this->uafOrRace && !param.uafOrRace)
 				return true;

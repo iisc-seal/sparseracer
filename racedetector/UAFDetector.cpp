@@ -2624,11 +2624,6 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 		return;
 	}
 
-#if 0
-	if ((!(taskIDMap[race.op1Task].atomic) || (taskIDMap[race.op1Task].parentTask.compare("") != 0))
-			&& (!(taskIDMap[race.op2Task].atomic) || (taskIDMap[race.op2Task].parentTask.compare("") != 0))
-			&& (taskIDMap[race.op1Task].parentTask.compare(taskIDMap[race.op2Task].parentTask) == 0))
-#endif
 	if ((taskIDMap[race.op1Task].parentTask.compare("") != 0) && (taskIDMap[race.op2Task].parentTask.compare("") != 0)
 			&& (taskIDMap[race.op1Task].parentTask.compare(taskIDMap[race.op2Task].parentTask) == 0)) {
 		race.raceType = NESTED_NESTED;
@@ -2696,6 +2691,17 @@ void UAFDetector::insertRace(raceDetails race) {
 	}
 }
 
+#if 0
+bool isInteresting(RaceKind type) {
+	if (type == NESTED_NESTED || type == NESTED_PRIMARY ||
+			type == NESTED_WITH_TASKS_ORDERED ||
+			type == NONATOMIC_WITH_OTHER)
+		return true;
+	else
+		return false;
+}
+#endif
+
 IDType  UAFDetector::findUAF() {
 
 	bool flag = false;
@@ -2747,6 +2753,7 @@ IDType  UAFDetector::findUAF() {
 				return -1;
 			}
 			if (nodeFree == nodeRead && freeID < readID) {
+#if 0
 				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
 					 << " in task " << opIDMap[readID].taskID << " in thread " << opIDMap[readID].threadID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2756,6 +2763,7 @@ IDType  UAFDetector::findUAF() {
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
+#endif
 
 				// If free and read are in the same node, they are in the same thread
 				uaf.op1 = readID;
@@ -2784,6 +2792,7 @@ IDType  UAFDetector::findUAF() {
 				continue;
 			}
 			if (graph->opEdgeExists(nodeFree, nodeRead) == 1) {
+#if 0
 				cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
 					 << " in task " << opIDMap[readID].taskID << " in thread " << opIDMap[readID].threadID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2793,6 +2802,7 @@ IDType  UAFDetector::findUAF() {
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
+#endif
 
 				uaf.op1 = readID;
 				uaf.op2 = freeID;
@@ -2852,6 +2862,7 @@ IDType  UAFDetector::findUAF() {
 					}
 				}
 #endif
+#if 0
 				cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
 					 << " in task " << opIDMap[readID].taskID << " in thread " << opIDMap[readID].threadID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2861,6 +2872,7 @@ IDType  UAFDetector::findUAF() {
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
+#endif
 
 				insertRace(uaf);
 
@@ -2894,6 +2906,7 @@ IDType  UAFDetector::findUAF() {
 				return -1;
 			}
 			if (nodeFree == nodeWrite && freeID < writeID) {
+#if 0
 				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress
 					 << " in task " << opIDMap[writeID].taskID << " in thread " << opIDMap[writeID].threadID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2903,6 +2916,7 @@ IDType  UAFDetector::findUAF() {
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID << " in thread "
 						 << opIDMap[allocID].threadID << ")\n";
 				}
+#endif
 
 				// If free and read are in the same node, they are in the same thread
 				uaf.op1 = writeID;
@@ -2932,6 +2946,7 @@ IDType  UAFDetector::findUAF() {
 				continue;
 			}
 			if (graph->opEdgeExists(nodeFree, nodeWrite) == 1) {
+#if 0
 				cout << "Definite UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress
 					 << " in task " << opIDMap[writeID].taskID << " in thread " << opIDMap[writeID].threadID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -2941,6 +2956,7 @@ IDType  UAFDetector::findUAF() {
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
+#endif
 
 				uaf.op1 = writeID;
 				uaf.op2 = freeID;
@@ -3000,6 +3016,7 @@ IDType  UAFDetector::findUAF() {
 				}
 #endif
 
+#if 0
 				cout << "Potential UAF between write op " << writeID << " (write at address " << writeSet[writeID].startingAddress
 					 << " in task " << opIDMap[writeID].taskID << " in thread " << opIDMap[writeID].threadID << ") "
 					 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -3009,6 +3026,7 @@ IDType  UAFDetector::findUAF() {
 						 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 						 << " in thread " << opIDMap[allocID].threadID << ")\n";
 				}
+#endif
 
 				insertRace(uaf);
 				uafCount++;
@@ -3076,11 +3094,13 @@ IDType UAFDetector::findDataRaces() {
 				dataRace.allocID = allocIt->first;
 
 				if (graph->opEdgeExists(nodeWrite, nodeWrite2) == 0 && graph->opEdgeExists(nodeWrite2, nodeWrite) == 0) {
+#if 0
 					cout << "Potential data race between write ops " << *writeIt << " (in task " << opIDMap[*writeIt].taskID
 						 << " in thread " << opIDMap[*writeIt].threadID
 						 << ") and " << *write2It << " (in task " << opIDMap[*write2It].taskID
 						 << " in thread " << opIDMap[*write2It].threadID << ") on address "
 						 << writeAddress1 << endl;
+#endif
 
 					dataRace.op1 = *writeIt;
 					dataRace.op2 = *write2It;
@@ -3094,7 +3114,8 @@ IDType UAFDetector::findDataRaces() {
 
 					flag = true;
 #ifdef UNIQUERACE
-					raceForAlloc = true;
+					if (isInteresting(dataRace.raceType))
+						raceForAlloc = true;
 					break;
 #else
 					continue;
@@ -3129,11 +3150,13 @@ IDType UAFDetector::findDataRaces() {
 				dataRace.allocID = allocIt->first;
 
 				if (graph->opEdgeExists(nodeWrite, nodeRead) == 0 && graph->opEdgeExists(nodeRead, nodeWrite) == 0) {
+#if 0
 					cout << "Potential data race between read op " << *readIt << " (in task " << opIDMap[*readIt].taskID
 						 << " in thread " << opIDMap[*readIt].threadID
 						 << ") and write op " << *writeIt << "(in task " << opIDMap[*writeIt].taskID
 						 << " in thread " << opIDMap[*writeIt].threadID << ") on address "
 						 << readAddress << "\n";
+#endif
 
 					dataRace.op1 = *writeIt;
 					dataRace.op2 = *readIt;
