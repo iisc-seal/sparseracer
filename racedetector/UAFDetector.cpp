@@ -3187,6 +3187,297 @@ IDType UAFDetector::findDataRaces() {
 }
 #endif
 
+IDType  UAFDetector::findUAFUsingNodes() {
+
+	bool flag = false;
+
+	// Loop through freeIDMap, for each free, find use that no HB edge
+
+	IDType falsePositives = 0;
+
+#ifdef UNIQUERACE
+	bool raceForFree; // Flag to track if we saw a race for a given free
+	bool falsePositiveForFree; // Flag to track if we saw a false positive for a given free
+#endif
+	for (map<IDType, freeOpDetails>::iterator freeIt = freeIDMap.begin(); freeIt != freeIDMap.end(); freeIt++) {
+#ifdef UNIQUERACE
+		raceForFree = false;
+		falsePositiveForFree = false;
+#endif
+		IDType freeID = freeIt->first;
+		IDType allocID = freeIt->second.allocOpID;
+		IDType nodeAlloc = -1;
+
+		IDType nodeFree = opIDMap[freeID].nodeID;
+		if (nodeFree <= 0) {
+			cout << "ERROR: Invalid node ID for op " << freeID << "\n";
+			return -1;
+		}
+
+		if (allocID == -1) {
+#ifdef GRAPHDEBUGFULL
+			cout << "DEBUG: Cannot find alloc for free op " << freeID << endl;
+#endif
+		} else {
+			nodeAlloc = opIDMap[allocID].nodeID;
+			if (nodeAlloc <= 0) {
+				cout << "ERROR: Invalid node ID for op " << allocID << "\n";
+				return -1;
+			}
+		}
+
+		for (set<IDType>::iterator nodeIt = freeIt->second.nodes.begin(); nodeIt != freeIt->second.nodes.end(); nodeIt++) {
+			if (nodeIDMap.find(*nodeIt) == nodeIDMap.end()) {
+				cout << "ERROR: Invalid node ID in freeIDMap\n";
+				return -1;
+			}
+			for (set<IDType>::iterator readIt = nodeIDMap[*nodeIt].opSet.begin();
+					readIt != nodeIDMap[*nodeIt].opSet.end(); readIt++) {
+				IDType readID = *readIt;
+
+				raceDetails uaf;
+				uaf.allocID = allocID;
+
+				IDType nodeRead = opIDMap[readID].nodeID;
+				if (nodeRead <= 0) {
+					cout << "ERROR: Invalid node ID for op " << readID << "\n";
+					return -1;
+				}
+				if (nodeFree == nodeRead && freeID < readID) {
+#if 0
+					cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
+						 << " in task " << opIDMap[readID].taskID << " in thread " << opIDMap[readID].threadID << ") "
+						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+						 << " in task " << opIDMap[freeID].taskID << " in thread " << opIDMap[freeID].threadID << ")\n";
+					if (allocID > 0) {
+						cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+							 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
+							 << " in thread " << opIDMap[allocID].threadID << ")\n";
+					}
+#endif
+
+					// If free and read are in the same node, they are in the same thread
+					uaf.op1 = readID;
+					uaf.op2 = freeID;
+					uaf.uafOrRace = true;
+
+					getRaceKind(uaf);
+					uaf.raceType = SINGLETHREADED;
+					insertRace(uaf);
+
+					uafCount++;
+//					log(readID, freeID, allocID, "read", "free", true);
+
+					flag = true;
+#ifdef UNIQUERACE
+					raceForFree = true;
+					break;
+#else
+					continue;
+#endif
+				} else if (nodeFree == nodeRead) {
+#ifdef RACEDEBUG
+					cout << "DEBUG: Free op " << freeID << " and read op " << readID << " in the same node, but read before free\n";
+					cout << "DEBUG: Skipping this read while detecting races\n";
+#endif
+					continue;
+				}
+				if (graph->opEdgeExists(nodeFree, nodeRead) == 1) {
+#if 0
+					cout << "Definite UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
+						 << " in task " << opIDMap[readID].taskID << " in thread " << opIDMap[readID].threadID << ") "
+						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+						 << " in task " << opIDMap[freeID].taskID << " in thread " << opIDMap[freeID].threadID << ")\n";
+					if (allocID > 0) {
+						cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+							 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
+							 << " in thread " << opIDMap[allocID].threadID << ")\n";
+					}
+#endif
+
+					uaf.op1 = readID;
+					uaf.op2 = freeID;
+					uaf.uafOrRace = true;
+
+					getRaceKind(uaf);
+					insertRace(uaf);
+
+					uafCount++;
+//					log(readID, freeID, allocID, "read", "free", true);
+					flag = true;
+#ifdef UNIQUERACE
+					raceForFree = true;
+					break;
+#else
+					continue;
+#endif
+				}
+
+				if (graph->opEdgeExists(nodeRead, nodeFree) == 0) {
+
+					uaf.op1 = readID;
+					uaf.op2 = freeID;
+					uaf.uafOrRace = true;
+					getRaceKind(uaf);
+
+#ifdef ADDITIONS
+					if (allocID > 0) {
+						// Even if there is no edge between read and free,
+						// if there is an edge from alloc to read (alloc happens before read), and the alloc is in the same task as the read and the task is atomic, this is a false positive.
+						// This is true only if free is in the same thread as alloc and read.
+						bool edgeExists = false;
+						if (nodeAlloc == nodeRead && allocID < readID)
+							edgeExists = true;
+						else if (nodeAlloc != nodeRead && graph->opEdgeExists(nodeAlloc, nodeRead))
+							edgeExists = true;
+						if (edgeExists &&
+								opIDMap[allocID].taskID.compare(opIDMap[readID].taskID) == 0
+								&& taskIDMap[opIDMap[allocID].taskID].atomic) {
+
+							if (opIDMap[freeID].threadID == opIDMap[readID].threadID) {
+#ifdef UNIQUERACE
+								if (!falsePositiveForFree) {
+									falsePositives++;
+									falsePositiveForFree = true;
+								}
+#else
+								falsePositives++;
+#endif
+								uaf.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
+
+								continue;
+							} else {
+								// May be we should categorize these separately. Easy to reproduce
+								uaf.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
+							}
+						}
+					}
+#endif
+#if 0
+					cout << "Potential UAF between read op " << readID << " (read at address " << readSet[readID].startingAddress
+						 << " in task " << opIDMap[readID].taskID << " in thread " << opIDMap[readID].threadID << ") "
+						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
+						 << " in task " << opIDMap[freeID].taskID << " in thread " << opIDMap[freeID].threadID << ")\n";
+					if (allocID > 0) {
+						cout << "Memory originally allocated at " << allocID << " (allocated " << allocSet[allocID].range << " bytes from address "
+							 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
+							 << " in thread " << opIDMap[allocID].threadID << ")\n";
+					}
+#endif
+
+					insertRace(uaf);
+
+					uafCount++;
+//					log(readID, freeID, allocID, "read", "free", true);
+
+					flag = true;
+#ifdef UNIQUERACE
+					raceForFree = true;
+					break;
+#else
+					continue;
+#endif
+				}
+			}
+		}
+	}
+
+	if (flag) {
+		cout << "OUTPUT: False positives = " << falsePositives << "\n";
+		return uafCount;
+	} else
+		return 0;
+}
+
+#ifndef ACCESS
+IDType UAFDetector::findDataRacesUsingNodes() {
+
+	bool flag = false;
+
+#ifdef UNIQUERACE
+	bool raceForAlloc;
+#endif
+	for (map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
+#ifdef UNIQUERACE
+		raceForAlloc = false;
+#endif
+		for (set<IDType>::iterator nodeIt1 = allocIt->second.nodes.begin(); nodeIt1 != allocIt->second.nodes.end(); nodeIt1++) {
+			if (nodeIDMap.find(*nodeIt1) == nodeIDMap.end()) {
+				cout << "ERROR: Invalid node ID in allocIDMap\n";
+				return -1;
+			}
+
+			for (set<IDType>::iterator nodeIt2 = allocIt->second.nodes.begin(); nodeIt2 != allocIt->second.nodes.end(); nodeIt2++) {
+				if (*nodeIt1 == *nodeIt2) continue;
+
+				if (nodeIDMap.find(*nodeIt2) == nodeIDMap.end()) {
+					cout << "ERROR: Invalid node ID in allocIDMap\n";
+					return -1;
+				}
+
+				if (graph->opEdgeExists(*nodeIt1, *nodeIt2) != 0 ||
+						graph->opEdgeExists(*nodeIt2, *nodeIt1) != 0)
+					continue;
+
+				for (set<IDType>::iterator op1It = nodeIDMap[*nodeIt1].opSet.begin();
+						op1It != nodeIDMap[*nodeIt1].opSet.end(); op1It++) {
+
+					string op1Address;
+					if (opIDMap[*op1It].opType.compare("write") == 0)
+						op1Address = writeSet[*op1It].startingAddress;
+					else if (opIDMap[*op1It].opType.compare("read") == 0)
+						op1Address = readSet[*op1It].startingAddress;
+					else {
+						cout << "ERROR: Op for node " << *nodeIt1 << " is neither read nor write\n";
+						return -1;
+					}
+
+					for (set<IDType>::iterator op2It = nodeIDMap[*nodeIt2].opSet.begin();
+							op2It != nodeIDMap[*nodeIt2].opSet.end(); op2It++) {
+
+						string op2Address;
+						if (opIDMap[*op2It].opType.compare("write") == 0)
+							op2Address = writeSet[*op2It].startingAddress;
+						else if (opIDMap[*op2It].opType.compare("read") == 0)
+							op2Address = readSet[*op2It].startingAddress;
+						else {
+							cout << "ERROR: Op for node " << *nodeIt2 << " is neither read nor write\n";
+							return -1;
+						}
+
+						if (op1Address.compare(op2Address) != 0) continue;
+
+						if (opIDMap[*op1It].opType.compare("read") == 0 &&
+								opIDMap[*op2It].opType.compare("read") == 0)
+							continue;
+
+						UAFDetector::raceDetails dataRace;
+						dataRace.allocID = allocIt->first;
+
+						dataRace.op1 = *op1It;
+						dataRace.op2 = *op2It;
+						dataRace.uafOrRace = false;
+
+						getRaceKind(dataRace);
+						insertRace(dataRace);
+						raceCount++;
+//						log(*writeIt, *write2It, allocIt->first, "write", "write", false);
+
+						flag = true;
+
+					}
+				}
+			}
+		}
+	}
+
+	if (flag)
+		return raceCount;
+	else
+		return 0;
+}
+#endif
+
 void UAFDetector::initLog(std::string traceFileName) {
 	uafCount = 0;
 	raceCount = 0;
@@ -3248,6 +3539,11 @@ void UAFDetector::initLog(std::string traceFileName) {
 	raceFileName = traceFileName + ".race.nonatomicwithother";
 	raceNonAtomicOtherLogger.init(raceFileName);
 
+	uafFileName = traceFileName + ".uaf.multithreadedwithsamenestingloop";
+	uafMultithreadedSameNestingLoopLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.multithreadedwithsamenestingloop";
+	raceMultithreadedSameNestingLoopLogger.init(raceFileName);
+
 	uafFileName = traceFileName + ".uaf.other";
 	uafOtherLogger.init(uafFileName);
 	raceFileName = traceFileName + ".race.other";
@@ -3277,17 +3573,6 @@ std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
 
 void UAFDetector::log() {
 	cout << "\n#Allocation sites with races = " << allocToRaceMap.size() << "\n";
-
-#if 0
-	for (map<IDType, std::vector<UAFDetector::raceDetails> >::iterator allocIt = allocToRaceMap.begin();
-			allocIt != allocToRaceMap.end(); allocIt++) {
-		for (std::vector<UAFDetector::raceDetails>::iterator raceIt = allocIt->second.begin();
-				raceIt != allocIt->second.end(); raceIt++) {
-			log(raceIt->op1, raceIt->op2, raceIt->allocID,
-					raceIt->uafOrRace, raceIt->raceType);
-		}
-	}
-#endif
 
 	// Find UAFs
 	uniqueUafCount = 0;
@@ -3349,16 +3634,6 @@ void UAFDetector::log() {
 			if (foundNested)
 				continue;
 		}
-
-#if 0
-		std::multiset<raceDetails>::iterator firstRace = allocToRaceMap[allocIt->first].begin();
-		if (firstRace != allocToRaceMap[allocIt->first].end()) {
-			log (firstRace->op1, firstRace->op2, firstRace->allocID,
-					firstRace->uafOrRace, firstRace->raceType);
-			uniqueUafCount++;
-			continue;
-		}
-#endif
 
 		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
 				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
@@ -3431,17 +3706,6 @@ void UAFDetector::log() {
 			if (foundNested)
 				continue;
 		}
-
-#if 0
-		std::multiset<raceDetails>::iterator firstRace = allocToRaceMap[allocIt->first].begin();
-		if (firstRace != allocToRaceMap[allocIt->first].end()) {
-			log (firstRace->op1, firstRace->op2, firstRace->allocID,
-					firstRace->uafOrRace, firstRace->raceType);
-			uniqueRaceCount++;
-			continue;
-		}
-#endif
-
 
 		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
 				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
@@ -3568,6 +3832,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	IDType enqID, threadID = -1;
 	std::string tempTaskID = "";
 
+	std::set<std::string> enqPathTasks1, enqPathTasks2;
 	// op1
 	enqPathLogger->streamObject << "OP: " << op1ID << " " << op1TaskID
 			<< " " << op1ThreadID << "\n";
@@ -3576,6 +3841,12 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	enqID = taskIDMap[op1TaskID].enqOpID;
 	if (enqID != -1) {
 		tempTaskID = opIDMap[enqID].taskID;
+
+		if (tempTaskID.compare("") != 0 &&
+				taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+			enqPathTasks1.insert(taskIDMap[tempTaskID].parentTask);
+		}
+
 		threadID = opIDMap[enqID].threadID;
 		enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
 			<< " " << threadID << "\n";
@@ -3590,6 +3861,12 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		enqID = taskIDMap[tempTaskID].enqOpID;
 		if (enqID != -1) {
 			tempTaskID = opIDMap[enqID].taskID;
+
+			if (tempTaskID.compare("") != 0 &&
+					taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+				enqPathTasks1.insert(taskIDMap[tempTaskID].parentTask);
+			}
+
 			threadID = opIDMap[enqID].threadID;
 			enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
 				<< " " << threadID << "\n";
@@ -3614,6 +3891,12 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	enqID = taskIDMap[op2TaskID].enqOpID;
 	if (enqID != -1) {
 		tempTaskID = opIDMap[enqID].taskID;
+
+		if (tempTaskID.compare("") != 0 &&
+				taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+			enqPathTasks2.insert(taskIDMap[tempTaskID].parentTask);
+		}
+
 		threadID = opIDMap[enqID].threadID;
 		enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
 			<< " " << threadID << "\n";
@@ -3626,6 +3909,12 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		enqID = taskIDMap[tempTaskID].enqOpID;
 		if (enqID != -1) {
 			tempTaskID = opIDMap[enqID].taskID;
+
+			if (tempTaskID.compare("") != 0 &&
+					taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+				enqPathTasks2.insert(taskIDMap[tempTaskID].parentTask);
+			}
+
 			threadID = opIDMap[enqID].threadID;
 			enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
 				<< " " << threadID << "\n";
@@ -3643,6 +3932,25 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	line3 = allLogger->streamObject.str();
 
 	allLogger->writeLog();
+
+	if (opIDMap[op1ID].threadID != opIDMap[op2ID].threadID) {
+		for (std::set<std::string>::iterator it1 = enqPathTasks1.begin();
+				it1 != enqPathTasks1.end(); it1++) {
+			for (std::set<std::string>::iterator it2 = enqPathTasks2.begin();
+					it2 != enqPathTasks2.end(); it2++) {
+				if ((*it1).compare(*it2) == 0) {
+					raceType = MULTITHREADED_FROM_SAME_NESTING_LOOP;
+					if (uafOrRace)
+						raceLogger = &uafMultithreadedSameNestingLoopLogger;
+					else
+						raceLogger = &raceMultithreadedSameNestingLoopLogger;
+					break;
+				}
+			}
+			if (raceType == MULTITHREADED_FROM_SAME_NESTING_LOOP)
+				break;
+		}
+	}
 
 	raceLogger->writeLog(line1);
 	raceLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";

@@ -85,7 +85,11 @@ int main(int argc, char* argv[]) {
 
 	tStart = clock();
 	cout << "\nFinding UAF\n";
+#ifdef NODERACES
+	int retfindUAF = detectorObj.findUAFUsingNodes();
+#else
 	int retfindUAF = detectorObj.findUAF();
+#endif
 
 	if (retfindUAF == -1) {
 		cout << "ERROR: While finding UAF\n";
@@ -101,7 +105,11 @@ int main(int argc, char* argv[]) {
 #ifdef DATARACE
 	tStart = clock();
 	cout << "\nFinding data races\n";
+#ifdef NODERACES
+	int retfindRace = detectorObj.findDataRacesUsingNodes();
+#else
 	int retfindRace = detectorObj.findDataRaces();
+#endif
 
 	if (retfindRace == -1) {
 		cout << "ERROR: While finding Dataraces\n";

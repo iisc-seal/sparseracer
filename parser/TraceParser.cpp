@@ -4233,6 +4233,48 @@ it++) {
 							opdetails.nodeID = nodeCount;
 							stackElement.nodeID = nodeCount;
 
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.allocSet.begin(); it != detector.allocSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntAlloc, endAddressIntAlloc;
+								str2 >> std::hex >> baseAddressIntAlloc;
+								endAddressIntAlloc = baseAddressIntAlloc + it->second.range - 1;
+
+								if (baseAddressIntAlloc <= addressIntRead && addressIntRead <= endAddressIntAlloc) {
+									if (detector.allocIDMap.find(it->first) == detector.allocIDMap.end()) {
+										UAFDetector::allocOpDetails allocdetails;
+										allocdetails.nodes.insert(nodeCount);
+										detector.allocIDMap[it->first] = allocdetails;
+									} else {
+										UAFDetector::allocOpDetails existingEntry = detector.allocIDMap[it->first];
+										existingEntry.nodes.insert(nodeCount);
+										detector.allocIDMap.erase(detector.allocIDMap.find(it->first));
+										detector.allocIDMap[it->first] = existingEntry;
+									}
+								}
+							}
+
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.freeSet.begin(); it != detector.freeSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntFree, endAddressIntFree;
+								str2 >> std::hex >> baseAddressIntFree;
+								endAddressIntFree = baseAddressIntFree + it->second.range - 1;
+
+								if (baseAddressIntFree <= addressIntRead && addressIntRead <= endAddressIntFree) {
+									if (detector.freeIDMap.find(it->first) == detector.freeIDMap.end()) {
+										UAFDetector::freeOpDetails freedetails;
+										freedetails.nodes.insert(nodeCount);
+										detector.freeIDMap[it->first] = freedetails;
+									} else {
+										UAFDetector::freeOpDetails existingEntry = detector.freeIDMap[it->first];
+										existingEntry.nodes.insert(nodeCount);
+										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+										detector.freeIDMap[it->first] = existingEntry;
+									}
+								}
+							}
+
 							if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
 								UAFDetector::setOfOps set;
 								set.opSet.insert(opCount);
@@ -4593,6 +4635,49 @@ it++) {
 									stackForGlobalLoop.push(stackElement);
 								}
 							}
+
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.allocSet.begin(); it != detector.allocSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntAlloc, endAddressIntAlloc;
+								str2 >> std::hex >> baseAddressIntAlloc;
+								endAddressIntAlloc = baseAddressIntAlloc + it->second.range - 1;
+
+								if (baseAddressIntAlloc <= addressIntRead && addressIntRead <= endAddressIntAlloc) {
+									if (detector.allocIDMap.find(it->first) == detector.allocIDMap.end()) {
+										UAFDetector::allocOpDetails allocdetails;
+										allocdetails.nodes.insert(opdetails.nodeID);
+										detector.allocIDMap[it->first] = allocdetails;
+									} else {
+										UAFDetector::allocOpDetails existingEntry = detector.allocIDMap[it->first];
+										existingEntry.nodes.insert(opdetails.nodeID);
+										detector.allocIDMap.erase(detector.allocIDMap.find(it->first));
+										detector.allocIDMap[it->first] = existingEntry;
+									}
+								}
+							}
+
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.freeSet.begin(); it != detector.freeSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntFree, endAddressIntFree;
+								str2 >> std::hex >> baseAddressIntFree;
+								endAddressIntFree = baseAddressIntFree + it->second.range - 1;
+
+								if (baseAddressIntFree <= addressIntRead && addressIntRead <= endAddressIntFree) {
+									if (detector.freeIDMap.find(it->first) == detector.freeIDMap.end()) {
+										UAFDetector::freeOpDetails freedetails;
+										freedetails.nodes.insert(opdetails.nodeID);
+										detector.freeIDMap[it->first] = freedetails;
+									} else {
+										UAFDetector::freeOpDetails existingEntry = detector.freeIDMap[it->first];
+										existingEntry.nodes.insert(opdetails.nodeID);
+										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+										detector.freeIDMap[it->first] = existingEntry;
+									}
+								}
+							}
+
 						}
 
 					} else if (match.compare("write") == 0) {
@@ -4669,6 +4754,48 @@ it++) {
 							nodeCount++;
 							opdetails.nodeID = nodeCount;
 							stackElement.nodeID = nodeCount;
+
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.allocSet.begin(); it != detector.allocSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntAlloc, endAddressIntAlloc;
+								str2 >> std::hex >> baseAddressIntAlloc;
+								endAddressIntAlloc = baseAddressIntAlloc + it->second.range - 1;
+
+								if (baseAddressIntAlloc <= addressIntWrite && addressIntWrite <= endAddressIntAlloc) {
+									if (detector.allocIDMap.find(it->first) == detector.allocIDMap.end()) {
+										UAFDetector::allocOpDetails allocdetails;
+										allocdetails.nodes.insert(nodeCount);
+										detector.allocIDMap[it->first] = allocdetails;
+									} else {
+										UAFDetector::allocOpDetails existingEntry = detector.allocIDMap[it->first];
+										existingEntry.nodes.insert(nodeCount);
+										detector.allocIDMap.erase(detector.allocIDMap.find(it->first));
+										detector.allocIDMap[it->first] = existingEntry;
+									}
+								}
+							}
+
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.freeSet.begin(); it != detector.freeSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntFree, endAddressIntFree;
+								str2 >> std::hex >> baseAddressIntFree;
+								endAddressIntFree = baseAddressIntFree + it->second.range - 1;
+
+								if (baseAddressIntFree <= addressIntWrite && addressIntWrite <= endAddressIntFree) {
+									if (detector.freeIDMap.find(it->first) == detector.freeIDMap.end()) {
+										UAFDetector::freeOpDetails freedetails;
+										freedetails.nodes.insert(nodeCount);
+										detector.freeIDMap[it->first] = freedetails;
+									} else {
+										UAFDetector::freeOpDetails existingEntry = detector.freeIDMap[it->first];
+										existingEntry.nodes.insert(nodeCount);
+										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+										detector.freeIDMap[it->first] = existingEntry;
+									}
+								}
+							}
 
 							if (detector.nodeIDMap.find(nodeCount) == detector.nodeIDMap.end()) {
 								UAFDetector::setOfOps set;
@@ -5029,6 +5156,49 @@ it++) {
 									stackForGlobalLoop.push(stackElement);
 								}
 							}
+
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.allocSet.begin(); it != detector.allocSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntAlloc, endAddressIntAlloc;
+								str2 >> std::hex >> baseAddressIntAlloc;
+								endAddressIntAlloc = baseAddressIntAlloc + it->second.range - 1;
+
+								if (baseAddressIntAlloc <= addressIntWrite && addressIntWrite <= endAddressIntAlloc) {
+									if (detector.allocIDMap.find(it->first) == detector.allocIDMap.end()) {
+										UAFDetector::allocOpDetails allocdetails;
+										allocdetails.nodes.insert(opdetails.nodeID);
+										detector.allocIDMap[it->first] = allocdetails;
+									} else {
+										UAFDetector::allocOpDetails existingEntry = detector.allocIDMap[it->first];
+										existingEntry.nodes.insert(opdetails.nodeID);
+										detector.allocIDMap.erase(detector.allocIDMap.find(it->first));
+										detector.allocIDMap[it->first] = existingEntry;
+									}
+								}
+							}
+
+							for (map<IDType, UAFDetector::memoryOpDetails>::iterator it = detector.freeSet.begin(); it != detector.freeSet.end(); it++) {
+								std::stringstream str2;
+								str2 << it->second.startingAddress;
+								IDType baseAddressIntFree, endAddressIntFree;
+								str2 >> std::hex >> baseAddressIntFree;
+								endAddressIntFree = baseAddressIntFree + it->second.range - 1;
+
+								if (baseAddressIntFree <= addressIntWrite && addressIntWrite <= endAddressIntFree) {
+									if (detector.freeIDMap.find(it->first) == detector.freeIDMap.end()) {
+										UAFDetector::freeOpDetails freedetails;
+										freedetails.nodes.insert(opdetails.nodeID);
+										detector.freeIDMap[it->first] = freedetails;
+									} else {
+										UAFDetector::freeOpDetails existingEntry = detector.freeIDMap[it->first];
+										existingEntry.nodes.insert(opdetails.nodeID);
+										detector.freeIDMap.erase(detector.freeIDMap.find(it->first));
+										detector.freeIDMap[it->first] = existingEntry;
+									}
+								}
+							}
+
 						}
 
 					} else if (match.compare("wait") == 0) {
@@ -6188,7 +6358,11 @@ it++) {
 	cout << "No of ops: " << opCount << "\n";
 	cout << "No of blocks: " << detector.blockIDMap.size() << "\n";
 	cout << "No of tasks: " << detector.taskIDMap.size() << "\n";
+
 	long long numOfAtomicTasks = 0;
+	int maxRecursiveDepth = 0; std::string taskWithMaxRecursiveDepth = "";
+	int maxCascadingDepth = 0; std::string taskWithMaxCascadingDepth = "";
+
 	for (map<string, UAFDetector::taskDetails>::iterator it = detector.taskIDMap.begin(); it != detector.taskIDMap.end(); it++) {
 #ifdef SANITYCHECK
 		if (it->second.atomic == true && (it->second.firstPauseOpID != -1 || it->second.lastResumeOpID != -1
@@ -6199,9 +6373,35 @@ it++) {
 #endif
 		if (it->second.atomic == true)
 			numOfAtomicTasks++;
+		else {
+			if (maxCascadingDepth < it->second.pauseResumeResetSequence.size()) {
+				maxCascadingDepth = it->second.pauseResumeResetSequence.size();
+				taskWithMaxCascadingDepth = it->first;
+			}
+
+			int recursiveDepth = 0;
+			std::string currTask = it->first;
+			std::string prevTask = "";
+			while (currTask.compare("") != 0) {
+				recursiveDepth++;
+				prevTask = currTask;
+				currTask = detector.taskIDMap[currTask].parentTask;
+			}
+
+			if (maxRecursiveDepth < recursiveDepth) {
+				maxRecursiveDepth = recursiveDepth;
+				taskWithMaxRecursiveDepth = prevTask;
+			}
+		}
 	}
 	cout << "No of atomic tasks: " << numOfAtomicTasks << "\n";
 	cout << "No of nesting loops: " << detector.nestingLoopMap.size() << "\n";
+	if (maxRecursiveDepth != 0)
+		cout << "Max recursive depth: " << maxRecursiveDepth << " (task "
+			 << taskWithMaxRecursiveDepth << ")\n";
+	if (maxCascadingDepth != 0)
+		cout << "Max cascading depth: " << maxCascadingDepth << " (task "
+			 << taskWithMaxCascadingDepth << ")\n";
 	cout << "No of threads: " << detector.threadIDMap.size() << "\n";
 	cout << "No of alloc ops: " << detector.allocSet.size() << "\n";
 	cout << "No of free ops: " << detector.freeSet.size() << "\n";

@@ -25,6 +25,7 @@ class HBGraph;
 enum RaceKind {
 	MULTITHREADED,
 	MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK,
+	MULTITHREADED_FROM_SAME_NESTING_LOOP,
 	SINGLETHREADED,
 	SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP,
 	NESTED_NESTED,
@@ -316,6 +317,7 @@ public:
 		set<IDType> readOps;
 		set<IDType> writeOps;
 		set<IDType> freeOps;
+		set<IDType> nodes;
 
 		allocOpDetails() {
 			readOps = set<IDType>();
@@ -333,6 +335,9 @@ public:
 			cout << "\nfree ops: ";
 			for (set<IDType>::iterator it = freeOps.begin(); it != freeOps.end(); it++)
 				cout << *it << " ";
+			cout << "\nnodes: ";
+			for (set<IDType>::iterator it = nodes.begin(); it != nodes.end(); it++)
+				cout << *it << " ";
 		}
 	};
 
@@ -343,6 +348,7 @@ public:
 		IDType allocOpID;
 		set<IDType> readOps;
 		set<IDType> writeOps;
+		set<IDType> nodes;
 
 		freeOpDetails() {
 			allocOpID = -1;
@@ -357,6 +363,9 @@ public:
 				cout << *it << " ";
 			cout << "\nwrite ops: ";
 			for (set<IDType>::iterator it = writeOps.begin(); it != writeOps.end(); it++)
+				cout << *it << " ";
+			cout << "\nnodes: ";
+			for (set<IDType>::iterator it = nodes.begin(); it != nodes.end(); it++)
 				cout << *it << " ";
 		}
 	};
@@ -403,8 +412,10 @@ public:
 	int addEdges();
 
 	IDType findUAF();
+	IDType findUAFUsingNodes();
 
 	IDType findDataRaces();
+	IDType findDataRacesUsingNodes();
 
 	void initLog(std::string traceFileName);
 
@@ -440,6 +451,7 @@ private:
 	Logger uafNestedOrderedLogger, raceNestedOrderedLogger;
 	Logger uafOtherLogger, raceOtherLogger;
 	Logger uafNonAtomicOtherLogger, raceNonAtomicOtherLogger;
+	Logger uafMultithreadedSameNestingLoopLogger, raceMultithreadedSameNestingLoopLogger;
 
 	class raceDetails {
 	public:
