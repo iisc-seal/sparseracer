@@ -6360,6 +6360,8 @@ it++) {
 	cout << "No of tasks: " << detector.taskIDMap.size() << "\n";
 
 	long long numOfAtomicTasks = 0;
+	long long numOfTasksWithNonNullParent = 0;
+	long long numOfTasksWithCascadingLoop = 0;
 	int maxRecursiveDepth = 0; std::string taskWithMaxRecursiveDepth = "";
 	int maxCascadingDepth = 0; std::string taskWithMaxCascadingDepth = "";
 
@@ -6371,11 +6373,17 @@ it++) {
 			it->second.printTaskDetails();
 		}
 #endif
+		if (it->second.parentTask.compare("") != 0)
+			numOfTasksWithNonNullParent++;
 		if (it->second.atomic == true)
 			numOfAtomicTasks++;
 		else {
-			if (maxCascadingDepth < it->second.pauseResumeResetSequence.size()) {
-				maxCascadingDepth = it->second.pauseResumeResetSequence.size();
+			int currCascadingDepth = it->second.pauseResumeResetSequence.size();
+			if (currCascadingDepth > 1)
+				numOfTasksWithCascadingLoop++;
+
+			if (maxCascadingDepth < currCascadingDepth) {
+				maxCascadingDepth = currCascadingDepth;
 				taskWithMaxCascadingDepth = it->first;
 			}
 
@@ -6395,6 +6403,7 @@ it++) {
 		}
 	}
 	cout << "No of atomic tasks: " << numOfAtomicTasks << "\n";
+	cout << "No of tasks with non-null parent: " << numOfTasksWithNonNullParent << "\n";
 	cout << "No of nesting loops: " << detector.nestingLoopMap.size() << "\n";
 	if (maxRecursiveDepth != 0)
 		cout << "Max recursive depth: " << maxRecursiveDepth << " (task "
@@ -6402,6 +6411,7 @@ it++) {
 	if (maxCascadingDepth != 0)
 		cout << "Max cascading depth: " << maxCascadingDepth << " (task "
 			 << taskWithMaxCascadingDepth << ")\n";
+	cout << "No of tasks with cascading depth > 1: " << numOfTasksWithCascadingLoop << "\n";
 	cout << "No of threads: " << detector.threadIDMap.size() << "\n";
 	cout << "No of alloc ops: " << detector.allocSet.size() << "\n";
 	cout << "No of free ops: " << detector.freeSet.size() << "\n";
