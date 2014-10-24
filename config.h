@@ -29,6 +29,9 @@
 // To find unique races
 // #define UNIQUERACE
 
+// To use nodes for finding races
+ #define NODERACES
+
 // To use extra rules
 // #define EXTRARULES
 

@@ -2614,6 +2614,12 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 	race.op1Task = opIDMap[race.op1].taskID;
 	race.op2Task = opIDMap[race.op2].taskID;
 
+	if (race.op1Task.compare(race.op2Task) == 0) {
+		cout << "ERROR: Racing ops are in the same task\n";
+		cout << "ERROR: Op: " << race.op1 << ", " << race.op2 << "\n";
+		return;
+	}
+
 	if (race.op1Task.compare("") == 0 || race.op2Task.compare("") == 0) {
 		race.raceType = NOTASKRACE;
 		return;
@@ -2651,6 +2657,12 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 		return;
 	}
 
+	if (op1Deq == op2Deq) {
+		cout << "ERROR: Tasks " << race.op1Task << " and " << race.op2Task
+			 << " have same deq op " << op1Deq << "\n";
+		return;
+	}
+
 	IDType nodeDeq1 = opIDMap[op1Deq].nodeID;
 	IDType nodeDeq2 = opIDMap[op2Deq].nodeID;
 	if (nodeDeq1 <= 0) {
@@ -2662,7 +2674,14 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 		return;
 	}
 
-	if (graph->opEdgeExists(nodeDeq1, nodeDeq2)) {
+	if (nodeDeq1 == nodeDeq2) {
+		cout << "ERROR: Nodes of deq ops " << op1Deq << " and " << op2Deq
+			 << " are the same: " << nodeDeq1 << "\n";
+		return;
+	}
+
+	if (graph->opEdgeExists(nodeDeq1, nodeDeq2) ||
+			graph->opEdgeExists(nodeDeq2, nodeDeq1)) {
 		race.raceType = NESTED_WITH_TASKS_ORDERED;
 	}
 
