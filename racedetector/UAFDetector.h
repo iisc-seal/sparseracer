@@ -442,6 +442,7 @@ private:
 	unsigned long long uniqueUafCount, uniqueRaceCount;
 
 	Logger uafAllLogger, raceAllLogger;
+	Logger uafAllUniqueLogger, raceAllUniqueLogger;
 	Logger uafNestingLogger, raceNestingLogger;
 	Logger uafNoNestingLogger, raceNoNestingLogger;
 	Logger uafTaskLogger, raceTaskLogger;
@@ -480,6 +481,12 @@ private:
 			else
 				return (this->raceType < param.raceType);
 		}
+
+		void printDetails() const {
+			cout << "Op1: " << op1 << " op2: " << op2 << " op1Task: " << op1Task
+				 << " op2Task: " << op2Task << " allocID: " << allocID
+				 << " uafOrRace: " << uafOrRace << " raceType: " << raceType << "\n";
+		}
 	};
 
 //	map<IDType, std::vector<raceDetails> > allocToRaceMap;
@@ -489,7 +496,7 @@ private:
 
 
 	void log(IDType op1ID, IDType op2ID, IDType opAllocID,
-			bool uafOrRace, RaceKind raceType);
+			bool uafOrRace, RaceKind raceType, bool logAll=false);
 
 	std::string findPreviousTaskOfOp(IDType op);
 	void insertRace(raceDetails race);

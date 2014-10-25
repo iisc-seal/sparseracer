@@ -3292,6 +3292,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 				uaf.allocID = allocID;
 
 				if (nodeFree == nodeAccess && freeID < accessID) {
+#if 0
 					cout << "Definite UAF between read op " << accessID << " (read at address " << readSet[accessID].startingAddress
 						 << " in task " << opIDMap[accessID].taskID << " in thread " << opIDMap[accessID].threadID << ") "
 						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -3301,6 +3302,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 							 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 							 << " in thread " << opIDMap[allocID].threadID << ")\n";
 					}
+#endif
 
 					// If free and read are in the same node, they are in the same thread
 					uaf.op1 = accessID;
@@ -3312,7 +3314,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 					insertRace(uaf);
 
 					uafCount++;
-//					log(readID, freeID, allocID, "read", "free", true);
+					log (accessID, freeID, allocID, true, UNKNOWN, true);
 
 					flag = true;
 					continue;
@@ -3325,6 +3327,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 					continue;
 				}
 				if (graph->opEdgeExists(nodeFree, nodeAccess) == 1) {
+#if 0
 					cout << "Definite UAF between read op " << accessID << " (read at address " << readSet[accessID].startingAddress
 						 << " in task " << opIDMap[accessID].taskID << " in thread " << opIDMap[accessID].threadID << ") "
 						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -3334,6 +3337,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 							 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 							 << " in thread " << opIDMap[allocID].threadID << ")\n";
 					}
+#endif
 
 					uaf.op1 = accessID;
 					uaf.op2 = freeID;
@@ -3343,7 +3347,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 					insertRace(uaf);
 
 					uafCount++;
-//					log(readID, freeID, allocID, "read", "free", true);
+					log (accessID, freeID, allocID, true, UNKNOWN, true);
 					flag = true;
 					continue;
 				}
@@ -3381,6 +3385,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 						}
 					}
 #endif
+#if 0
 					cout << "Potential UAF between read op " << accessID << " (read at address " << readSet[accessID].startingAddress
 						 << " in task " << opIDMap[accessID].taskID << " in thread " << opIDMap[accessID].threadID << ") "
 						 << " and free op " << freeID << " (freed " << freeSet[freeID].range << " bytes from address " << freeSet[freeID].startingAddress
@@ -3390,11 +3395,12 @@ IDType  UAFDetector::findUAFUsingNodes() {
 							 << allocSet[allocID].startingAddress << " in task " << opIDMap[allocID].taskID
 							 << " in thread " << opIDMap[allocID].threadID << ")\n";
 					}
+#endif
 
 					insertRace(uaf);
 
 					uafCount++;
-//					log(readID, freeID, allocID, "read", "free", true);
+					log (accessID, freeID, allocID, true, UNKNOWN, true);
 
 					flag = true;
 					continue;
@@ -3416,11 +3422,21 @@ IDType UAFDetector::findDataRacesUsingNodes() {
 	bool flag = false;
 
 	for (map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin(); allocIt != allocIDMap.end(); allocIt++) {
+		if (allocIt->second.writeOps.size() == 0)
+			continue;
+
+		long long allocStartAddress, allocEndAddress;
+		std::stringstream allocStream;
+		allocStream << allocSet[allocIt->first].startingAddress;
+		allocStream >> std::hex >> allocStartAddress;
+		allocEndAddress = allocStartAddress + allocSet[allocIt->first].range - 1;
+
 		for (set<IDType>::iterator nodeIt1 = allocIt->second.nodes.begin(); nodeIt1 != allocIt->second.nodes.end(); nodeIt1++) {
 			if (nodeIDMap.find(*nodeIt1) == nodeIDMap.end()) {
 				cout << "ERROR: Invalid node ID in allocIDMap\n";
 				return -1;
 			}
+			IDType node1 = *nodeIt1;
 
 			for (set<IDType>::iterator nodeIt2 = allocIt->second.nodes.begin(); nodeIt2 != allocIt->second.nodes.end(); nodeIt2++) {
 				if (*nodeIt1 == *nodeIt2) continue;
@@ -3429,36 +3445,54 @@ IDType UAFDetector::findDataRacesUsingNodes() {
 					cout << "ERROR: Invalid node ID in allocIDMap\n";
 					return -1;
 				}
+				IDType node2 = *nodeIt2;
 
-				if (graph->opEdgeExists(*nodeIt1, *nodeIt2) != 0 ||
-						graph->opEdgeExists(*nodeIt2, *nodeIt1) != 0)
+				if (graph->opEdgeExists(node1, node2) != 0 ||
+						graph->opEdgeExists(node2, node1) != 0)
 					continue;
 
-				for (set<IDType>::iterator op1It = nodeIDMap[*nodeIt1].opSet.begin();
-						op1It != nodeIDMap[*nodeIt1].opSet.end(); op1It++) {
+				for (set<IDType>::iterator op1It = nodeIDMap[node1].opSet.begin();
+						op1It != nodeIDMap[node1].opSet.end(); op1It++) {
 
 					string op1Address;
-					if (opIDMap[*op1It].opType.compare("write") == 0) {
-						op1Address = writeSet[*op1It].startingAddress;
-					} else if (opIDMap[*op1It].opType.compare("read") == 0) {
-						op1Address = readSet[*op1It].startingAddress;
+					IDType op1 = *op1It;
+					if (opIDMap[op1].opType.compare("write") == 0) {
+						op1Address = writeSet[op1].startingAddress;
+					} else if (opIDMap[op1].opType.compare("read") == 0) {
+						op1Address = readSet[op1].startingAddress;
 					} else {
 //						cout << "DEBUG: Op for node " << *nodeIt1 << " is neither read nor write\n";
 						continue;
 					}
 
+					long long op1AddressInt;
+					std::stringstream op1Stream;
+					op1Stream << op1Address;
+					op1Stream >> std::hex >> op1AddressInt;
+
+					if (op1AddressInt < allocStartAddress || allocEndAddress < op1AddressInt)
+						continue;
+
 					for (set<IDType>::iterator op2It = nodeIDMap[*nodeIt2].opSet.begin();
 							op2It != nodeIDMap[*nodeIt2].opSet.end(); op2It++) {
 
 						string op2Address;
-						if (opIDMap[*op2It].opType.compare("write") == 0)
-							op2Address = writeSet[*op2It].startingAddress;
-						else if (opIDMap[*op2It].opType.compare("read") == 0)
-							op2Address = readSet[*op2It].startingAddress;
+						IDType op2 = *op2It;
+						if (opIDMap[op2].opType.compare("write") == 0)
+							op2Address = writeSet[op2].startingAddress;
+						else if (opIDMap[op2].opType.compare("read") == 0)
+							op2Address = readSet[op2].startingAddress;
 						else {
 //							cout << "DEBUG: Op for node " << *nodeIt2 << " is neither read nor write\n";
 							continue;
 						}
+						long long op2AddressInt;
+						std::stringstream op2Stream;
+						op2Stream << op2Address;
+						op2Stream >> std::hex >> op2AddressInt;
+
+						if (op2AddressInt < allocStartAddress || allocEndAddress < op2AddressInt)
+							continue;
 
 						if (op1Address.compare(op2Address) != 0) continue;
 
@@ -3476,7 +3510,9 @@ IDType UAFDetector::findDataRacesUsingNodes() {
 						getRaceKind(dataRace);
 						insertRace(dataRace);
 						raceCount++;
-//						log(*writeIt, *write2It, allocIt->first, "write", "write", false);
+						log (*op1It, *op2It, allocIt->first, false, UNKNOWN, true);
+//						cout << "Data Race: ";
+//						dataRace.printDetails();
 
 						flag = true;
 
@@ -3501,6 +3537,11 @@ void UAFDetector::initLog(std::string traceFileName) {
 	uafAllLogger.init(uafFileName);
 	std::string raceFileName = traceFileName + ".race.all";
 	raceAllLogger.init(raceFileName);
+
+	uafFileName = traceFileName + ".uaf.unique.all";
+	uafAllUniqueLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.unique.all";
+	raceAllUniqueLogger.init(raceFileName);
 
 #if 0
 	uafFileName = traceFileName + ".uaf.withnesting";
@@ -3587,6 +3628,17 @@ std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
 }
 
 void UAFDetector::log() {
+#ifdef RACEDEBUG
+	for (map<IDType, std::multiset<raceDetails> >::iterator it = allocToRaceMap.begin();
+			it != allocToRaceMap.end(); it++) {
+		cout << "Alloc ID: " << it->first << "\n";
+		for (std::multiset<raceDetails>::iterator rIt = it->second.begin();
+				rIt != it->second.end(); rIt++) {
+			rIt->printDetails();
+		}
+	}
+#endif
+
 	cout << "\n#Allocation sites with races = " << allocToRaceMap.size() << "\n";
 
 	// Find UAFs
@@ -3725,9 +3777,11 @@ void UAFDetector::log() {
 		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
 				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
 			if (!raceIt->uafOrRace) {
+//				cout << "RACE: ";
+//				raceIt->printDetails();
+				uniqueRaceCount++;
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
-				uniqueRaceCount++;
 				break;
 			}
 		}
@@ -3738,8 +3792,38 @@ void UAFDetector::log() {
 }
 
 // uafOrRace: true if uaf, false if data race
+// logAll: log all races
 void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
-		bool uafOrRace, RaceKind raceType) {
+		bool uafOrRace, RaceKind raceType, bool logAll) {
+
+	IDType op1ThreadID = opIDMap[op1ID].threadID;
+	IDType op2ThreadID = opIDMap[op2ID].threadID;
+
+	if (logAll) {
+		std::string accessAddress;
+		if (opIDMap[op1ID].opType.compare("read") == 0) {
+			accessAddress = readSet[op1ID].startingAddress;
+		} else if (opIDMap[op1ID].opType.compare("write") == 0) {
+			accessAddress = writeSet[op1ID].startingAddress;
+		} else {
+			cout << "ERROR: Racing op " << op1ID << " is neither read nor write\n";
+			opIDMap[op1ID].printOpDetails();
+			return;
+		}
+
+		if (uafOrRace) {
+			uafAllLogger.streamObject << op1ID << " "
+					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
+					<< " " << opAllocID << " " << accessAddress << "\n";
+			uafAllLogger.writeLog();
+		} else {
+			raceAllLogger.streamObject << op1ID << " "
+					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
+					<< " " << opAllocID << " " << accessAddress << "\n";
+			raceAllLogger.writeLog();
+		}
+		return;
+	}
 
 	Logger *allLogger, *enqPathLogger, *raceLogger;
 	std::string raceTypeString;
@@ -3750,11 +3834,11 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	}
 
 	if (uafOrRace) {
-		allLogger = &uafAllLogger;
+		allLogger = &uafAllUniqueLogger;
 		enqPathLogger = &uafEnqPathLogger;
 
 	} else {
-		allLogger = &raceAllLogger;
+		allLogger = &raceAllUniqueLogger;
 		enqPathLogger = &raceEnqPathLogger;
 	}
 
@@ -3823,10 +3907,9 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			raceLogger = &raceOtherLogger;
 	}
 
-	IDType op1ThreadID = opIDMap[op1ID].threadID;
-	IDType op2ThreadID = opIDMap[op2ID].threadID;
 	std::string op1TaskID = opIDMap[op1ID].taskID;
 	std::string op2TaskID = opIDMap[op2ID].taskID;
+
 
 	if (op1TaskID.compare("") == 0)
 		op1TaskID = findPreviousTaskOfOp(op1ID);
