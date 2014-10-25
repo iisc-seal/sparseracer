@@ -323,6 +323,7 @@ public:
 			readOps = set<IDType>();
 			writeOps = set<IDType>();
 			freeOps = set<IDType>();
+			nodes = set<IDType>();
 		}
 
 		void printDetails() {
@@ -354,6 +355,7 @@ public:
 			allocOpID = -1;
 			readOps = set<IDType>();
 			writeOps = set<IDType>();
+			nodes = set<IDType>();
 		}
 
 		void printDetails() {

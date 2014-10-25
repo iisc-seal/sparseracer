@@ -277,7 +277,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 						}
 					}
 				} else if (count == 1) {
-					if (minNode < destinationNode)
+					if (minNode <= destinationNode)
 						return 1;
 				} else if (count < 1) {
 					cout << "ERROR: While finding edges from node " << nodei
@@ -297,7 +297,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 						}
 					}
 
-					if (minNode < destinationNode)
+					if (minNode <= destinationNode)
 						return 1;
 
 					prevnodei = nodei;
