@@ -2454,7 +2454,9 @@ int UAFDetector::addTransSTOrMTEdges() {
 #ifdef GRAPHDEBUGFULL
 									cout << "Restored edge from " << nodeI
 										 << " to " << minNodeInK << "\n";
+#endif
 								} else if (addEdgeRetValue == 0) {
+#ifdef GRAPHDEBUGFULL
 									cout << "Did not add restoration edge from "
 										 << nodeI << " to " << minNodeInK << "\n";
 #endif
@@ -2547,7 +2549,9 @@ int UAFDetector::addTransSTOrMTEdges() {
 									if (addEdgeRetValue == 1) {
 #ifdef GRAPHDEBUGFULL
 										cout << "Restored edge from " << nodeTempOp << " to " << minNodeInJ << endl;
+#endif
 									} else if (addEdgeRetValue == 0) {
+#ifdef GRAPHDEBUGFULL
 										cout << "Did not add restoration edge from " << nodeTempOp << " to " << minNodeInJ << endl;
 #endif
 									} else {
