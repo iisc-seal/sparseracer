@@ -442,6 +442,7 @@ private:
 	unsigned long long uniqueUafCount, uniqueRaceCount;
 
 	Logger uafAllLogger, raceAllLogger;
+	Logger uafAllDebugLogger, raceAllDebugLogger;
 	Logger uafAllUniqueLogger, raceAllUniqueLogger;
 	Logger uafNestingLogger, raceNestingLogger;
 	Logger uafNoNestingLogger, raceNoNestingLogger;

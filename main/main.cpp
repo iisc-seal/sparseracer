@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
 #endif
 
 	if (retfindRace == -1) {
-		cout << "ERROR: While finding Dataraces\n";
+		cout << "ERROR: While finding Data races\n";
 		return -1;
 	} else if (retfindRace == 0) {
 		cout << "No data races in the trace\n";

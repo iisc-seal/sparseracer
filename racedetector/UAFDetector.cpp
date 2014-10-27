@@ -3542,27 +3542,15 @@ void UAFDetector::initLog(std::string traceFileName) {
 	std::string raceFileName = traceFileName + ".race.all";
 	raceAllLogger.init(raceFileName);
 
+	uafFileName = traceFileName + ".uaf.all.debug";
+	uafAllDebugLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.all.debug";
+	raceAllDebugLogger.init(raceFileName);
+
 	uafFileName = traceFileName + ".uaf.unique.all";
 	uafAllUniqueLogger.init(uafFileName);
 	raceFileName = traceFileName + ".race.unique.all";
 	raceAllUniqueLogger.init(raceFileName);
-
-#if 0
-	uafFileName = traceFileName + ".uaf.withnesting";
-	uafNestingLogger.init(uafFileName);
-	raceFileName = traceFileName + ".race.withnesting";
-	raceNestingLogger.init(raceFileName);
-
-	uafFileName = traceFileName + ".uaf.withoutnesting";
-	uafNoNestingLogger.init(uafFileName);
-	raceFileName = traceFileName + ".race.withoutnesting";
-	raceNoNestingLogger.init(raceFileName);
-
-	uafFileName = traceFileName + ".uaf.withtask";
-	uafTaskLogger.init(uafFileName);
-	raceFileName = traceFileName + ".race.withtask";
-	raceTaskLogger.init(raceFileName);
-#endif
 
 	uafFileName = traceFileName + ".uaf.withouttask";
 	uafNoTaskLogger.init(uafFileName);
@@ -3781,8 +3769,6 @@ void UAFDetector::log() {
 		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
 				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
 			if (!raceIt->uafOrRace) {
-//				cout << "RACE: ";
-//				raceIt->printDetails();
 				uniqueRaceCount++;
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
@@ -3802,9 +3788,106 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 
 	IDType op1ThreadID = opIDMap[op1ID].threadID;
 	IDType op2ThreadID = opIDMap[op2ID].threadID;
+	std::string op1TaskID = opIDMap[op1ID].taskID;
+	std::string op2TaskID = opIDMap[op2ID].taskID;
+
+	if (op1TaskID.compare("") == 0)
+		op1TaskID = findPreviousTaskOfOp(op1ID);
+	if (op2TaskID.compare("") == 0)
+		op2TaskID = findPreviousTaskOfOp(op2ID);
+
+	IDType allocThreadID = -1;
+	if (opAllocID > 0) {
+		allocThreadID = opIDMap[opAllocID].threadID;
+	}
+
+	string line1, lines23, line4, line5;
+	std::stringstream str;
+
+	str << op1ID << " " << op1ThreadID
+		<< " " << op2ID << " " << op2ThreadID << "\n";
+	line1 = str.str();
+
+	str.str("");
+	str.clear();
+
+	str << opAllocID << "\n" << allocThreadID << "\n";
+	lines23 = str.str();
+
+	str.str("");
+	str.clear();
+
+	// Finding the enq path
+	IDType enqID;
+	std::string tempTaskID = "";
+
+	std::set<std::string> enqPathTasks1, enqPathTasks2;
+	// op1
+	enqID = taskIDMap[op1TaskID].enqOpID;
+	if (enqID != -1) {
+		tempTaskID = opIDMap[enqID].taskID;
+
+		if (tempTaskID.compare("") != 0 &&
+				taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+			enqPathTasks1.insert(taskIDMap[tempTaskID].parentTask);
+		}
+	}
+
+	str << enqID << " ";
+
+	while (enqID != -1 && tempTaskID.compare("") != 0) {
+		enqID = taskIDMap[tempTaskID].enqOpID;
+		if (enqID != -1) {
+			tempTaskID = opIDMap[enqID].taskID;
+
+			if (tempTaskID.compare("") != 0 &&
+					taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+				enqPathTasks1.insert(taskIDMap[tempTaskID].parentTask);
+			}
+		}
+
+		str << enqID << " ";
+
+	}
+
+	str << "\n";
+	line4 = str.str();
+
+	str.str("");
+	str.clear();
+
+	// op2
+	enqID = taskIDMap[op2TaskID].enqOpID;
+	if (enqID != -1) {
+		tempTaskID = opIDMap[enqID].taskID;
+
+		if (tempTaskID.compare("") != 0 &&
+				taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+			enqPathTasks2.insert(taskIDMap[tempTaskID].parentTask);
+		}
+	}
+
+	str << enqID << " ";
+	while (enqID != -1 && tempTaskID.compare("") != 0) {
+		enqID = taskIDMap[tempTaskID].enqOpID;
+		if (enqID != -1) {
+			tempTaskID = opIDMap[enqID].taskID;
+
+			if (tempTaskID.compare("") != 0 &&
+					taskIDMap[tempTaskID].parentTask.compare("") != 0) {
+				enqPathTasks2.insert(taskIDMap[tempTaskID].parentTask);
+			}
+		}
+
+		str << enqID << " ";
+	}
+
+	str << "\n";
+
+	line5 = str.str();
 
 	if (logAll) {
-		std::string accessAddress;
+		std::string accessAddress, allocAddress;
 		if (opIDMap[op1ID].opType.compare("read") == 0) {
 			accessAddress = readSet[op1ID].startingAddress;
 		} else if (opIDMap[op1ID].opType.compare("write") == 0) {
@@ -3815,69 +3898,78 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			return;
 		}
 
+		allocAddress = allocSet[opAllocID].startingAddress;
+		long long allocAddressInt, accessAddressInt;
+		str << allocAddress;
+		str >> std::hex >> allocAddressInt;
+		str.str("");
+		str.clear();
+
+		str << accessAddress;
+		str >> std::hex >> accessAddressInt;
+		str.str("");
+		str.clear();
+
+		int offset = accessAddressInt - allocAddressInt;
+
 		if (uafOrRace) {
 			uafAllLogger.streamObject << op1ID << " "
 					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
-					<< " " << opAllocID << " " << accessAddress << "\n";
+					<< " " << opAllocID << " " << accessAddress << offset << "\n";
 			uafAllLogger.writeLog();
+
+			uafAllDebugLogger.writeLog(line1);
+			uafAllDebugLogger.writeLog(lines23);
+			uafAllDebugLogger.writeLog(line4);
+			uafAllDebugLogger.writeLog(line5);
 		} else {
 			raceAllLogger.streamObject << op1ID << " "
 					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
-					<< " " << opAllocID << " " << accessAddress << "\n";
+					<< " " << opAllocID << " " << accessAddress << offset << "\n";
 			raceAllLogger.writeLog();
+
+			raceAllDebugLogger.writeLog(line1);
+			raceAllDebugLogger.writeLog(lines23);
+			raceAllDebugLogger.writeLog(line4);
+			raceAllDebugLogger.writeLog(line5);
 		}
 		return;
 	}
 
-	Logger *allLogger, *enqPathLogger, *raceLogger;
+	Logger *allLogger, *raceLogger;
 	std::string raceTypeString;
 
-	IDType allocThreadID = -1;
-	if (opAllocID > 0) {
-		allocThreadID = opIDMap[opAllocID].threadID;
-	}
+
 
 	if (uafOrRace) {
 		allLogger = &uafAllUniqueLogger;
-		enqPathLogger = &uafEnqPathLogger;
 
 	} else {
 		allLogger = &raceAllUniqueLogger;
-		enqPathLogger = &raceEnqPathLogger;
 	}
 
-	bool nested = false;
-	IDType nestedTaskDeq = -1;
 	if (raceType == NESTED_NESTED) {
 		if (uafOrRace)
 			raceLogger = &uafNestedNestedLogger;
 		else
 			raceLogger = &raceNestedNestedLogger;
-		nested = true;
-		nestedTaskDeq = taskIDMap[opIDMap[op1ID].taskID].deqOpID;
 	} else if (raceType == NESTED_PRIMARY) {
 		if (uafOrRace)
 			raceLogger = &uafNestedPrimaryLogger;
 		else
 			raceLogger = &raceNestedPrimaryLogger;
-		nested = true;
-		IDType deq1 = -1;
-		IDType deq2 = -1;
-		if (taskIDMap[opIDMap[op1ID].taskID].parentTask.compare("") != 0)
-			deq1 = taskIDMap[taskIDMap[opIDMap[op1ID].taskID].parentTask].deqOpID;
-		if (taskIDMap[opIDMap[op2ID].taskID].parentTask.compare("") != 0)
-			deq2 = taskIDMap[taskIDMap[opIDMap[op2ID].taskID].parentTask].deqOpID;
-		if (deq1 == -1) nestedTaskDeq = deq2;
-		else if (deq2 == -1) nestedTaskDeq = deq1;
-		else if (deq1 < deq2) nestedTaskDeq = deq1;
-		else nestedTaskDeq = deq2;
+//		IDType deq1 = -1;
+//		IDType deq2 = -1;
+//		if (taskIDMap[opIDMap[op1ID].taskID].parentTask.compare("") != 0)
+//			deq1 = taskIDMap[taskIDMap[opIDMap[op1ID].taskID].parentTask].deqOpID;
+//		if (taskIDMap[opIDMap[op2ID].taskID].parentTask.compare("") != 0)
+//			deq2 = taskIDMap[taskIDMap[opIDMap[op2ID].taskID].parentTask].deqOpID;
 
 	} else if (raceType == NESTED_WITH_TASKS_ORDERED) {
 		if (uafOrRace)
 			raceLogger = &uafNestedOrderedLogger;
 		else
 			raceLogger = &raceNestedOrderedLogger;
-		nested = true;
 	} else if (raceType == NOTASKRACE) {
 		if (uafOrRace)
 			raceLogger = &uafNoTaskLogger;
@@ -3893,17 +3985,13 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			raceLogger = &uafNonAtomicOtherLogger;
 		else
 			raceLogger = &raceNonAtomicOtherLogger;
-		nested = true;
-		IDType deq1 = -1;
-		IDType deq2 = -1;
-		if (!(taskIDMap[opIDMap[op1ID].taskID].atomic))
-			deq1 = taskIDMap[opIDMap[op1ID].taskID].deqOpID;
-		if (!(taskIDMap[opIDMap[op2ID].taskID].atomic))
-			deq2 = taskIDMap[opIDMap[op2ID].taskID].deqOpID;
-		if (deq1 == -1) nestedTaskDeq = deq2;
-		else if (deq2 == -1) nestedTaskDeq = deq1;
-		else if (deq1 < deq2) nestedTaskDeq = deq1;
-		else nestedTaskDeq = deq2;
+//		IDType deq1 = -1;
+//		IDType deq2 = -1;
+//		if (!(taskIDMap[opIDMap[op1ID].taskID].atomic))
+//			deq1 = taskIDMap[opIDMap[op1ID].taskID].deqOpID;
+//		if (!(taskIDMap[opIDMap[op2ID].taskID].atomic))
+//			deq2 = taskIDMap[opIDMap[op2ID].taskID].deqOpID;
+
 	} else {
 		if (uafOrRace)
 			raceLogger = &uafOtherLogger;
@@ -3911,129 +3999,11 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			raceLogger = &raceOtherLogger;
 	}
 
-	std::string op1TaskID = opIDMap[op1ID].taskID;
-	std::string op2TaskID = opIDMap[op2ID].taskID;
 
-
-	if (op1TaskID.compare("") == 0)
-		op1TaskID = findPreviousTaskOfOp(op1ID);
-	if (op2TaskID.compare("") == 0)
-		op2TaskID = findPreviousTaskOfOp(op2ID);
-
-	string line1, line2, line3;
-
-	allLogger->streamObject << op1ID << " " << op1ThreadID
-			<< " " << op2ID << " " << op2ThreadID << "\n";
-	line1 = allLogger->streamObject.str();
-	allLogger->writeLog();
-
-	allLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
-	allLogger->writeLog();
-
-	// Finding the enq path
-	IDType enqID, threadID = -1;
-	std::string tempTaskID = "";
-
-	std::set<std::string> enqPathTasks1, enqPathTasks2;
-	// op1
-	enqPathLogger->streamObject << "OP: " << op1ID << " " << op1TaskID
-			<< " " << op1ThreadID << "\n";
-	enqPathLogger->writeLog();
-
-	enqID = taskIDMap[op1TaskID].enqOpID;
-	if (enqID != -1) {
-		tempTaskID = opIDMap[enqID].taskID;
-
-		if (tempTaskID.compare("") != 0 &&
-				taskIDMap[tempTaskID].parentTask.compare("") != 0) {
-			enqPathTasks1.insert(taskIDMap[tempTaskID].parentTask);
-		}
-
-		threadID = opIDMap[enqID].threadID;
-		enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
-			<< " " << threadID << "\n";
-	} else {
-		enqPathLogger->streamObject << "enq: " << enqID << "\n";
-	}
-	enqPathLogger->writeLog();
-
-	allLogger->streamObject << enqID << " ";
-
-	while (enqID != -1 && tempTaskID.compare("") != 0) {
-		enqID = taskIDMap[tempTaskID].enqOpID;
-		if (enqID != -1) {
-			tempTaskID = opIDMap[enqID].taskID;
-
-			if (tempTaskID.compare("") != 0 &&
-					taskIDMap[tempTaskID].parentTask.compare("") != 0) {
-				enqPathTasks1.insert(taskIDMap[tempTaskID].parentTask);
-			}
-
-			threadID = opIDMap[enqID].threadID;
-			enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
-				<< " " << threadID << "\n";
-		} else {
-			enqPathLogger->streamObject << "enq: " << enqID << "\n";
-		}
-
-		allLogger->streamObject << enqID << " ";
-
-		enqPathLogger->writeLog();
-	}
-
-	allLogger->streamObject << "\n";
-	line2 = allLogger->streamObject.str();
-	allLogger->writeLog();
-
-	// op2
-	enqPathLogger->streamObject << "OP: " << op2ID << " " << op2TaskID
-			<< " " << op2ThreadID << "\n";
-	enqPathLogger->writeLog();
-
-	enqID = taskIDMap[op2TaskID].enqOpID;
-	if (enqID != -1) {
-		tempTaskID = opIDMap[enqID].taskID;
-
-		if (tempTaskID.compare("") != 0 &&
-				taskIDMap[tempTaskID].parentTask.compare("") != 0) {
-			enqPathTasks2.insert(taskIDMap[tempTaskID].parentTask);
-		}
-
-		threadID = opIDMap[enqID].threadID;
-		enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
-			<< " " << threadID << "\n";
-	} else {
-		enqPathLogger->streamObject << "enq: " << enqID << "\n";
-	}
-	enqPathLogger->writeLog();
-	allLogger->streamObject << enqID << " ";
-	while (enqID != -1 && tempTaskID.compare("") != 0) {
-		enqID = taskIDMap[tempTaskID].enqOpID;
-		if (enqID != -1) {
-			tempTaskID = opIDMap[enqID].taskID;
-
-			if (tempTaskID.compare("") != 0 &&
-					taskIDMap[tempTaskID].parentTask.compare("") != 0) {
-				enqPathTasks2.insert(taskIDMap[tempTaskID].parentTask);
-			}
-
-			threadID = opIDMap[enqID].threadID;
-			enqPathLogger->streamObject << "enq: " << enqID << " " << tempTaskID
-				<< " " << threadID << "\n";
-		} else {
-			enqPathLogger->streamObject << "enq: " << enqID << "\n";
-		}
-
-		enqPathLogger->writeLog();
-
-		allLogger->streamObject << enqID << " ";
-	}
-
-	allLogger->streamObject << "\n";
-
-	line3 = allLogger->streamObject.str();
-
-	allLogger->writeLog();
+	allLogger->writeLog(line1);
+	allLogger->writeLog(lines23);
+	allLogger->writeLog(line4);
+	allLogger->writeLog(line5);
 
 	if (opIDMap[op1ID].threadID != opIDMap[op2ID].threadID) {
 		for (std::set<std::string>::iterator it1 = enqPathTasks1.begin();
@@ -4055,12 +4025,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	}
 
 	raceLogger->writeLog(line1);
-	raceLogger->streamObject << opAllocID << "\n" << allocThreadID << "\n";
-	raceLogger->writeLog();
-	raceLogger->writeLog(line2);
-	raceLogger->writeLog(line3);
-	if (nested) {
-		raceLogger->streamObject << nestedTaskDeq << "\n";
-		raceLogger->writeLog();
-	}
+	raceLogger->writeLog(lines23);
+	raceLogger->writeLog(line4);
+	raceLogger->writeLog(line5);
 }
