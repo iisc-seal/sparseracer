@@ -2044,6 +2044,8 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 					assert(*enqIt > 0);
 #endif
 					IDType opL = *enqIt;
+					if (opL == enqOfReset)
+						continue;
 					IDType threadL = enqToTaskEnqueued[opL].targetThread;
 //					IDType threadK = enqToTaskEnqueued[opK].targetThread;
 					IDType threadK = opIDMap[opK].threadID;
@@ -2074,9 +2076,10 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 						cout << "ERROR: Invalid node ID for op " << opL << "\n";
 						return -1;
 					} else if (nodeK == nodeL) {
-						cout << "ERROR: Two ops: " << enqOfReset << " and " << opL
-							 << " are in the same node " << nodeK << "\n";
-						return -1;
+#ifdef GRAPHDEBUG
+						cout << "DEBUG: Comparing same enq ops: " << opL << "\n";
+#endif
+						continue;
 					} else {
 						int retValue = graph->opEdgeExists(nodeK, nodeL);
 						if (retValue == 1) {
@@ -3374,8 +3377,6 @@ IDType  UAFDetector::findUAFUsingNodes() {
 							if (opIDMap[freeID].threadID == opIDMap[accessID].threadID) {
 								falsePositives++;
 								uaf.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
-
-								continue;
 							} else {
 								// May be we should categorize these separately. Easy to reproduce
 								uaf.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
@@ -3556,10 +3557,15 @@ void UAFDetector::initLog(std::string traceFileName) {
 	raceFileName = traceFileName + ".race.enqpath";
 	raceEnqPathLogger.init(raceFileName);
 
-	uafFileName = traceFileName + ".uaf.allocmemopinsametask";
+	uafFileName = traceFileName + ".uaf.allocmemopinsametaskdiffthread";
 	uafAllocMemopSameTaskLogger.init(uafFileName);
-	raceFileName = traceFileName + ".race.allocmemopinsametask";
+	raceFileName = traceFileName + ".race.allocmemopinsametaskdiffthread";
 	raceAllocMemopSameTaskLogger.init(raceFileName);
+
+	uafFileName = traceFileName + ".uaf.allocmemopinsametaskinsamethread";
+	uafAllocMemopSameTaskSameThreadLogger.init(uafFileName);
+	raceFileName = traceFileName + ".race.allocmemopinsametaskinsamethread";
+	raceAllocMemopSameTaskSameThreadLogger.init(raceFileName);
 
 	uafFileName = traceFileName + ".uaf.nestednested";
 	uafNestedNestedLogger.init(uafFileName);
@@ -3976,6 +3982,11 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			raceLogger = &uafAllocMemopSameTaskLogger;
 		else
 			raceLogger = &raceAllocMemopSameTaskLogger;
+	} else if (raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
+		if (uafOrRace)
+			raceLogger = &uafAllocMemopSameTaskSameThreadLogger;
+		else
+			raceLogger = &raceAllocMemopSameTaskSameThreadLogger;
 	} else if (raceType == NONATOMIC_WITH_OTHER) {
 		if (uafOrRace)
 			raceLogger = &uafNonAtomicOtherLogger;
@@ -4021,7 +4032,9 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	}
 
 	raceLogger->writeLog(line1);
-	raceLogger->writeLog(lines23);
-	raceLogger->writeLog(line4);
-	raceLogger->writeLog(line5);
+	if (raceType != SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
+		raceLogger->writeLog(lines23);
+		raceLogger->writeLog(line4);
+		raceLogger->writeLog(line5);
+	}
 }

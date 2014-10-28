@@ -450,6 +450,7 @@ private:
 	Logger uafNoTaskLogger, raceNoTaskLogger;
 	Logger uafEnqPathLogger, raceEnqPathLogger;
 	Logger uafAllocMemopSameTaskLogger, raceAllocMemopSameTaskLogger;
+	Logger uafAllocMemopSameTaskSameThreadLogger, raceAllocMemopSameTaskSameThreadLogger;
 	Logger uafNestedNestedLogger, raceNestedNestedLogger;
 	Logger uafNestedPrimaryLogger, raceNestedPrimaryLogger;
 	Logger uafNestedOrderedLogger, raceNestedOrderedLogger;
