@@ -1344,15 +1344,12 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				cout << "ERROR: Cannot find block ID of op " << enqI << "\n";
 				return -1;
 			}
-//			for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockI].head; currNode != NULL; currNode = currNode->next) {
 			for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockI].begin();
 					blockIt != graph->blockAdjList[blockI].end(); blockIt++) {
 #ifdef SANITYCHECK
-//				assert(currNode->destination > 0);
 				assert(blockIt->blockID > 0);
 #endif
 
-//				IDType blockJ = currNode->destination;
 				IDType blockJ = blockIt->blockID;
 
 				for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
@@ -1476,15 +1473,12 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				IDType blockL = opIDMap[opL].blockID;
 				threadI = opIDMap[opI].threadID;
 				if (blockL > 0 && threadI > 0) {
-//					for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockL].head; currNode != NULL; currNode = currNode->next) {
 					for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockL].begin();
 							blockIt != graph->blockAdjList[blockL].end(); blockIt++) {
 #ifdef SANITYCHECK
-//						assert(currNode->destination > 0);
 						assert(blockIt->blockID > 0);
 #endif
 
-//						IDType blockJ = currNode->destination;
 						IDType blockJ = blockIt->blockID;
 						for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
 #ifdef SANITYCHECK
@@ -1496,7 +1490,6 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 #ifdef SANITYCHECK
 							if (threadJ < 0) {
 								cout << "ERROR: Cannot find target thread of enq op " << enqJ << endl;
-//								continue;
 								return -1;
 							}
 #endif
@@ -1626,15 +1619,12 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 #endif
 
 			if (blockOfResumeOp > 0 && threadI >= 0) {
-//				for (HBGraph::adjListNode* currNode = graph->blockAdjList[blockOfResumeOp].head; currNode != NULL; currNode = currNode->next) {
 				for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockOfResumeOp].begin();
 						blockIt != graph->blockAdjList[blockOfResumeOp].end(); blockIt++) {
 #ifdef SANITYCHECK
-//					assert(currNode->destination > 0);
 					assert(blockIt->blockID > 0);
 #endif
 
-//					IDType blockJ = currNode->destination;
 					IDType blockJ = blockIt->blockID;
 					for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
 #ifdef SANITYCHECK
@@ -1645,7 +1635,6 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 #ifdef SANITYCHECK
 						if (threadJ < 0) {
 							cout << "ERROR: Cannot find target thread of enq op " << enqJ << endl;
-//							continue;
 							return -1;
 						}
 #endif
@@ -1669,13 +1658,13 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 									continue;
 
 								opI = (prIt+1)->pauseOp;
-#ifdef GRAPHDEBUGFULL
 								if (opI <= 0) {
+#ifdef GRAPHDEBUGFULL
 									cout << "DEBUG: Cannot find pause op after resume op " << resumeOp << endl;
 									cout << "DEBUG: Skipping FIFO-NESTED-GEN edge from resume op " << resumeOp << "\n";
+#endif
 									continue;
 								}
-#endif
 
 								std::string taskEnqueued = enqToTaskEnqueued[enqJ].taskEnqueued;
 #ifdef SANITYCHECK
@@ -1807,15 +1796,12 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				if (threadK != threadN)
 					continue;
 
-//				for (HBGraph::adjListNode *currNode = graph->blockAdjList[blockK].head; currNode != NULL; currNode = currNode->next) {
 				for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
 						blockKIt != graph->blockAdjList[blockK].end(); blockKIt++) {
 #ifdef SANITYCHECK
-//					assert(currNode->destination > 0);
 					assert(blockKIt->blockID > 0);
 #endif
 
-//					IDType blockJ = currNode->destination;
 					IDType blockJ = blockKIt->blockID;
 					for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin();
 							enqIt != blockIDMap[blockJ].enqSet.end(); enqIt++) {
@@ -2022,32 +2008,35 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 				cout << "ERROR: Cannot find last resume of task " << taskM << " but we saw a resume op " << opM << "\n";
 				return -1;
 			}
-			// opM needs to be the last resume of taskM
-			if (opM != lastResumeOftaskM)
-				continue;
 
 			// taskM needs to be the parent of taskK
 			if (taskM.compare(taskIDMap[taskK].parentTask) != 0)
 				continue;
 
-			IDType blockK = opIDMap[opK].blockID;
+			IDType enqOfReset = taskIDMap[taskK].enqOpID;
+			if (enqOfReset <= 0) {
+#ifdef GRAPHDEBUG
+				cout << "ERROR: Cannot find enq of task " << taskK << "\n";
+#endif
+				continue;
+			}
+
+//			IDType blockK = opIDMap[opK].blockID;
+			IDType blockK = opIDMap[enqOfReset].blockID;
 #ifdef SANITYCHECK
 			if (blockK <= 0) {
-				cout << "ERROR: Cannot find block of op " << opK << "\n";
+//				cout << "ERROR: Cannot find block of op " << opK << "\n";
+				cout << "ERROR: Cannot find block of op " << enqOfReset << "\n";
 				return -1;
 			}
 #endif
 
-//			for (HBGraph::adjListNode *currNode = graph->blockAdjList[blockK].head;
-//					currNode != NULL; currNode = currNode->next) {
 			for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
 					blockKIt != graph->blockAdjList[blockK].end(); blockKIt++) {
 #ifdef SANITYCHECK
-//				assert(currNode->destination > 0);
 				assert(blockKIt->blockID > 0);
 #endif
 
-//				IDType blockJ = currNode->destination;
 				IDType blockJ = blockKIt->blockID;
 				for (set<IDType>::iterator enqIt = blockIDMap[blockJ].enqSet.begin(); enqIt != blockIDMap[blockJ].enqSet.end();
 						enqIt++) {
@@ -2074,10 +2063,12 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 #ifdef GRAPHDEBUGFULL
 					cout << "DEBUG: checking op edge (" << opK << ", " << opL << ")\n";
 #endif
-					IDType nodeK = opIDMap[opK].nodeID;
+//					IDType nodeK = opIDMap[opK].nodeID;
+					IDType nodeK = opIDMap[enqOfReset].nodeID;
 					IDType nodeL = opIDMap[opL].nodeID;
 					if (nodeK <= 0) {
-						cout << "ERROR: Invalid node ID for op " << opK << "\n";
+//						cout << "ERROR: Invalid node ID for op " << opK << "\n";
+						cout << "ERROR: Invalid node ID for op " << enqOfReset << "\n";
 						return -1;
 					} else if (nodeL <= 0) {
 						cout << "ERROR: Invalid node ID for op " << opL << "\n";
@@ -2118,132 +2109,135 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 #endif
 							}
 
-							// ENQRESET-ST-2
-							opI = taskIDMap[taskM].endOpID;
+							if (opM == lastResumeOftaskM) {
+								// ENQRESET-ST-2
+								opI = taskIDMap[taskM].endOpID;
 
-							if (opI <= 0) {
+								if (opI <= 0) {
 #ifdef GRAPHDEBUGFULL
-								cout << "DEBUG: Cannot find end of task " << taskM << "\n";
+									cout << "DEBUG: Cannot find end of task " << taskM << "\n";
 #ifdef EXTRARULES
-								IDType lastBlockOfTask = taskIDMap[taskM].lastBlockID;
-								if (lastBlockOfTask <= 0) {
-									cout << "DEBUG: Cannot find last block of task " << taskM << "\n";
-									cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task " << taskM << "\n";
-								} else {
-									IDType lastOpOfTask = blockIDMap[lastBlockOfTask].lastOpInBlock;
-									if (lastOpOfTask <= 0) {
-										cout << "DEBUG: Cannot find last op of task " << taskM << "\n";
+									IDType lastBlockOfTask = taskIDMap[taskM].lastBlockID;
+									if (lastBlockOfTask <= 0) {
+										cout << "DEBUG: Cannot find last block of task " << taskM << "\n";
 										cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task " << taskM << "\n";
 									} else {
-										opI = lastOpOfTask;
-										cout << "DEBUG: Adding ENQRESET-ST-2 edge from last op " << opI << " of task " << taskM << "\n";
+										IDType lastOpOfTask = blockIDMap[lastBlockOfTask].lastOpInBlock;
+										if (lastOpOfTask <= 0) {
+											cout << "DEBUG: Cannot find last op of task " << taskM << "\n";
+											cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task " << taskM << "\n";
+										} else {
+											opI = lastOpOfTask;
+											cout << "DEBUG: Adding ENQRESET-ST-2 edge from last op " << opI << " of task " << taskM << "\n";
+										}
 									}
+#endif
+#endif
 								}
-#endif
-#endif
-							}
 
-							if (opI > 0 && opJ > 0) {
+								if (opI > 0 && opJ > 0) {
 #ifdef GRAPHDEBUGFULL
-								cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
+									cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
 #endif
-								IDType nodeI = opIDMap[opI].nodeID;
-								IDType nodeJ = opIDMap[opJ].nodeID;
-								if (nodeI <= 0) {
-									cout << "ERROR: Invalid node ID for op " << opI << "\n";
-									return -1;
-								} else if (nodeJ <= 0) {
-									cout << "ERROR: Invalid node ID for op " << opJ << "\n";
-									return -1;
-								} else {
-									int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
-									if (addEdgeRetValue == 1) {
-										flag = true;
-#ifdef GRAPHDEBUG
-										cout << "ENQRESET-ST-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
-											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-#ifdef GRAPHDEBUGFULL
-									} else if (addEdgeRetValue == 0) {
-										cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
-#endif
-									} else if (addEdgeRetValue == -1) {
-										cout << "ERROR: While adding ENQRESET-ST-2 edge from " << nodeI << " to " << nodeJ << endl;
+									IDType nodeI = opIDMap[opI].nodeID;
+									IDType nodeJ = opIDMap[opJ].nodeID;
+									if (nodeI <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opI << "\n";
 										return -1;
+									} else if (nodeJ <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+										return -1;
+									} else {
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										if (addEdgeRetValue == 1) {
+											flag = true;
+#ifdef GRAPHDEBUG
+											cout << "ENQRESET-ST-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+#ifdef GRAPHDEBUGFULL
+										} else if (addEdgeRetValue == 0) {
+											cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
+										} else if (addEdgeRetValue == -1) {
+											cout << "ERROR: While adding ENQRESET-ST-2 edge from " << nodeI << " to " << nodeJ << endl;
+											return -1;
+										}
 									}
+								} else if (opI <= 0) {
+#ifdef GRAPHDEBUGFULL
+									cout << "DEBUG: Cannot find end of task " << taskM << "\n";
+									cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task\n";
+#endif
+								} else if (opJ <= 0) {
+#ifdef GRAPHDEBUGFULL
+									cout << "DEBUG: Cannot find deq of task " << taskL << "\n";
+									cout << "DEBUG: Skipping ENQRESET-ST-2 edge from deq of task\n";
+#endif
 								}
-							} else if (opI <= 0) {
-#ifdef GRAPHDEBUGFULL
-								cout << "DEBUG: Cannot find end of task " << taskM << "\n";
-								cout << "DEBUG: Skipping ENQRESET-ST-2 edge from end of task\n";
-#endif
-							} else if (opJ <= 0) {
-#ifdef GRAPHDEBUGFULL
-								cout << "DEBUG: Cannot find deq of task " << taskL << "\n";
-								cout << "DEBUG: Skipping ENQRESET-ST-2 edge from deq of task\n";
-#endif
-							}
 
-							// ENQRESET-ST-3
-							std::string sharedVariable = it->first;
-							bool foundFlag = false;
-							for (vector<UAFDetector::pauseResumeResetTuple>::iterator prIt = taskIDMap[taskM].pauseResumeResetSequence.begin();
-								prIt != taskIDMap[taskM].pauseResumeResetSequence.end(); prIt++) {
-								if (prIt->resumeOp == opM) {
-									if (prIt+1 == taskIDMap[taskM].pauseResumeResetSequence.end())
-										continue;
-									IDType nextPause = (prIt+1)->pauseOp;
+							} else {
+								// ENQRESET-ST-3
+								std::string sharedVariable = it->first;
+								bool foundFlag = false;
+								for (vector<UAFDetector::pauseResumeResetTuple>::iterator prIt = taskIDMap[taskM].pauseResumeResetSequence.begin();
+										prIt != taskIDMap[taskM].pauseResumeResetSequence.end(); prIt++) {
+									if (prIt->resumeOp == opM) {
+										if (prIt+1 == taskIDMap[taskM].pauseResumeResetSequence.end())
+											continue;
+										IDType nextPause = (prIt+1)->pauseOp;
 
-									if (nextPause <= 0) {
+										if (nextPause <= 0) {
 #ifdef GRAPHDEBUGFULL
-										cout << "DEBUG: Cannot find next pause after the nesting loop of shared variable " << sharedVariable
-											 << " with pause " << prIt->pauseOp << ", resume " << prIt->resumeOp << ", reset " << prIt->resetOp
-											 << "\n";
+											cout << "DEBUG: Cannot find next pause after the nesting loop of shared variable " << sharedVariable
+												 << " with pause " << prIt->pauseOp << ", resume " << prIt->resumeOp << ", reset " << prIt->resetOp
+												 << "\n";
 #endif
-//										continue;
+//											continue;
+											break;
+										}
+
+										opI = nextPause;
+										foundFlag = true;
 										break;
 									}
-
-									opI = nextPause;
-									foundFlag = true;
-									break;
 								}
-							}
 
-							if (foundFlag && opJ > 0) {
+								if (foundFlag && opJ > 0) {
 #ifdef GRAPHDEBUGFULL
-								cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
+									cout << "DEBUG: checking op edge (" << opI << ", " << opJ << ")\n";
 #endif
-								IDType nodeI = opIDMap[opI].nodeID;
-								IDType nodeJ = opIDMap[opJ].nodeID;
-								if (nodeI <= 0) {
-									cout << "ERROR: Invalid node ID for op " << opI << "\n";
-									return -1;
-								} else if (nodeJ <= 0) {
-									cout << "ERROR: Invalid node ID for op " << opJ << "\n";
-									return -1;
-								} else {
-									int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
-									if (addEdgeRetValue == 1) {
-										flag = true;
-	#ifdef GRAPHDEBUG
-										cout << "ENQRESET-ST-3 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
-											 << " -- #block-edges " << graph->numOfBlockEdges << endl;
-	#endif
-#ifdef GRAPHDEBUGFULL
-									} else if (addEdgeRetValue == 0) {
-										cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
-#endif
-									} else if (addEdgeRetValue == -1) {
-										cout << "ERROR: While adding ENQRESET-ST-3 edge from " << nodeI << " to " << nodeJ << endl;
+									IDType nodeI = opIDMap[opI].nodeID;
+									IDType nodeJ = opIDMap[opJ].nodeID;
+									if (nodeI <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opI << "\n";
 										return -1;
-									}
-								}
-							} else if (opJ <= 0) {
-#ifdef GRAPHDEBUGFULL
-								cout << "DEBUG: Cannot find deq op (or first op) of task " << taskL << "\n";
-								cout << "DEBUG: Skipping ENQRESET-ST-3 edge from op " << opI << " to this task\n";
+									} else if (nodeJ <= 0) {
+										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+										return -1;
+									} else {
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										if (addEdgeRetValue == 1) {
+											flag = true;
+#ifdef GRAPHDEBUG
+											cout << "ENQRESET-ST-3 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
+#ifdef GRAPHDEBUGFULL
+										} else if (addEdgeRetValue == 0) {
+											cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
+										} else if (addEdgeRetValue == -1) {
+											cout << "ERROR: While adding ENQRESET-ST-3 edge from " << nodeI << " to " << nodeJ << endl;
+											return -1;
+										}
+									}
+								} else if (opJ <= 0) {
+#ifdef GRAPHDEBUGFULL
+									cout << "DEBUG: Cannot find deq op (or first op) of task " << taskL << "\n";
+									cout << "DEBUG: Skipping ENQRESET-ST-3 edge from op " << opI << " to this task\n";
+#endif
+								}
 							}
 						} else if (retValue == -1) {
 							cout << "ERROR: While checking edge from " << nodeK << " to " << nodeL << endl;
@@ -2272,10 +2266,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 		assert(blockI > 0);
 #endif
 
-//		for (HBGraph::adjListNode* tempNode1 = graph->blockAdjList[blockI].head; tempNode1 != NULL; tempNode1 = tempNode1->next) {
 		for (std::multiset<HBGraph::adjListNode>::iterator blockIIt = graph->blockAdjList[blockI].begin();
 				blockIIt != graph->blockAdjList[blockI].end(); blockIIt++) {
-//			IDType blockK = tempNode1->destination;
 			IDType blockK = blockIIt->blockID;
 
 #ifdef SANITYCHECK
@@ -2389,12 +2381,10 @@ int UAFDetector::addTransSTOrMTEdges() {
 #ifdef SANITYCHECK
 				if (opI <= 0) {
 					cout << "ERROR: Cannot find last op of block " << blockI << endl;
-//					continue;
 					return -1;
 				}
 				if (firstOp <= 0) {
 					cout << "ERROR: Cannot find first op of block " << blockI << endl;
-//					continue;
 					return -1;
 				}
 #endif
