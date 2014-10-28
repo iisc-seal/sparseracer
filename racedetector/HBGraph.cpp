@@ -201,6 +201,9 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 
 	assert(sourceNode > 0);
 	assert(destinationNode > 0);
+	if (sourceNode == destinationNode) {
+		cout << "ERROR: sourceNode == destinationNode: " << sourceNode << "\n";
+	}
 	assert(sourceNode != destinationNode);
 	assert(opAdjMatrix[sourceNode][destinationNode] == true || opAdjMatrix[sourceNode][destinationNode] == false);
 

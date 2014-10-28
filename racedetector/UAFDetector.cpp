@@ -2073,6 +2073,10 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 					} else if (nodeL <= 0) {
 						cout << "ERROR: Invalid node ID for op " << opL << "\n";
 						return -1;
+					} else if (nodeK == nodeL) {
+						cout << "ERROR: Two ops: " << enqOfReset << " and " << opL
+							 << " are in the same node " << nodeK << "\n";
+						return -1;
 					} else {
 						int retValue = graph->opEdgeExists(nodeK, nodeL);
 						if (retValue == 1) {
