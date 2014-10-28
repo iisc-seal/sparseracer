@@ -6367,6 +6367,7 @@ it++) {
 	long long numOfTasksWithCascadingLoop = 0;
 	int maxRecursiveDepth = 0; std::string taskWithMaxRecursiveDepth = "";
 	int maxCascadingDepth = 0; std::string taskWithMaxCascadingDepth = "";
+	IDType numOfNestingLoops = 0;
 
 	for (map<string, UAFDetector::taskDetails>::iterator it = detector.taskIDMap.begin(); it != detector.taskIDMap.end(); it++) {
 #ifdef SANITYCHECK
@@ -6381,6 +6382,9 @@ it++) {
 		if (it->second.atomic == true)
 			numOfAtomicTasks++;
 		else {
+
+			numOfNestingLoops += it->second.pauseResumeResetSequence.size();
+
 			int currCascadingDepth = it->second.pauseResumeResetSequence.size();
 			if (currCascadingDepth > 1)
 				numOfTasksWithCascadingLoop++;
@@ -6406,7 +6410,8 @@ it++) {
 	}
 	cout << "No of atomic tasks: " << numOfAtomicTasks << "\n";
 	cout << "No of tasks with non-null parent: " << numOfTasksWithNonNullParent << "\n";
-	cout << "No of nesting loops: " << detector.nestingLoopMap.size() << "\n";
+	cout << "No of shared variables guarding nesting loops: " << detector.nestingLoopMap.size() << "\n";
+	cout << "No of nesting loops: " << numOfNestingLoops << "\n";
 	if (maxRecursiveDepth != 0)
 		cout << "Max recursive depth: " << maxRecursiveDepth << " (task "
 			 << taskWithMaxRecursiveDepth << ")\n";
