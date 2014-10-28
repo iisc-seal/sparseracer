@@ -3915,7 +3915,8 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		if (uafOrRace) {
 			uafAllLogger.streamObject << op1ID << " "
 					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
-					<< " " << opAllocID << " " << accessAddress << offset << "\n";
+					<< " " << opAllocID << " " << accessAddress << " "
+					<< offset << "\n";
 			uafAllLogger.writeLog();
 
 			uafAllDebugLogger.writeLog(line1);
@@ -3925,7 +3926,8 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		} else {
 			raceAllLogger.streamObject << op1ID << " "
 					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
-					<< " " << opAllocID << " " << accessAddress << offset << "\n";
+					<< " " << opAllocID << " " << accessAddress << " "
+					<< offset << "\n";
 			raceAllLogger.writeLog();
 
 			raceAllDebugLogger.writeLog(line1);
