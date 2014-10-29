@@ -3696,6 +3696,8 @@ void UAFDetector::log() {
 
 		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
 				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
+			if (raceIt->raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP)
+				continue;
 			if (raceIt->uafOrRace) {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
@@ -3768,6 +3770,8 @@ void UAFDetector::log() {
 
 		for (std::multiset<raceDetails>::iterator raceIt = allocToRaceMap[allocIt->first].begin();
 				raceIt != allocToRaceMap[allocIt->first].end(); raceIt++) {
+			if (raceIt->raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP)
+				continue;
 			if (!raceIt->uafOrRace) {
 				uniqueRaceCount++;
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
