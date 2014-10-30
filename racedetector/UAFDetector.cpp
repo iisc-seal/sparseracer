@@ -3315,7 +3315,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 					insertRace(uaf);
 
 					uafCount++;
-					log (accessID, freeID, allocID, true, UNKNOWN, true);
+					log (accessID, freeID, allocID, true, uaf.raceType, true);
 
 					flag = true;
 					continue;
@@ -3348,7 +3348,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 					insertRace(uaf);
 
 					uafCount++;
-					log (accessID, freeID, allocID, true, UNKNOWN, true);
+					log (accessID, freeID, allocID, true, uaf.raceType, true);
 					flag = true;
 					continue;
 				}
@@ -3399,7 +3399,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 					insertRace(uaf);
 
 					uafCount++;
-					log (accessID, freeID, allocID, true, UNKNOWN, true);
+					log (accessID, freeID, allocID, true, uaf.raceType, true);
 
 					flag = true;
 					continue;
@@ -3509,7 +3509,7 @@ IDType UAFDetector::findDataRacesUsingNodes() {
 						getRaceKind(dataRace);
 						insertRace(dataRace);
 						raceCount++;
-						log (*op1It, *op2It, allocIt->first, false, UNKNOWN, true);
+						log (*op1It, *op2It, allocIt->first, false, dataRace.raceType, true);
 //						cout << "Data Race: ";
 //						dataRace.printDetails();
 
@@ -3631,8 +3631,8 @@ void UAFDetector::log() {
 	}
 #endif
 
-	cout << "\n#Allocation sites with races = " << allocToRaceMap.size() << "\n";
-
+	IDType allocCount = 0;
+	std::set<IDType> allocSeen;
 	// Find UAFs
 	uniqueUafCount = 0;
 	for (map<IDType, UAFDetector::allocOpDetails>::iterator allocIt = allocIDMap.begin();
@@ -3652,6 +3652,12 @@ void UAFDetector::log() {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				foundNested = true;
 				break;
 			}
@@ -3669,6 +3675,12 @@ void UAFDetector::log() {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				foundNested = true;
 				break;
 			}
@@ -3686,6 +3698,12 @@ void UAFDetector::log() {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				foundNested = true;
 				break;
 			}
@@ -3702,6 +3720,12 @@ void UAFDetector::log() {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				break;
 			}
 		}
@@ -3726,6 +3750,12 @@ void UAFDetector::log() {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueRaceCount++;
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				foundNested = true;
 				break;
 			}
@@ -3743,6 +3773,12 @@ void UAFDetector::log() {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueRaceCount++;
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				foundNested = true;
 				break;
 			}
@@ -3760,6 +3796,12 @@ void UAFDetector::log() {
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueRaceCount++;
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				foundNested = true;
 				break;
 			}
@@ -3776,11 +3818,18 @@ void UAFDetector::log() {
 				uniqueRaceCount++;
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
+
+				if (allocSeen.find(allocIt->first) == allocSeen.end()) {
+					allocCount++;
+					allocSeen.insert(allocIt->first);
+				}
+
 				break;
 			}
 		}
 	}
 
+  	cout << "\n#Allocation sites with races = " << allocCount << "\n";
 	cout << "OUTPUT: #Unique UAFs: " << uniqueUafCount << "\n";
 	cout << "OUTPUT: #Unique Races: " << uniqueRaceCount << "\n";
 }
@@ -3927,6 +3976,10 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			uafAllDebugLogger.writeLog(lines23);
 			uafAllDebugLogger.writeLog(line4);
 			uafAllDebugLogger.writeLog(line5);
+
+			if (raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
+				uafAllocMemopSameTaskSameThreadLogger.writeLog(line1);
+			}
 		} else {
 			raceAllLogger.streamObject << op1ID << " "
 					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
@@ -3938,6 +3991,10 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			raceAllDebugLogger.writeLog(lines23);
 			raceAllDebugLogger.writeLog(line4);
 			raceAllDebugLogger.writeLog(line5);
+
+			if (raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
+				raceAllocMemopSameTaskSameThreadLogger.writeLog(line1);
+			}
 		}
 		return;
 	}
@@ -3987,10 +4044,11 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		else
 			raceLogger = &raceAllocMemopSameTaskLogger;
 	} else if (raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
-		if (uafOrRace)
-			raceLogger = &uafAllocMemopSameTaskSameThreadLogger;
-		else
-			raceLogger = &raceAllocMemopSameTaskSameThreadLogger;
+		return;
+//		if (uafOrRace)
+//			raceLogger = &uafAllocMemopSameTaskSameThreadLogger;
+//		else
+//			raceLogger = &raceAllocMemopSameTaskSameThreadLogger;
 	} else if (raceType == NONATOMIC_WITH_OTHER) {
 		if (uafOrRace)
 			raceLogger = &uafNonAtomicOtherLogger;
@@ -4036,9 +4094,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	}
 
 	raceLogger->writeLog(line1);
-	if (raceType != SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
-		raceLogger->writeLog(lines23);
-		raceLogger->writeLog(line4);
-		raceLogger->writeLog(line5);
-	}
+	raceLogger->writeLog(lines23);
+	raceLogger->writeLog(line4);
+	raceLogger->writeLog(line5);
 }
