@@ -2874,7 +2874,7 @@ IDType  UAFDetector::findUAF() {
 #endif
 							uaf.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
 
-							continue;
+//							continue;
 						} else {
 							// May be we should categorize these separately. Easy to reproduce
 							uaf.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
@@ -3028,7 +3028,7 @@ IDType  UAFDetector::findUAF() {
 							falsePositives++;
 #endif
 							uaf.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
-							continue;
+//							continue;
 						} else {
 							uaf.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
 						}
