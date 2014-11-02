@@ -3070,6 +3070,7 @@ IDType  UAFDetector::findUAF() {
 		return 0;
 }
 
+#ifdef DATARACE
 #ifndef ACCESS
 IDType UAFDetector::findDataRaces() {
 
@@ -3205,6 +3206,7 @@ IDType UAFDetector::findDataRaces() {
 	else
 		return 0;
 }
+#endif
 #endif
 
 IDType  UAFDetector::findUAFUsingNodes() {
@@ -3415,6 +3417,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 		return 0;
 }
 
+#ifdef DATARACE
 #ifndef ACCESS
 IDType UAFDetector::findDataRacesUsingNodes() {
 
@@ -3527,6 +3530,7 @@ IDType UAFDetector::findDataRacesUsingNodes() {
 		return 0;
 }
 #endif
+#endif
 
 void UAFDetector::initLog(std::string traceFileName) {
 	uafCount = 0;
@@ -3534,68 +3538,94 @@ void UAFDetector::initLog(std::string traceFileName) {
 
 	std::string uafFileName = traceFileName + ".uaf.all";
 	uafAllLogger.init(uafFileName);
+#ifdef DATARACE
 	std::string raceFileName = traceFileName + ".race.all";
 	raceAllLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.all.debug";
 	uafAllDebugLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.all.debug";
 	raceAllDebugLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.unique.all";
 	uafAllUniqueLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.unique.all";
 	raceAllUniqueLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.withouttask";
 	uafNoTaskLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.withouttask";
 	raceNoTaskLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.enqpath";
 	uafEnqPathLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.enqpath";
 	raceEnqPathLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.allocmemopinsametaskdiffthread";
 	uafAllocMemopSameTaskLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.allocmemopinsametaskdiffthread";
 	raceAllocMemopSameTaskLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.allocmemopinsametaskinsamethread";
 	uafAllocMemopSameTaskSameThreadLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.allocmemopinsametaskinsamethread";
 	raceAllocMemopSameTaskSameThreadLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.nestednested";
 	uafNestedNestedLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.nestednested";
 	raceNestedNestedLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.nestedprimary";
 	uafNestedPrimaryLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.nestedprimary";
 	raceNestedPrimaryLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.nestedordered";
 	uafNestedOrderedLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.nestedordered";
 	raceNestedOrderedLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.nonatomicwithother";
 	uafNonAtomicOtherLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.nonatomicwithother";
 	raceNonAtomicOtherLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.multithreadedwithsamenestingloop";
 	uafMultithreadedSameNestingLoopLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.multithreadedwithsamenestingloop";
 	raceMultithreadedSameNestingLoopLogger.init(raceFileName);
+#endif
 
 	uafFileName = traceFileName + ".uaf.other";
 	uafOtherLogger.init(uafFileName);
+#ifdef DATARACE
 	raceFileName = traceFileName + ".race.other";
 	raceOtherLogger.init(raceFileName);
+#endif
 }
 
 std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
@@ -3731,6 +3761,7 @@ void UAFDetector::log() {
 		}
 	}
 
+#ifdef DATARACE
 	// Find data races
 	uniqueRaceCount = 0;
 	for (map<IDType, UAFDetector::allocOpDetails>::iterator allocIt = allocIDMap.begin();
@@ -3828,10 +3859,13 @@ void UAFDetector::log() {
 			}
 		}
 	}
+#endif
 
   	cout << "\n#Allocation sites with races = " << allocCount << "\n";
 	cout << "OUTPUT: #Unique UAFs: " << uniqueUafCount << "\n";
+#ifdef DATARACE
 	cout << "OUTPUT: #Unique Races: " << uniqueRaceCount << "\n";
+#endif
 }
 
 // uafOrRace: true if uaf, false if data race
@@ -3981,6 +4015,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 				uafAllocMemopSameTaskSameThreadLogger.writeLog(line1);
 			}
 		} else {
+#ifdef DATARACE
 			raceAllLogger.streamObject << op1ID << " "
 					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
 					<< " " << opAllocID << " " << accessAddress << " "
@@ -3995,6 +4030,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 			if (raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
 				raceAllocMemopSameTaskSameThreadLogger.writeLog(line1);
 			}
+#endif
 		}
 		return;
 	}
@@ -4008,19 +4044,25 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		allLogger = &uafAllUniqueLogger;
 
 	} else {
+#ifdef DATARACE
 		allLogger = &raceAllUniqueLogger;
+#endif
 	}
 
 	if (raceType == NESTED_NESTED) {
 		if (uafOrRace)
 			raceLogger = &uafNestedNestedLogger;
+#ifdef DATARACE
 		else
 			raceLogger = &raceNestedNestedLogger;
+#endif
 	} else if (raceType == NESTED_PRIMARY) {
 		if (uafOrRace)
 			raceLogger = &uafNestedPrimaryLogger;
+#ifdef DATARACE
 		else
 			raceLogger = &raceNestedPrimaryLogger;
+#endif
 //		IDType deq1 = -1;
 //		IDType deq2 = -1;
 //		if (taskIDMap[opIDMap[op1ID].taskID].parentTask.compare("") != 0)
@@ -4031,18 +4073,24 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	} else if (raceType == NESTED_WITH_TASKS_ORDERED) {
 		if (uafOrRace)
 			raceLogger = &uafNestedOrderedLogger;
+#ifdef DATARACE
 		else
 			raceLogger = &raceNestedOrderedLogger;
+#endif
 	} else if (raceType == NOTASKRACE) {
 		if (uafOrRace)
 			raceLogger = &uafNoTaskLogger;
+#ifdef DATARACE
 		else
 			raceLogger = &raceNoTaskLogger;
+#endif
 	} else if (raceType == MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK) {
 		if (uafOrRace)
 			raceLogger = &uafAllocMemopSameTaskLogger;
+#ifdef DATARACE
 		else
 			raceLogger = &raceAllocMemopSameTaskLogger;
+#endif
 	} else if (raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP) {
 		return;
 //		if (uafOrRace)
@@ -4052,8 +4100,10 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	} else if (raceType == NONATOMIC_WITH_OTHER) {
 		if (uafOrRace)
 			raceLogger = &uafNonAtomicOtherLogger;
+#ifdef DATARACE
 		else
 			raceLogger = &raceNonAtomicOtherLogger;
+#endif
 //		IDType deq1 = -1;
 //		IDType deq2 = -1;
 //		if (!(taskIDMap[opIDMap[op1ID].taskID].atomic))
@@ -4064,8 +4114,10 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	} else {
 		if (uafOrRace)
 			raceLogger = &uafOtherLogger;
+#ifdef DATARACE
 		else
 			raceLogger = &raceOtherLogger;
+#endif
 	}
 
 
@@ -4083,8 +4135,10 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 					raceType = MULTITHREADED_FROM_SAME_NESTING_LOOP;
 					if (uafOrRace)
 						raceLogger = &uafMultithreadedSameNestingLoopLogger;
+#ifdef DATARACE
 					else
 						raceLogger = &raceMultithreadedSameNestingLoopLogger;
+#endif
 					break;
 				}
 			}
