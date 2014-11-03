@@ -1217,6 +1217,19 @@ int UAFDetector::add_WaitNotify_Edges() {
 		IDType opJ = it->second;
 
 		if (opI > 0 && opJ > 0) {
+			IDType threadI = opIDMap[opI].threadID;
+			IDType threadJ = opIDMap[opJ].threadID;
+			if (threadI < 0) {
+				cout << "ERROR: Cannot find threadID of op " << opI << "\n";
+				return -1;
+			}
+			if (threadJ < 0) {
+				cout << "ERROR: Cannot find threadID of op " << opJ << "\n";
+				return -1;
+			}
+
+			if (threadI == threadJ) continue;
+
 			IDType nodeI = opIDMap[opI].nodeID;
 			IDType nodeJ = opIDMap[opJ].nodeID;
 			if (nodeI <= 0) {
@@ -1263,6 +1276,19 @@ int UAFDetector::add_WaitNotify_Edges() {
 			IDType opJ = *waitIt;
 
 			if (opI > 0 && opJ > 0) {
+				IDType threadI = opIDMap[opI].threadID;
+				IDType threadJ = opIDMap[opJ].threadID;
+				if (threadI < 0) {
+					cout << "ERROR: Cannot find threadID of op " << opI << "\n";
+					return -1;
+				}
+				if (threadJ < 0) {
+					cout << "ERROR: Cannot find threadID of op " << opJ << "\n";
+					return -1;
+				}
+
+				if (threadI == threadJ) continue;
+
 				IDType nodeI = opIDMap[opI].nodeID;
 				IDType nodeJ = opIDMap[opJ].nodeID;
 				if (nodeI <= 0) {
