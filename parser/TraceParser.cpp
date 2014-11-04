@@ -5294,9 +5294,11 @@ it++) {
 							if (detector.notifyToWait.find(notifyOp) == detector.notifyToWait.end()) {
 								detector.notifyToWait[notifyOp] = opCount;
 							} else {
-								cout << "ERROR: Wait op already set for notify op " << notifyOp << "\n";
-								cout << "ERROR: Existing entry: " << detector.notifyToWait[notifyOp] << "\n";
-								return -1;
+								cout << "WARNING: Wait op already set for notify op " << notifyOp << "\n";
+								cout << "WARNING: Existing entry: " << detector.notifyToWait[notifyOp] << "\n";
+								cout << "WARNING: Skipping this op\n";
+								continue;
+//								return -1;
 							}
 						} else if (!notifyFlag && notifyAllFlag) {
 							if (detector.notifyAllToWaitSet.find(notifyAllOp) == detector.notifyAllToWaitSet.end()) {
