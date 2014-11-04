@@ -32,6 +32,9 @@
 // To use nodes for finding races
  #define NODERACES
 
+// To enable reporting of only single threaded races
+ #define SINGLETHREADEDRACES
+
 // To use extra rules
 // #define EXTRARULES
 

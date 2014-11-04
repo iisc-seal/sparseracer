@@ -3904,6 +3904,19 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	std::string op1TaskID = opIDMap[op1ID].taskID;
 	std::string op2TaskID = opIDMap[op2ID].taskID;
 
+	if (op1ThreadID < 0) {
+		cout << "ERROR: Cannot find threadID of op " << op1ID << "\n";
+		return;
+	}
+	if (op2ThreadID < 0) {
+		cout << "ERROR: Cannot find threadID of op " << op2ID << "\n";
+		return;
+	}
+#ifdef SINGLETHREADEDRACES
+	if (op1ThreadID != op2ThreadID)
+		return;
+#endif
+
 	if (op1TaskID.compare("") == 0)
 		op1TaskID = findPreviousTaskOfOp(op1ID);
 	if (op2TaskID.compare("") == 0)
