@@ -6514,6 +6514,50 @@ it++) {
 		it->second.printDetails();
 		cout << "\n";
 	}
+	cout << "\nMap - wait\n";
+	for (map<IDType, UAFDetector::lockOpDetails>::iterator it = detector.waitSet.begin(); it != detector.waitSet.end(); it++) {
+		cout << "Wait: " << it->first << "\n";
+		it->second.printDetails();
+		cout << "\n";
+	}
+	cout << "\nMap - notify\n";
+	for (map<IDType, UAFDetector::lockOpDetails>::iterator it = detector.notifySet.begin(); it != detector.notifySet.end(); it++) {
+		cout << "Notify: " << it->first << "\n";
+		it->second.printDetails();
+		cout << "\n";
+	}
+	cout << "\nMap - notifyAll\n";
+	for (map<IDType, UAFDetector::lockOpDetails>::iterator it = detector.notifyAllSet.begin(); it != detector.notifyAllSet.end(); it++) {
+		cout << "NotifyAll: " << it->first << "\n";
+		it->second.printDetails();
+		cout << "\n";
+	}
+	cout << "\nMap - lockToNotify\n";
+	for (map<std::string, UAFDetector::setOfOps>::iterator it = detector.lockToNotify.begin(); it != detector.lockToNotify.end(); it++) {
+		cout << "Lock ID: " << it->first << "\n";
+		it->second.printDetails();
+		cout << "\n";
+	}
+	cout << "\nMap - lockToNotifyAll\n";
+	for (map<std::string, UAFDetector::setOfOps>::iterator it = detector.lockToNotifyAll.begin(); it != detector.lockToNotifyAll.end(); it++) {
+		cout << "Lock ID: " << it->first << "\n";
+		it->second.printDetails();
+		cout << "\n";
+	}
+	cout << "\nMap - notifyToWait\n";
+	for (map<IDType, IDType>::iterator it = detector.notifyToWait.begin(); it != detector.notifyToWait.end(); it++) {
+		cout << "Notify " << it->first << " --> Wait " << it->second << "\n";
+	}
+	cout << "\nMap - notifyAllToWaitSet\n";
+	for (map<IDType, UAFDetector::setOfOps>::iterator it = detector.notifyAllToWaitSet.begin(); it != detector.notifyAllToWaitSet.end(); it++) {
+		cout << "NotifyAll " << it->first << "-->\n";
+		it->second.printDetails();
+		cout << "\n";
+	}
+	cout << "\nMap - waitToNotify\n";
+	for (map<IDType, IDType>::iterator it = detector.waitToNotify.begin(); it != detector.waitToNotify.end(); it++) {
+		cout << "Wait " << it->first << " --> Notify " << it->second << "\n";
+	}
 #endif
 
 	// Initialize HB Graph
