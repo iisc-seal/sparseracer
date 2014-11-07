@@ -6371,6 +6371,17 @@ it++) {
 	int maxCascadingDepth = 0; std::string taskWithMaxCascadingDepth = "";
 	IDType numOfNestingLoops = 0;
 
+	std::set<IDType> setOfThreadsWithQueues;
+	std::set<IDType> setOfThreadsWithNestingLoops;
+	map<IDType, int> threadToMaxRecursiveDepth;
+	map<IDType, int> threadToMaxCascadingDepth;
+
+	for (map<IDType, UAFDetector::threadDetails>::iterator it = detector.threadIDMap.begin(); it != detector.threadIDMap.end(); it++) {
+		if (it->second.enterloopBlockID > 0) {
+			setOfThreadsWithQueues.insert(it->first);
+		}
+	}
+
 	for (map<string, UAFDetector::taskDetails>::iterator it = detector.taskIDMap.begin(); it != detector.taskIDMap.end(); it++) {
 #ifdef SANITYCHECK
 		if (it->second.atomic == true && (it->second.firstPauseOpID != -1 || it->second.lastResumeOpID != -1
@@ -6387,12 +6398,25 @@ it++) {
 
 			numOfNestingLoops += it->second.pauseResumeResetSequence.size();
 
+			IDType currThreadID = detector.opIDMap[it->second.firstPauseOpID].threadID;
+			setOfThreadsWithNestingLoops.insert(currThreadID);
+
 			int currCascadingDepth = it->second.pauseResumeResetSequence.size();
 			if (currCascadingDepth > 1)
 				numOfTasksWithCascadingLoop++;
 			if (maxCascadingDepth < currCascadingDepth) {
 				maxCascadingDepth = currCascadingDepth;
 				taskWithMaxCascadingDepth = it->first;
+			}
+
+			if (threadToMaxCascadingDepth.find(currThreadID) != threadToMaxCascadingDepth.end()) {
+				IDType threadCascadingDepth = threadToMaxCascadingDepth.find(currThreadID)->second;
+				if (threadCascadingDepth < currCascadingDepth) {
+					threadToMaxCascadingDepth.erase(threadToMaxCascadingDepth.find(currThreadID));
+					threadToMaxCascadingDepth[currThreadID] = currCascadingDepth;
+				}
+			} else {
+				threadToMaxCascadingDepth[currThreadID] = currCascadingDepth;
 			}
 
 			int recursiveDepth = 0;
@@ -6408,6 +6432,16 @@ it++) {
 				maxRecursiveDepth = recursiveDepth;
 				taskWithMaxRecursiveDepth = prevTask;
 			}
+
+			if (threadToMaxRecursiveDepth.find(currThreadID) != threadToMaxRecursiveDepth.end()) {
+				IDType threadRecursiveDepth = threadToMaxRecursiveDepth.find(currThreadID)->second;
+				if (threadRecursiveDepth < recursiveDepth) {
+					threadToMaxRecursiveDepth.erase(threadToMaxRecursiveDepth.find(currThreadID));
+					threadToMaxRecursiveDepth[currThreadID] = recursiveDepth;
+				}
+			} else {
+				threadToMaxRecursiveDepth[currThreadID] = recursiveDepth;
+			}
 		}
 	}
 	cout << "No of atomic tasks: " << numOfAtomicTasks << "\n";
@@ -6422,12 +6456,24 @@ it++) {
 			 << taskWithMaxCascadingDepth << ")\n";
 	cout << "No of tasks with cascading depth > 1: " << numOfTasksWithCascadingLoop << "\n";
 	cout << "No of threads: " << detector.threadIDMap.size() << "\n";
+	cout << "No of threads with queues: " << setOfThreadsWithQueues.size() << "\n";
+	cout << "No of threads with nesting loops: " << setOfThreadsWithNestingLoops.size() << "\n";
 	cout << "No of alloc ops: " << detector.allocSet.size() << "\n";
 	cout << "No of free ops: " << detector.freeSet.size() << "\n";
 	cout << "No of read ops: " << detector.readSet.size() << "\n";
 	cout << "No of write ops: " << detector.writeSet.size() << "\n";
 	cout << "No of nodes: " << detector.nodeIDMap.size() << "\n";
 	cout << "Node Limit: " << NODELIMIT << "\n";
+
+	cout << "threadToMaxRecursiveDepth:\n";
+	for (map<IDType, IDType>::iterator it = threadToMaxRecursiveDepth.begin(); it != threadToMaxRecursiveDepth.end(); it++) {
+		cout << "Thread " << it->first << ": " << it->second << "\n";
+	}
+
+	cout << "threadToMaxCascadingDepth:\n";
+	for (map<IDType, IDType>::iterator it = threadToMaxCascadingDepth.begin(); it != threadToMaxCascadingDepth.end(); it++) {
+		cout << "Thread " << it->first << ": " << it->second << "\n";
+	}
 
 	if (detector.nodeIDMap.size() > NODELIMIT)
 		return -2;
