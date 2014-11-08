@@ -29,6 +29,8 @@ TraceParser::TraceParser(string traceFileName) {
 		cout << "Cannot open trace file\n";
 	}
 
+	traceName = traceFileName;
+
 	opCount = 0;
 	nodeCount = 0;
 	blockCount = 0;
@@ -6478,12 +6480,19 @@ it++) {
 	if (detector.nodeIDMap.size() > NODELIMIT)
 		return -2;
 
+	Logger opTaskLogger;
+	opTaskLogger.init(traceName + ".tasks");
+
 	cout << "\nOps: \n";
 	for (map<IDType, UAFDetector::opDetails>::iterator it = detector.opIDMap.begin(); it != detector.opIDMap.end(); it++) {
 		cout << "\nOp: " << it->first << " - details: ";
 		it->second.printOpDetails();
 		cout << endl;
+
+		opTaskLogger.streamObject << it->first << ":" << it->second.taskID << "\n";
+		opTaskLogger.writeLog();
 	}
+
 	cout << "\nTasks:\n";
 	for (map<string, UAFDetector::taskDetails>::iterator it = detector.taskIDMap.begin(); it != detector.taskIDMap.end(); it++) {
 		cout << "Task ID: " << it->first << " - details: ";

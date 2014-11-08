@@ -24,6 +24,8 @@ public:
 	TraceParser(string traceFileName);
 	virtual ~TraceParser();
 
+	std::string traceName;
+
 	// checks whether each line from the trace file is a valid operation
 //	int parse(UAFDetector &detector, Logger *logger);
 	int parse(UAFDetector &detector);
