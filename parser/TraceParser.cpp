@@ -6477,8 +6477,10 @@ it++) {
 		cout << "Thread " << it->first << ": " << it->second << "\n";
 	}
 
+#ifdef RUNOVERNODELIMIT
 	if (detector.nodeIDMap.size() > NODELIMIT)
 		return -2;
+#endif
 
 	Logger opTaskLogger;
 	opTaskLogger.init(traceName + ".tasks");
