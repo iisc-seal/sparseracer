@@ -6477,7 +6477,7 @@ it++) {
 		cout << "Thread " << it->first << ": " << it->second << "\n";
 	}
 
-#ifdef RUNOVERNODELIMIT
+#ifndef RUNOVERNODELIMIT
 	if (detector.nodeIDMap.size() > NODELIMIT)
 		return -2;
 #endif
