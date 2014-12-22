@@ -100,7 +100,17 @@ namespace MemInstrument {
       // 	continue;
       
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+	// if(fName.compare("main") == 0){
+	//   llvm::outs() << "==========Before:=========" << "\n";
+	//   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+	//     llvm::outs() << *I << "\n";
+	// }
 	LoadStoreInstrument::runOnBasicBlock(BB, fName, dirName);
+	// if(fName.compare("main") == 0){
+	//   llvm::outs() << "==========After:=========" << "\n";
+	//   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+	//     llvm::outs() << *I << "\n";
+	// }
       }
     }
     return true;
@@ -206,12 +216,12 @@ namespace MemInstrument {
       // Getting the dirname earlier failed. Try again using the instruction
 
       
-
+      // llvm::outs() << "Considering " << fName << " in " << getFileName(BI) << " \n";
       if(dName.compare("")==0)
-	if(!shouldInstrumentDirectory(getDirName(BI)))  //&&
+	if(!shouldInstrumentDirectory(getDirName(BI))  &&
 	  // fName.find("assign_assuming_AddRef") == std::string::npos)
 	 //	  && fName.find("CheckAcquire") == std::string::npos )
-	  //!shouldInstrumentFile(getFileName(BI)))
+	   !shouldInstrumentFile(getFileName(BI)))
 	 continue;
       
       // llvm::outs() << "Processing " << fName << " in " << getFileName(BI) << " \n";
@@ -225,7 +235,7 @@ namespace MemInstrument {
 	if (isa<StoreInst>(BI)) {
 	  //errs() << ">";
 	  // Instrument STORE here
-	  //llvm::outs() << "\n Store: " << getDirName(BI) << "\n";
+	  // llvm::outs() << "\n Store: " << *BI << "\n";
 	  LoadStoreInstrument::Instrument(BI, true, fName);
 	} else {
 	  //errs() << " ";

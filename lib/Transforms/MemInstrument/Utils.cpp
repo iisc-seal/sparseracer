@@ -53,6 +53,27 @@ namespace MemInstrument {
     "_ZN8JSString8rootKindEv"
   };
 
+  std::set<std::string> mustInstrument = {
+    "_ZN12nsThreadPool14ShutdownThreadEP9nsIThread",
+    "_ZN12nsThreadPool8ShutdownEv",
+    "_ZN15nsThreadManager8ShutdownEv",
+    "_ZN21nsThreadShutdownEvent3RunEv",
+    "_ZN21nsThreadShutdownEventC2EP8nsThreadP23nsThreadShutdownContext",
+    "_ZN21nsThreadShutdownEventD0Ev",
+    "_ZN21nsThreadShutdownEventD2Ev",
+    "_ZN24nsThreadShutdownAckEvent3RunEv",
+    "_ZN24nsThreadShutdownAckEventC2EP23nsThreadShutdownContext",
+    "_ZN24nsThreadShutdownAckEventD0Ev",
+    "_ZN24nsThreadShutdownAckEventD2Ev",
+    "_ZN8nsThread16ShutdownRequiredEv",
+    "_ZN8nsThread8ShutdownEv",
+    "_ZN8nsThread16ProcessNextEventEbPb",
+    "_ZN8nsThread16DispatchInternalEP11nsIRunnablejPNS_19nsNestedEventTargetE",
+    "_ZN8nsThread19nsNestedEventTarget8DispatchEP11nsIRunnablej",
+    "_Z23NS_ProcessPendingEventsP9nsIThreadj",
+    "_ZN20nsThreadSyncDispatch3RunEv"
+  };
+
   bool endsWith(const std::string &str, const std::string &suffix){
     return str.size() >= suffix.size() &&
       str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
@@ -139,6 +160,12 @@ namespace MemInstrument {
       return false;
     }
 
+    // we must instrument the function irrespective of other constraints like
+    // the dir it is in being blacklisted etc
+    if(mustInstrument.find(name) != mustInstrument.end()){
+      return true;
+    }
+
     if(name.find("__cxx") != std::string::npos || name.find("PR_") != std::string::npos){
       llvm::outs() << "Skipping " << name << "\n";
       return false;
@@ -212,15 +239,15 @@ namespace MemInstrument {
       return false;
     std::string instrDirs(dirs);
     std::vector<std::string> wList = split(instrDirs, ':');
-    //llvm::outs() << "Current " << name << "\n";
+    // llvm::outs() << "Current " << name << "\n";
     for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
       // std::size_t found = name.find(*it);
       // if (found != std::string::npos){
       // 	return true;
       // }
-      //llvm::outs() << "Matching against " << *it << "\n";
+      // llvm::outs() << "Matching against " << *it << "\n";
       if(name.compare(*it) == 0){
-	//llvm::outs() << "Matched directory " << name << "\n";
+	// llvm::outs() << "Matched directory " << name << "\n";
 	return true;
       }
     }
@@ -239,7 +266,7 @@ namespace MemInstrument {
       std::size_t found = name.find(*it);
       // llvm::outs() << name << " : " << *it << "\n";
       if (found != std::string::npos){
-	// llvm::outs() << "Instrumenting " << name << "\n";
+	llvm::outs() << "Instrumenting File " << name << "\n";
 	return true;
       }
     }

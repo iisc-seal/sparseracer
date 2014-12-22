@@ -21,6 +21,27 @@ using namespace llvm;
 
 namespace MemInstrument {
 
+  std::set<std::string> wList = {
+    "_ZN12nsThreadPool14ShutdownThreadEP9nsIThread",
+    "_ZN12nsThreadPool8ShutdownEv",
+    "_ZN15nsThreadManager8ShutdownEv",
+    "_ZN21nsThreadShutdownEvent3RunEv",
+    "_ZN21nsThreadShutdownEventC2EP8nsThreadP23nsThreadShutdownContext",
+    "_ZN21nsThreadShutdownEventD0Ev",
+    "_ZN21nsThreadShutdownEventD2Ev",
+    "_ZN24nsThreadShutdownAckEvent3RunEv",
+    "_ZN24nsThreadShutdownAckEventC2EP23nsThreadShutdownContext",
+    "_ZN24nsThreadShutdownAckEventD0Ev",
+    "_ZN24nsThreadShutdownAckEventD2Ev",
+    "_ZN8nsThread16ShutdownRequiredEv",
+    "_ZN8nsThread8ShutdownEv",
+    "_ZN8nsThread16ProcessNextEventEbPb",
+    "_ZN8nsThread16DispatchInternalEP11nsIRunnablejPNS_19nsNestedEventTargetE",
+    "_ZN8nsThread19nsNestedEventTarget8DispatchEP11nsIRunnablej",
+    "_Z23NS_ProcessPendingEventsP9nsIThreadj",
+    "_ZN20nsThreadSyncDispatch3RunEv"
+  };
+
   void FInstrument::readBlacklist(){
     std::string line;
     std::ifstream skippedFunctionsFile ("/home/anirudh/blacklist.txt");
@@ -69,7 +90,7 @@ namespace MemInstrument {
       if (F->isDeclaration()) continue;
       //llvm::outs() << FName << "\n";
       
-      if(skipped.find(FName) != skipped.end()){
+      if(skipped.find(FName) != skipped.end() && (wList.find(FName) == wList.end())){
 	llvm::outs() << "Skipping already skipped function " << FName << "\n";
 	continue;
       }
@@ -101,6 +122,10 @@ namespace MemInstrument {
       if(startsWith(demangled, "js::") || 
 	 FName.find("CCParticipant") != std::string::npos ||
 	 FName.find("cycleCollection") != std::string::npos ||
+	 FName.find("ArrayLength") != std::string::npos ||
+	 FName.find("nsDefaultComparator") != std::string::npos ||
+	 FName.find("autoJArray") != std::string::npos ||
+	 FName.find("GetStyleDisplay") != std::string::npos ||
 	 endsWith(FName, "QueryInterfaceERK4nsIDPPv") || 
 	 endsWith(FName, "AddRefEv") ||
 	 endsWith(FName, "ReleaseEv") ||
@@ -116,9 +141,19 @@ namespace MemInstrument {
 	 startsWith(demangled, "nsAttrAndChildArray::") ||
 	 startsWith(demangled, "nsIContent::GetID") ||
 	 startsWith(demangled, "nsJSContext::MaybePokeCC") ||
+	 startsWith(demangled, "nsAutoTObserverArray") ||
+	 startsWith(demangled, "nsAutoArrayPtr") ||
 	 startsWith(demangled, "mozilla::MillisecondsToMediaTime") ||
 	 startsWith(demangled, "mozilla::LinkedListElement") ||
-	 startsWith(demangled, "mozilla::BloomFilter")
+ 	 startsWith(demangled, "mozilla::BloomFilter") ||
+	 startsWith(demangled, "nsEventStates::") ||
+	 startsWith(demangled, "nsWrapperCache::") ||
+	 startsWith(demangled, "nsINode::") ||
+	 startsWith(demangled, "nsStyleContext::") ||
+	 startsWith(demangled, "mozilla::safebrowsing::") ||
+	 startsWith(demangled, "int mozilla::safebrowsing::") ||
+	 startsWith(demangled, "vp8_") ||
+	 startsWith(demangled, "decode_")
 	 ){
 	skipped.insert(FName); 
 	llvm::outs() << "Skipping JS or std " << FName << "\n";
@@ -138,7 +173,10 @@ namespace MemInstrument {
 	  break;
 	}
       }
-      if(found){
+      
+      // we avoid skipping over functions in blacklisted directories that
+      // we must instrument - the fn must not be in our whitelist
+      if(found && (wList.find(FName) == wList.end())){
 	llvm::outs() << "Early Skipping " << FName << "\n";
 	skipped.insert(FName);
 	continue;
@@ -169,45 +207,45 @@ namespace MemInstrument {
 
       instrumented.insert(FName);
       
-      if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
-	llvm::outs() << "Before: \n";
-	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
-	  llvm::outs() << *I << "\n";
-      }
+      // if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
+      // 	llvm::outs() << "Before: \n";
+      // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+      // 	  llvm::outs() << *I << "\n";
+      // }
 
       FInstrument::instrumentEntry(F);
 
-      if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
-	llvm::outs() << "After Entry: \n";
-	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
-	  llvm::outs() << *I << "\n";
-      }
+      // if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
+      // 	llvm::outs() << "After Entry: \n";
+      // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+      // 	  llvm::outs() << *I << "\n";
+      // }
 
       for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
-	if(isa<ReturnInst>(BB->getTerminator())){
-	  exitBlocks.push_back(BB);
-	}
+      	if(isa<ReturnInst>(BB->getTerminator())){
+      	  exitBlocks.push_back(BB);
+      	}
       }
 
       FInstrument::instrumentExits(F, exitBlocks);
       
-      if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
-	llvm::outs() << "After entry exit: \n";
-	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
-	  llvm::outs() << *I << "\n";
-      }
+      // if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
+      // 	llvm::outs() << "After entry exit: \n";
+      // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
+      // 	  llvm::outs() << *I << "\n";
+      // }
 
     }
     
-    std::vector<std::string> v_intersection;
+    // std::vector<std::string> v_intersection;
  
-    std::set_intersection(skipped.begin(), skipped.end(),
-                          instrumented.begin(), instrumented.end(),
-                          std::back_inserter(v_intersection));
-    if(!v_intersection.empty())
-      llvm::outs() << "Suspicious ";
-    for (std::vector<std::string>::iterator it = v_intersection.begin(); it != v_intersection.end(); ++it)
-      llvm::outs() << *it << ' ';
+    // std::set_intersection(skipped.begin(), skipped.end(),
+    //                       instrumented.begin(), instrumented.end(),
+    //                       std::back_inserter(v_intersection));
+    // if(!v_intersection.empty())
+    //   llvm::outs() << "Suspicious ";
+    // for (std::vector<std::string>::iterator it = v_intersection.begin(); it != v_intersection.end(); ++it)
+    //   llvm::outs() << *it << ' ';
     
     return false;
   }
@@ -242,7 +280,7 @@ namespace MemInstrument {
 
     
     //Value *ThreadId =  ConstantInt::get(Type::getInt64Ty(*Context), pthread_self());
-    Value *MessageString = IRB.CreateGlobalString(F->getName().str());
+    Value *MessageString = IRB.CreateGlobalString(demangleFunctionName(F->getName().str()));
     Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
     Value *MessageType =  ConstantInt::get(Type::getInt32Ty(*Context), 1);
 
@@ -282,7 +320,7 @@ namespace MemInstrument {
 
       //std::string message("exiting(%lu, "+ name +")");
       //Value *ThreadId =  ConstantInt::get(Type::getInt64Ty(*Context), pthread_self());
-      Value *MessageString = IRB.CreateGlobalString(name);
+      Value *MessageString = IRB.CreateGlobalString(demangleFunctionName(name));
       Value *MessagePtr = IRB.CreateBitCast(MessageString, IRB.getInt8PtrTy());
       Value *MessageType =  ConstantInt::get(Type::getInt32Ty(*Context), 0);
 
