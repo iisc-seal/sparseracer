@@ -27,7 +27,7 @@
 // #define REFCOUNT
 
 // To find data races also
-// #define DATARACE
+ #define DATARACE
 
 // To find unique races
 // #define UNIQUERACE
@@ -36,7 +36,7 @@
  #define NODERACES
 
 // To enable reporting of only single threaded races
- #define SINGLETHREADEDRACES
+// #define SINGLETHREADEDRACES
 
 // To use extra rules
 // #define EXTRARULES

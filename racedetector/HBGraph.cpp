@@ -25,6 +25,7 @@ HBGraph::HBGraph(){
 
 	opAdjList = NULL;
 	opAdjMatrix = NULL;
+	opEdgeTypeMatrix = NULL;
 	blockAdjList = NULL;
 	blockAdjMatrix = NULL;
 }
@@ -45,10 +46,14 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks,
 	nodeIDMap = nodeMap;
 
 	opAdjMatrix = (bool**) malloc(sizeof(bool*) * (totalOps+1));
+	opEdgeTypeMatrix = (bool**) malloc(sizeof(bool*) * (totalOps+1));
 	blockAdjMatrix = (bool**) malloc(sizeof(bool*) * (totalBlocks+1));
 
 	if (opAdjMatrix == NULL) {
 		cout << "ERROR: Cannot allocate memory for opAdjMatrix\n";
+	}
+	if (opEdgeTypeMatrix == NULL) {
+		cout << "ERROR: Cannot allocate memory for opEdgeTypeMatrix\n";
 	}
 	if (blockAdjMatrix == NULL) {
 		cout << "ERROR: Cannot allocate memory for blockAdjMatrix\n";
@@ -59,6 +64,7 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks,
 
 	for (IDType i=1; i <= totalOps; i++) {
 		opAdjMatrix[i] = (bool*) calloc((totalOps+1) , sizeof(bool));
+		opEdgeTypeMatrix[i] = (bool*) calloc((totalOps+1), sizeof(bool));
 	}
 	for (IDType i=1; i <= totalBlocks; i++) {
 		blockAdjMatrix[i] = (bool*) calloc((totalBlocks+1) , sizeof(bool));
@@ -74,7 +80,7 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks,
 HBGraph::~HBGraph() {
 }
 
-int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, IDType sourceBlock, IDType destinationBlock) {
+int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, bool edgeType, IDType sourceBlock, IDType destinationBlock) {
 
 	assert(1 <= sourceNode      && sourceNode <= totalOps);
 	assert(1 <= destinationNode && destinationNode <= totalOps);
@@ -113,6 +119,7 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, IDType sourceB
 		assert(sourceBlock != destinationBlock);
 
 		opAdjMatrix[sourceNode][destinationNode] = true;
+		opEdgeTypeMatrix[sourceNode][destinationNode] = edgeType;
 
 		adjListNode destOpNode(destinationNode, destinationBlock);
 		opAdjList[sourceNode].insert(destOpNode);
@@ -178,6 +185,7 @@ int HBGraph::removeOpEdge(IDType sourceNode, IDType destinationNode, IDType sour
 	}
 
 	opAdjMatrix[sourceNode][destinationNode] = false;
+	opEdgeTypeMatrix[sourceNode][destinationNode] = false;
 	numOfOpEdges--;
 	numOfOpEdgesRemoved++;
 	return 0;
@@ -189,6 +197,7 @@ int HBGraph::removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator 
 	// Assuming this function is called with valid arguments
 	for (std::multiset<HBGraph::adjListNode>::iterator it = first; it != last; it++) {
 		opAdjMatrix[sourceNode][it->nodeID] = false;
+		opEdgeTypeMatrix[sourceNode][it->nodeID] = false;
 		numOfOpEdges--;
 		numOfOpEdgesRemoved++;
 	}
@@ -262,9 +271,11 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 			if (ret.first != ret.second) {
 				IDType count = 0;
 				IDType minNode = -1;
+				bool edgeTypeOfMinNode;
 				for (nodeIterator retIt = ret.first; retIt != ret.second; retIt++) {
 					if (minNode == -1 || minNode < retIt->nodeID) {
 						minNode = retIt->nodeID;
+						edgeTypeOfMinNode = isSTEdge(nodei, minNode);
 						count++;
 					}
 				}
@@ -272,7 +283,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 				if (count > 1) {
 					removeOpEdgesToBlock(ret.first, ret.second, nodei, destinationBlock);
 					if (minNode > 0) {
-						int addEdgeRetValue = addOpEdge(nodei, minNode);
+						int addEdgeRetValue = addOpEdge(nodei, minNode, edgeTypeOfMinNode);
 						if (addEdgeRetValue == -1) {
 							cout << "ERROR: While adding restoration edge from "
 								 << nodei << " to " << minNode << "\n";
@@ -349,4 +360,8 @@ void HBGraph::printGraph() {
 			cout << it->nodeID << " ";
 	}
 	cout << "\n";
+}
+
+bool HBGraph::isSTEdge(IDType sourceNode, IDType destinationNode) {
+	return opEdgeTypeMatrix[sourceNode][destinationNode];
 }

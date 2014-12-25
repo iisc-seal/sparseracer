@@ -149,6 +149,7 @@ int UAFDetector::addEdges() {
 		cout << "Adding Trans-ST/MT edges\n";
 #endif
 		retValue = addTransSTOrMTEdges();
+		cout << "Transitive with criterion";
 		if (retValue == 1) edgeAdded = true;
 		else if (retValue == -1) {
 			cout << "ERROR: While adding TRANS-ST/MT edges\n";
@@ -195,7 +196,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 				cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 				return -1;
 			} else {
-				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false);
 				if (addEdgeRetValue == 1) {
 					flag = true;
 #ifdef GRAPHDEBUG
@@ -238,7 +239,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 				cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 				return -1;
 			} else {
-				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false);
 				if (addEdgeRetValue == 1) {
 					flag = true;
 #ifdef GRAPHDEBUG
@@ -346,7 +347,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 					return -1;
 				} else {
-					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
@@ -440,7 +441,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 					return -1;
 				} else {
-					int addEdgeRetValue = graph->addOpEdge(nodeJ, nodeI);
+					int addEdgeRetValue = graph->addOpEdge(nodeJ, nodeI, true);
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
@@ -486,7 +487,22 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 				cout << "ERROR: Invalid node ID for op " << deqOp << "\n";
 				return -1;
 			} else {
-				int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq);
+				IDType threadEnq = opIDMap[enqOp].threadID;
+				IDType threadDeq = opIDMap[deqOp].threadID;
+				if (threadEnq < 0) {
+					cout << "ERROR: Invalid thread ID for op " << enqOp << "\n";
+					return -1;
+				}
+				if (threadDeq < 0) {
+					cout << "ERROR: Invalid thread ID for op " << deqOp << "\n";
+					return -1;
+				}
+				bool edgeType;
+				if (threadEnq == threadDeq)
+					edgeType = true;
+				else
+					edgeType = false;
+				int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq, edgeType);
 				if (addEdgeRetValue == 1) {
 					flag = true;
 #ifdef GRAPHDEBUG
@@ -567,7 +583,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 					return -1;
 				} else {
-					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
@@ -704,7 +720,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 										return -1;
 									} else {
-										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
@@ -874,7 +890,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 										return -1;
 									} else {
-										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
@@ -948,7 +964,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 						cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 						return -1;
 					} else {
-						int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+						int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false);
 						if (addEdgeRetValue == 1) {
 							flag = true;
 #ifdef GRAPHDEBUG
@@ -985,7 +1001,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 								cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 								return -1;
 							} else {
-								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
@@ -1087,7 +1103,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 						cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 						return -1;
 					} else {
-						int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+						int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false);
 						if (addEdgeRetValue == 1) {
 							flag = true;
 #ifdef GRAPHDEBUG
@@ -1124,7 +1140,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 								cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 								return -1;
 							} else {
-								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
@@ -1239,7 +1255,7 @@ int UAFDetector::add_WaitNotify_Edges() {
 				cout << "ERROR: Invalid node ID for op" << opJ << "\n";
 				return -1;
 			} else {
-				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false);
 				if (addEdgeRetValue == 1) {
 					flag = true;
 #ifdef GRAPHDEBUG
@@ -1301,7 +1317,7 @@ int UAFDetector::add_WaitNotify_Edges() {
 #ifdef GRAPHDEBUG
 					cout << "DEBUG: Adding edge from " << nodeI << " to " << nodeJ << "\n";
 #endif
-					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false);
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
@@ -1430,7 +1446,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 								cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 								return -1;
 							} else {
-								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
@@ -1573,7 +1589,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 											cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 											return -1;
 										} else {
-											int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+											int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 											if (addEdgeRetValue == 1) {
 												flag = true;
 #ifdef GRAPHDEBUG
@@ -1735,7 +1751,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 										return -1;
 									} else {
-										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
@@ -1907,7 +1923,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 											cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 											return -1;
 										} else {
-											int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+											int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 											if (addEdgeRetValue == 1) {
 												flag = true;
 #ifdef GRAPHDEBUG
@@ -2181,7 +2197,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 										return -1;
 									} else {
-										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
@@ -2249,7 +2265,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 										cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 										return -1;
 									} else {
-										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+										int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
@@ -2409,6 +2425,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 				IDType opI, opJ, firstOp;
 				int addEdgeRetValue;
+				int edgeType1, edgeType2; // used to check the transitivity criterion
 				opI = blockIDMap[blockI].lastOpInBlock;
 				firstOp = blockIDMap[blockI].firstOpInBlock;
 #ifdef SANITYCHECK
@@ -2424,9 +2441,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 				IDType nodeI = 0;
 				IDType prevNodeI = 0;
 
+//				bool validTransEdge = true;
 				while (opI > 0 && opI >= firstOp) {
 					// Find the earliest op in blockK such that there exists edge (opI, op)
 					IDType minOpInK = -1, minNodeInK = -1;
+					bool edgeTypeOfMinNodeInK;
 					opJ = -1;
 
 					nodeI = opIDMap[opI].nodeID;
@@ -2460,6 +2479,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 							if (minOpInK == -1 || minOpInK > opDest) {
 								minOpInK = opDest;
 								minNodeInK = retIt->nodeID;
+								edgeTypeOfMinNodeInK = graph->isSTEdge(nodeI, minNodeInK);
 							}
 						}
 
@@ -2472,7 +2492,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 									return -1;
 								}
 								// Restore the edge from opI to the earliest op in blockK
-								addEdgeRetValue = graph->addOpEdge(nodeI, minNodeInK);
+								addEdgeRetValue = graph->addOpEdge(nodeI, minNodeInK, edgeTypeOfMinNodeInK);
 								if (addEdgeRetValue == 1) {
 #ifdef GRAPHDEBUGFULL
 									cout << "Restored edge from " << nodeI
@@ -2513,6 +2533,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 						continue;
 					}
 
+					edgeType1 = edgeTypeOfMinNodeInK;
+
 					IDType nodeTempOp = 0;
 					IDType prevNodeTempOp = 0;
 
@@ -2521,6 +2543,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 							tempOp = opIDMap[tempOp].nextOpInBlock) {
 						// Find the earliest op in blockJ such that there exists edge (tempOp, op)
 						IDType minOpInJ = -1, minNodeInJ = -1;
+						bool edgeTypeOfMinNodeInJ;
 
 						nodeTempOp = opIDMap[tempOp].nodeID;
 						if (nodeTempOp <= 0) {
@@ -2553,6 +2576,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 								if (minOpInJ == -1 || minOpInJ > opDest) {
 									minOpInJ = opDest;
 									minNodeInJ = retIt->nodeID;
+									edgeTypeOfMinNodeInJ = graph->isSTEdge(nodeTempOp, minNodeInJ);
 								}
 							}
 
@@ -2568,7 +2592,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 										return -1;
 									}
 									// Restore the edge from tempOp to the earliest op in blockJ
-									addEdgeRetValue = graph->addOpEdge(nodeTempOp, minNodeInJ);
+									addEdgeRetValue = graph->addOpEdge(nodeTempOp, minNodeInJ, edgeTypeOfMinNodeInJ);
 									if (addEdgeRetValue == 1) {
 #ifdef GRAPHDEBUGFULL
 										cout << "Restored edge from " << nodeTempOp << " to " << minNodeInJ << endl;
@@ -2596,6 +2620,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 							if (opJ == -1 || opJ > minOpInJ)
 								opJ = minOpInJ;
 						}
+
+						edgeType2 = edgeTypeOfMinNodeInJ;
 					}
 
 					if (opJ > 0) {
@@ -2604,7 +2630,20 @@ int UAFDetector::addTransSTOrMTEdges() {
 							cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 							return -1;
 						}
-						addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ);
+						bool transEdgeType;
+						if (threadI != threadJ)
+							transEdgeType = false;
+						else if (edgeType1 && edgeType2)
+							transEdgeType = true;
+						else {
+							// threadI == threadJ and the contributing edges are not ST
+//							validTransEdge = false;
+							// Not a valid transitive edge
+							cout << "Not a valid transitive edge " << nodeI << ", " << nodeJ << "\n";
+							opI = opIDMap[opI].prevOpInBlock;
+							continue;
+						}
+						addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, transEdgeType);
 						if (addEdgeRetValue == 1) {
 							flag = true;
 #ifdef GRAPHDEBUG
@@ -2726,10 +2765,6 @@ void UAFDetector::insertRace(raceDetails race) {
 		allocRaceSet.insert(race);
 		allocToRaceMap[race.allocID] = allocRaceSet;
 	} else {
-#if 0
-		std::vector<raceDetails> existingEntry = allocToRaceMap[race.allocID];
-		existingEntry.push_back(race);
-#endif
 		std::multiset<raceDetails> existingEntry = allocToRaceMap[race.allocID];
 		existingEntry.insert(race);
 		allocToRaceMap.erase(allocToRaceMap.find(race.allocID));
@@ -3405,6 +3440,7 @@ IDType  UAFDetector::findUAFUsingNodes() {
 							if (opIDMap[freeID].threadID == opIDMap[accessID].threadID) {
 								falsePositives++;
 								uaf.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
+//								cout << "False positive!!\n";
 							} else {
 								// May be we should categorize these separately. Easy to reproduce
 								uaf.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
@@ -3676,7 +3712,7 @@ std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
 }
 
 void UAFDetector::log() {
-#ifdef RACEDEBUG
+#if 0
 	for (map<IDType, std::multiset<raceDetails> >::iterator it = allocToRaceMap.begin();
 			it != allocToRaceMap.end(); it++) {
 		cout << "Alloc ID: " << it->first << "\n";
@@ -3705,6 +3741,7 @@ void UAFDetector::log() {
 		if (ret.first != ret.second) {
 			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
 					raceIt != ret.second; raceIt++) {
+//				raceIt->printDetails();
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
@@ -3728,6 +3765,7 @@ void UAFDetector::log() {
 		if (ret.first != ret.second) {
 			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
 					raceIt != ret.second; raceIt++) {
+//				raceIt->printDetails();
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
@@ -3751,6 +3789,7 @@ void UAFDetector::log() {
 		if (ret.first != ret.second) {
 			for (std::multiset<raceDetails>::iterator raceIt = ret.first;
 					raceIt != ret.second; raceIt++) {
+//				raceIt->printDetails();
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
@@ -3773,6 +3812,7 @@ void UAFDetector::log() {
 			if (raceIt->raceType == SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP)
 				continue;
 			if (raceIt->uafOrRace) {
+//				raceIt->printDetails();
 				log (raceIt->op1, raceIt->op2, raceIt->allocID,
 						raceIt->uafOrRace, raceIt->raceType);
 				uniqueUafCount++;
@@ -3899,6 +3939,8 @@ void UAFDetector::log() {
 void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		bool uafOrRace, RaceKind raceType, bool logAll) {
 
+//	cout << "Enter log(.): race: " << op1ID << " & " << op2ID << "\n";
+
 	IDType op1ThreadID = opIDMap[op1ID].threadID;
 	IDType op2ThreadID = opIDMap[op2ID].threadID;
 	std::string op1TaskID = opIDMap[op1ID].taskID;
@@ -4013,6 +4055,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 	line5 = str.str();
 
 	if (logAll) {
+//		cout << "logAll\n";
 		std::string accessAddress, allocAddress;
 		if (opIDMap[op1ID].opType.compare("read") == 0) {
 			accessAddress = readSet[op1ID].startingAddress;
@@ -4039,6 +4082,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		int offset = accessAddressInt - allocAddressInt;
 
 		if (uafOrRace) {
+//			cout << "logall uaf: " << op1ID << " & " << op2ID << "\n";
 			uafAllLogger.streamObject << op1ID << " "
 					<< op1ThreadID << " " << op2ID << " " << op2ThreadID
 					<< " " << opAllocID << " " << accessAddress << " "

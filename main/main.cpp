@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 	tEnd = clock();
 	cout << "Time taken for parsing: " << convertTime(tStart, tEnd) << "\n";
 
-    //return 0;
+        //return 0;
 
 	tStart = clock();
 	if (detectorObj.addEdges() < 0) {

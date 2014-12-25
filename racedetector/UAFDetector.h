@@ -484,11 +484,51 @@ private:
 				return (this->raceType < param.raceType);
 		}
 
+		void printRaceKind() const {
+			switch(raceType) {
+			case MULTITHREADED:
+				cout << "MULTITHREADED";
+				break;
+			case MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK:
+				cout << "MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK";
+				break;
+			case MULTITHREADED_FROM_SAME_NESTING_LOOP:
+				cout << "MULTITHREADED_FROM_SAME_NESTING_LOOP";
+				break;
+			case SINGLETHREADED:
+				cout << "SINGLETHREADED";
+				break;
+			case SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP:
+				cout << "SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP";
+				break;
+			case NESTED_NESTED:
+				cout << "NESTED_NESTED";
+				break;
+			case NESTED_PRIMARY:
+				cout << "NESTED_PRIMARY";
+				break;
+			case NESTED_WITH_TASKS_ORDERED:
+				cout << "NESTED_WITH_TASKS_ORDERED";
+				break;
+			case NONATOMIC_WITH_OTHER:
+				cout << "NONATOMIC_WITH_OTHER";
+				break;
+			case NOTASKRACE:
+				cout << "NOTASKRACE";
+				break;
+			default:
+				cout << "UNKNOWN";
+			}
+		}
+
 		void printDetails() const {
 			cout << "Op1: " << op1 << " op2: " << op2 << " op1Task: " << op1Task
 				 << " op2Task: " << op2Task << " allocID: " << allocID
-				 << " uafOrRace: " << uafOrRace << " raceType: " << raceType << "\n";
+				 << " uafOrRace: " << uafOrRace << " raceType: ";
+			printRaceKind();
+			cout << "\n";
 		}
+
 	};
 
 //	map<IDType, std::vector<raceDetails> > allocToRaceMap;
@@ -543,6 +583,7 @@ public:
 	IDType totalBlocks;
 	IDType totalOps;
 	bool** opAdjMatrix;
+	bool** opEdgeTypeMatrix; // true if edge is st-edge, false if edge is dt-edge
 	bool** blockAdjMatrix;
 	std::multiset<adjListNode>* opAdjList;
 	std::multiset<adjListNode>* blockAdjList;
@@ -553,8 +594,9 @@ public:
 	unsigned long long numOfOpEdgesRemoved;
 
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
-	int addOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
+	int addOpEdge(IDType sourceOp, IDType destinationOp, bool edgeType, IDType sourceBlock=0, IDType destinationBlock=0);
 	//int addBlockEdge(IDType sourceBlock, IDType destinationBlock);
+	bool isSTEdge(IDType sourceNode, IDType destinationNode);
 	int removeOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
 	int removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator first,
 			std::multiset<HBGraph::adjListNode>::iterator last,
