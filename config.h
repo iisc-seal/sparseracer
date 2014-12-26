@@ -27,7 +27,7 @@
 // #define REFCOUNT
 
 // To find data races also
- #define DATARACE
+// #define DATARACE
 
 // To find unique races
 // #define UNIQUERACE

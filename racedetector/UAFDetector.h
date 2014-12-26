@@ -32,8 +32,16 @@ enum RaceKind {
 	NESTED_PRIMARY,
 	NESTED_WITH_TASKS_ORDERED,
 	NONATOMIC_WITH_OTHER,
-	NOTASKRACE,
+	NOTASKRACE_SINGLETHREADED,
+	NOTASKRACE_MULTITHREADED,
 	UNKNOWN
+};
+
+enum RaceKindByThread {
+	ONLY_MULTITHREADED,
+	ONLY_SINGLETHREADED,
+	BOTH_MULTITHREADED,
+	BOTH_SINGLETHREADED
 };
 
 class UAFDetector {
@@ -458,6 +466,11 @@ private:
 	Logger uafNonAtomicOtherLogger, raceNonAtomicOtherLogger;
 	Logger uafMultithreadedSameNestingLoopLogger, raceMultithreadedSameNestingLoopLogger;
 
+	Logger uafOnlyMultiLogger, raceOnlyMultiLogger;
+	Logger uafOnlySingleLogger, raceOnlySingleLogger;
+	Logger uafBothMultiLogger, raceBothMultiLogger;
+	Logger uafBothSingleLogger, raceBothSingleLogger;
+
 	class raceDetails {
 	public:
 		IDType op1;
@@ -513,8 +526,11 @@ private:
 			case NONATOMIC_WITH_OTHER:
 				cout << "NONATOMIC_WITH_OTHER";
 				break;
-			case NOTASKRACE:
-				cout << "NOTASKRACE";
+			case NOTASKRACE_MULTITHREADED:
+				cout << "NOTASKRACE_MULTITHREADED";
+				break;
+			case NOTASKRACE_SINGLETHREADED:
+				cout << "NOTASKRACE_SINGLETHREADED";
 				break;
 			default:
 				cout << "UNKNOWN";
@@ -538,7 +554,7 @@ private:
 
 
 	void log(IDType op1ID, IDType op2ID, IDType opAllocID,
-			bool uafOrRace, RaceKind raceType, bool logAll=false);
+			bool uafOrRace, RaceKind raceType, bool logAll=false, RaceKindByThread raceTypeByThread=BOTH_MULTITHREADED);
 
 	std::string findPreviousTaskOfOp(IDType op);
 	void insertRace(raceDetails race);

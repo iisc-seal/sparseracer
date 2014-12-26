@@ -1,2 +1,2 @@
-Commit with messge "Added flag to report only single threaded races" is the one
+Commit with message "Added flag to report only single threaded races" is the one
 we ran experiments on.
