@@ -61,6 +61,8 @@ void UAFDetector::outputAllConflictingOps(string outFileName) {
 		IDType allocID = allocIt->first;
 		IDType racesCount = 0;
 
+		str.str("");
+		str.clear();
 		str << "Object " << allocID << "\n";
 		string msg = str.str();
 		out.writeLog(msg);
@@ -73,6 +75,7 @@ void UAFDetector::outputAllConflictingOps(string outFileName) {
 					readIt != allocIt->second.readOps.end(); readIt++) {
 				IDType readID = *readIt;
 
+				str.str("");
 				str.clear();
 				str << readID << " " << freeID << "\n";
 				msg = str.str();
@@ -85,6 +88,7 @@ void UAFDetector::outputAllConflictingOps(string outFileName) {
 					writeIt != allocIt->second.writeOps.end(); writeIt++) {
 				IDType writeID = *writeIt;
 
+				str.str("");
 				str.clear();
 				str << writeID << " " << freeID << "\n";
 				msg = str.str();
