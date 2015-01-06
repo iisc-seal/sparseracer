@@ -2881,10 +2881,13 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 			return -1;
 		}
 
-		bool useToFree = graph->opEdgeExists(useOp, freeOp);
-		bool freeToUse = graph->opEdgeExists(freeOp, useOp);
+		IDType useNode = opIDMap[useOp].nodeID;
+		IDType freeNode = opIDMap[freeOp].nodeID;
+		bool useToFree = graph->opEdgeExists(useNode, freeNode);
+		bool freeToUse = graph->opEdgeExists(freeNode, useNode);
 
 		if (!useToFree && freeToUse) {
+			str.str("");
 			str.clear();
 			str << useOp << " " << threadUse << " " << freeOp << " " << threadFree << "\n";
 			out.writeLog(str.str());
@@ -2893,6 +2896,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 		}
 
 		if (!useToFree && !freeToUse) {
+			str.str("");
 			str.clear();
 			str << useOp << " " << threadUse << " " << freeOp << " " << threadFree << "\n";
 			out.writeLog(str.str());
