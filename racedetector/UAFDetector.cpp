@@ -2774,7 +2774,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 	out.init(outFileName);
 
 	string line;
-	string lineRegEx = "^ *([0-9]+) *([0-9]+) *$";
+	string lineRegEx = "^ *([0-9]+) *([0-9]+) *([0-9]+) *([0-9]+) *$";
 	string objRegEx = "^ *Object *([0-9]+) *$";
 	boost::regex reg, regObj;
 	boost::cmatch matches;
