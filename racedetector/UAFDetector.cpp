@@ -2836,6 +2836,8 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 
 		IDType useOp  = -1;
 		IDType freeOp = -1;
+		IDType threadUse = -1;
+		IDType threadFree = -1;
 
 		unsigned i;
 		for (i=1; i < matches.size(); i++) {
@@ -2849,7 +2851,23 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 		for (i=i+1; i < matches.size(); i++) {
 			string match(matches[i].first, matches[i].second);
 			if (!match.empty() && match.compare("") != 0) {
+				threadUse = atoi(match.c_str());
+				break;
+			}
+		}
+
+		for (i=i+1; i < matches.size(); i++) {
+			string match(matches[i].first, matches[i].second);
+			if (!match.empty() && match.compare("") != 0) {
 				freeOp = atoi(match.c_str());
+				break;
+			}
+		}
+
+		for (i=i+1; i < matches.size(); i++) {
+			string match(matches[i].first, matches[i].second);
+			if (!match.empty() && match.compare("") != 0) {
+				threadFree = atoi(match.c_str());
 				break;
 			}
 		}
@@ -2868,7 +2886,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 
 		if (!useToFree && freeToUse) {
 			str.clear();
-			str << useOp << " " << freeOp << "\n";
+			str << useOp << " " << threadUse << " " << freeOp << " " << threadFree << "\n";
 			out.writeLog(str.str());
 			allocRacesCount++;
 			continue;
@@ -2876,14 +2894,14 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 
 		if (!useToFree && !freeToUse) {
 			str.clear();
-			str << useOp << " " << freeOp << "\n";
+			str << useOp << " " << threadUse << " " << freeOp << " " << threadFree << "\n";
 			out.writeLog(str.str());
 			allocRacesCount++;
 			continue;
 		}
 	}
 
-	cout << "TotalRaces: " << totalRacesCount << "\n";
+//	cout << "TotalRaces: " << totalRacesCount << "\n";
 
 	return 0;
 }
