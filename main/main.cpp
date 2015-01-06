@@ -11,6 +11,7 @@
 #include <racedetector/UAFDetector.h>
 #include <logging/Logger.h>
 #include <time.h>
+#include <cstring>
 
 #include <debugconfig.h>
 
@@ -52,8 +53,28 @@ int main(int argc, char* argv[]) {
 	string traceFileName = argv[1];
 
 	TraceParser parser(traceFileName);
+
+	bool outputAllConflictingOps = false;
+	bool filterInput = false;
+	bool runDetectorOnTrace = false;
+	string outputAllOpsFileName, filterInputFileName, filterOutputFileName;
+	for (int i = 2; i < argc; i++) {
+		if (strcmp(argv[i], "-a") == 0) {
+			outputAllConflictingOps = true;
+			outputAllOpsFileName = traceFileName + ".allconflictingops";
+		} else if (strcmp(argv[i], "-f") == 0) {
+			filterInput = true;
+			filterInputFileName = argv[i+1];
+			filterOutputFileName = filterInputFileName + ".filtered";
+			i++;
+		} else if (strcmp(argv[i], "-r") == 0) {
+			runDetectorOnTrace = true;
+		} else {
+			cout << "ERROR: Invalid argument " << argv[i] << "\n";
+			exit(0);
+		}
+	}
 	UAFDetector detectorObj;
-	detectorObj.initLog(traceFileName);
 
 	clock_t totalStart, totalEnd, tStart, tEnd;
 	totalStart = clock();
@@ -66,6 +87,14 @@ int main(int argc, char* argv[]) {
 		cout << "ERROR while parsing the trace\n";
 		return -1;
 	}
+
+	if (outputAllConflictingOps) {
+		detectorObj.outputAllConflictingOps(outputAllOpsFileName);
+		return 0;
+	}
+
+	if (!filterInput && !runDetectorOnTrace)
+		return 0;
 
 #ifdef TRACEDEBUG
 	cout << "map size: " << detectorObj.opIDMap.size() << endl;
@@ -83,47 +112,57 @@ int main(int argc, char* argv[]) {
 	tEnd = clock();
 	cout << "Time taken for transitive closure: " << convertTime(tStart, tEnd) << "\n";
 
-	tStart = clock();
-	cout << "\nFinding UAF\n";
+	detectorObj.initLog(traceFileName);
+	if (runDetectorOnTrace) {
+		tStart = clock();
+		cout << "\nFinding UAF\n";
 #ifdef NODERACES
-	int retfindUAF = detectorObj.findUAFUsingNodes();
+		int retfindUAF = detectorObj.findUAFUsingNodes();
 #else
-	int retfindUAF = detectorObj.findUAF();
+		int retfindUAF = detectorObj.findUAF();
 #endif
 
-	if (retfindUAF == -1) {
-		cout << "ERROR: While finding UAF\n";
-		return -1;
-	} else if (retfindUAF == 0) {
-		cout << "No UAF in the trace\n";
-	} else {
-		cout << "OUTPUT: Found " << retfindUAF << " UAFs\n";
-	}
-	tEnd = clock();
-	cout << "Time taken for finding UAF: " << convertTime(tStart, tEnd) << "\n";
+		if (retfindUAF == -1) {
+			cout << "ERROR: While finding UAF\n";
+			return -1;
+		} else if (retfindUAF == 0) {
+			cout << "No UAF in the trace\n";
+		} else {
+			cout << "OUTPUT: Found " << retfindUAF << " UAFs\n";
+		}
+		tEnd = clock();
+		cout << "Time taken for finding UAF: " << convertTime(tStart, tEnd) << "\n";
 
 #ifdef DATARACE
-	tStart = clock();
-	cout << "\nFinding data races\n";
+		tStart = clock();
+		cout << "\nFinding data races\n";
 #ifdef NODERACES
-	int retfindRace = detectorObj.findDataRacesUsingNodes();
+		int retfindRace = detectorObj.findDataRacesUsingNodes();
 #else
-	int retfindRace = detectorObj.findDataRaces();
+		int retfindRace = detectorObj.findDataRaces();
 #endif
 
-	if (retfindRace == -1) {
-		cout << "ERROR: While finding Data races\n";
-		return -1;
-	} else if (retfindRace == 0) {
-		cout << "No data races in the trace\n";
-	} else {
-		cout << "OUTPUT: Found " << retfindRace << " races\n";
+		if (retfindRace == -1) {
+			cout << "ERROR: While finding Data races\n";
+			return -1;
+		} else if (retfindRace == 0) {
+			cout << "No data races in the trace\n";
+		} else {
+			cout << "OUTPUT: Found " << retfindRace << " races\n";
+		}
+		tEnd = clock();
+		cout << "Time taken for finding races: " << convertTime(tStart, tEnd) << "\n";
+#endif
+
+		detectorObj.log();
 	}
-	tEnd = clock();
-	cout << "Time taken for finding races: " << convertTime(tStart, tEnd) << "\n";
-#endif
 
-	detectorObj.log();
+	if (filterInput) {
+		if (detectorObj.filterInput(filterInputFileName, filterOutputFileName) < 0) {
+			cout << "ERROR: While filtering races\n";
+			return -1;
+		}
+	}
 
 	totalEnd = clock();
 	cout << "Total time taken: " << convertTime(totalStart, totalEnd) << "\n";

@@ -417,6 +417,8 @@ public:
 	HBGraph* graph;
 
 	void initGraph(IDType countOfOps, IDType countOfNodes);
+	void outputAllConflictingOps(string outFileName);
+	int filterInput(string inFileName, string outFileName);
 
 //	int addEdges(Logger &logger);
 	int addEdges();

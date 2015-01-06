@@ -8,6 +8,8 @@
 #include "UAFDetector.h"
 #include <iostream>
 #include <cassert>
+#include <fstream>
+#include <boost/regex.hpp>
 
 #include <debugconfig.h>
 
@@ -45,6 +47,59 @@ UAFDetector::~UAFDetector() {
 void UAFDetector::initGraph(IDType countOfNodes, IDType countOfBlocks) {
 	graph = new HBGraph(countOfNodes, countOfBlocks, opIDMap, blockIDMap, nodeIDMap);
 	assert(graph != NULL);
+}
+
+void UAFDetector::outputAllConflictingOps(string outFileName) {
+	Logger out;
+	out.init(outFileName);
+
+	IDType totalRacesCount = 0;
+	std::stringstream str;
+
+	for (std::map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin();
+			allocIt != allocIDMap.end(); allocIt++) {
+		IDType allocID = allocIt->first;
+		IDType racesCount = 0;
+
+		str << "Object " << allocID << "\n";
+		string msg = str.str();
+		out.writeLog(msg);
+
+		for (std::set<IDType>::iterator freeIt = allocIt->second.freeOps.begin();
+				freeIt != allocIt->second.freeOps.end(); freeIt++) {
+			IDType freeID = *freeIt;
+
+			for (std::set<IDType>::iterator readIt = allocIt->second.readOps.begin();
+					readIt != allocIt->second.readOps.end(); readIt++) {
+				IDType readID = *readIt;
+
+				str.clear();
+				str << readID << " " << freeID << "\n";
+				msg = str.str();
+				out.writeLog(msg);
+
+				racesCount++;
+			}
+
+			for (std::set<IDType>::iterator writeIt = allocIt->second.writeOps.begin();
+					writeIt != allocIt->second.writeOps.end(); writeIt++) {
+				IDType writeID = *writeIt;
+
+				str.clear();
+				str << writeID << " " << freeID << "\n";
+				msg = str.str();
+				out.writeLog(msg);
+
+				racesCount++;
+			}
+		}
+
+		cout << "Object-" << allocID << ":races-" << racesCount << "\n";
+		totalRacesCount += racesCount;
+	}
+
+	cout << "Total objects: " << allocIDMap.size() << "\n";
+	cout << "Total races: " << totalRacesCount << "\n";
 }
 
 //int UAFDetector::addEdges(Logger &logger) {
@@ -2672,6 +2727,132 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 1;
 	else
 		return 0;
+}
+
+int UAFDetector::filterInput(string inFileName, string outFileName) {
+	ifstream inFile;
+	inFile.open(inFileName.c_str(), ios_base::in);
+	if (!inFile.is_open()) {
+		cout << "ERROR: Cannot open input file: " << inFileName << "\n";
+		return -1;
+	}
+
+	Logger out;
+	out.init(outFileName);
+
+	string line;
+	string lineRegEx = "^ *([0-9]+) *([0-9]+) *$";
+	string objRegEx = "^ *Object *([0-9]+) *$";
+	boost::regex reg, regObj;
+	boost::cmatch matches;
+
+	std::stringstream str;
+
+	try {
+		reg.assign(lineRegEx, boost::regex_constants::icase);
+	} catch (boost::regex_error &e) {
+		cout << lineRegEx << " is not a valid regular expression: \""
+			 << e.what() << "\"\n";
+		return -1;
+	}
+	try {
+		regObj.assign(objRegEx, boost::regex_constants::icase);
+	} catch (boost::regex_error &e) {
+		cout << objRegEx << " is not a valid regular expression: \""
+			 << e.what() << "\"\n";
+		return -1;
+	}
+
+	bool newAlloc = false;
+	IDType allocID = -1;
+	long int allocRacesCount = 0;
+	long int totalRacesCount = 0;
+	while (getline(inFile, line)) {
+		if (boost::regex_match(line.c_str(), matches, regObj)) {
+			// Print out the stats for previous alloc
+			if (allocID != -1)
+				cout << "Object-" << allocID << ":races-" << allocRacesCount << "\n";
+			allocID = -1;
+			for (unsigned i=1; i < matches.size(); i++) {
+				string match(matches[i].first, matches[i].second);
+				if (!match.empty() && match.compare("") != 0) {
+					allocID = atoi(match.c_str());
+					break;
+				}
+			}
+			if (allocID == -1) {
+				cout << "ERROR: Cannot obtain allocID in line " << line << "\n";
+				return -1;
+			}
+			newAlloc = true;
+			totalRacesCount += allocRacesCount;
+			allocRacesCount = 0;
+
+			str.clear();
+			str << "Object " << allocID << "\n";
+			out.writeLog(str.str());
+			continue;
+		} else
+			newAlloc = false;
+
+		if (!boost::regex_match(line.c_str(), matches, reg)) {
+			cout << "ERROR: Line in input file is not valid\n";
+			cout << line << "\n";
+			return -1;
+		}
+
+		IDType useOp  = -1;
+		IDType freeOp = -1;
+
+		unsigned i;
+		for (i=1; i < matches.size(); i++) {
+			string match(matches[i].first, matches[i].second);
+			if (!match.empty() && match.compare("") != 0) {
+				useOp = atoi(match.c_str());
+				break;
+			}
+		}
+
+		for (i=i+1; i < matches.size(); i++) {
+			string match(matches[i].first, matches[i].second);
+			if (!match.empty() && match.compare("") != 0) {
+				freeOp = atoi(match.c_str());
+				break;
+			}
+		}
+
+		if (useOp == -1) {
+			cout << "Cannot find use op\n";
+			return -1;
+		}
+		if (freeOp == -1) {
+			cout << "Cannot find free op\n";
+			return -1;
+		}
+
+		bool useToFree = graph->opEdgeExists(useOp, freeOp);
+		bool freeToUse = graph->opEdgeExists(freeOp, useOp);
+
+		if (!useToFree && freeToUse) {
+			str.clear();
+			str << useOp << " " << freeOp << "\n";
+			out.writeLog(str.str());
+			allocRacesCount++;
+			continue;
+		}
+
+		if (!useToFree && !freeToUse) {
+			str.clear();
+			str << useOp << " " << freeOp << "\n";
+			out.writeLog(str.str());
+			allocRacesCount++;
+			continue;
+		}
+	}
+
+	cout << "TotalRaces: " << totalRacesCount << "\n";
+
+	return 0;
 }
 
 void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
