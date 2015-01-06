@@ -49,11 +49,15 @@ void UAFDetector::initGraph(IDType countOfNodes, IDType countOfBlocks) {
 	assert(graph != NULL);
 }
 
-void UAFDetector::outputAllConflictingOps(string outFileName) {
+void UAFDetector::outputAllConflictingOps(string outFileName, string outUniqueFileName) {
 	Logger out;
 	out.init(outFileName);
 
+	Logger outUniq;
+	outUniq.init(outUniqueFileName);
+
 	IDType totalRacesCount = 0;
+	IDType totalObjsWithRacesCount = 0;
 	std::stringstream str;
 
 	for (std::map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin();
@@ -67,10 +71,12 @@ void UAFDetector::outputAllConflictingOps(string outFileName) {
 		string msg = str.str();
 		out.writeLog(msg);
 
+		string minMsg;
+		IDType minUse = -1;
+
 		for (std::set<IDType>::iterator freeIt = allocIt->second.freeOps.begin();
 				freeIt != allocIt->second.freeOps.end(); freeIt++) {
 			IDType freeID = *freeIt;
-
 			for (std::set<IDType>::iterator readIt = allocIt->second.readOps.begin();
 					readIt != allocIt->second.readOps.end(); readIt++) {
 				IDType readID = *readIt;
@@ -80,6 +86,11 @@ void UAFDetector::outputAllConflictingOps(string outFileName) {
 				str << readID << " " << freeID << "\n";
 				msg = str.str();
 				out.writeLog(msg);
+
+				if (minUse == -1 || minUse > readID) {
+					minUse = readID;
+					minMsg = msg;
+				}
 
 				racesCount++;
 			}
@@ -94,8 +105,18 @@ void UAFDetector::outputAllConflictingOps(string outFileName) {
 				msg = str.str();
 				out.writeLog(msg);
 
+				if (minUse == -1 || minUse > writeID) {
+					minUse = writeID;
+					minMsg = msg;
+				}
+
 				racesCount++;
 			}
+		}
+
+		if (minUse != -1) {
+			outUniq.writeLog(minMsg);
+			totalObjsWithRacesCount++;
 		}
 
 		cout << "Object-" << allocID << ":races-" << racesCount << "\n";
@@ -103,6 +124,7 @@ void UAFDetector::outputAllConflictingOps(string outFileName) {
 	}
 
 	cout << "Total objects: " << allocIDMap.size() << "\n";
+	cout << "Objects with races: " << totalObjsWithRacesCount << "\n";
 	cout << "Total races: " << totalRacesCount << "\n";
 }
 

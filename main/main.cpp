@@ -57,11 +57,13 @@ int main(int argc, char* argv[]) {
 	bool outputAllConflictingOps = false;
 	bool filterInput = false;
 	bool runDetectorOnTrace = false;
-	string outputAllOpsFileName, filterInputFileName, filterOutputFileName;
+	string outputAllOpsFileName, outputAllOpsUniqueFileName;
+	string filterInputFileName, filterOutputFileName;
 	for (int i = 2; i < argc; i++) {
 		if (strcmp(argv[i], "-a") == 0) {
 			outputAllConflictingOps = true;
 			outputAllOpsFileName = traceFileName + ".allconflictingops";
+			outputAllOpsUniqueFileName = traceFileName + ".allconflictingops.unique";
 		} else if (strcmp(argv[i], "-f") == 0) {
 			filterInput = true;
 			filterInputFileName = argv[i+1];
@@ -89,7 +91,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (outputAllConflictingOps) {
-		detectorObj.outputAllConflictingOps(outputAllOpsFileName);
+		detectorObj.outputAllConflictingOps(outputAllOpsFileName, outputAllOpsUniqueFileName);
 		return 0;
 	}
 
