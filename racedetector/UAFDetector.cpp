@@ -77,13 +77,17 @@ void UAFDetector::outputAllConflictingOps(string outFileName, string outUniqueFi
 		for (std::set<IDType>::iterator freeIt = allocIt->second.freeOps.begin();
 				freeIt != allocIt->second.freeOps.end(); freeIt++) {
 			IDType freeID = *freeIt;
+			IDType threadFree = opIDMap[freeID].threadID;
 			for (std::set<IDType>::iterator readIt = allocIt->second.readOps.begin();
 					readIt != allocIt->second.readOps.end(); readIt++) {
 				IDType readID = *readIt;
+				IDType threadRead = opIDMap[readID].threadID;
+
+				if (threadFree == threadRead) continue;
 
 				str.str("");
 				str.clear();
-				str << readID << " " << freeID << "\n";
+				str << readID << " " << threadRead << " " << freeID << " " << threadFree << "\n";
 				msg = str.str();
 				out.writeLog(msg);
 
@@ -98,10 +102,13 @@ void UAFDetector::outputAllConflictingOps(string outFileName, string outUniqueFi
 			for (std::set<IDType>::iterator writeIt = allocIt->second.writeOps.begin();
 					writeIt != allocIt->second.writeOps.end(); writeIt++) {
 				IDType writeID = *writeIt;
+				IDType threadWrite = opIDMap[writeID].threadID;
+
+				if (threadFree == threadWrite) continue;
 
 				str.str("");
 				str.clear();
-				str << writeID << " " << freeID << "\n";
+				str << writeID << " " << threadWrite << " " << freeID << " " << threadFree << "\n";
 				msg = str.str();
 				out.writeLog(msg);
 
