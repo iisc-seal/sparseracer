@@ -49,7 +49,23 @@ void UAFDetector::initGraph(IDType countOfNodes, IDType countOfBlocks) {
 	assert(graph != NULL);
 }
 
-void UAFDetector::outputAllConflictingOps(string outFileName, string outUniqueFileName) {
+struct field {
+	std::string address;
+	IDType minUseOp;
+	std::string minMsg;
+};
+
+bool isFieldPresent(std::vector<field> fieldsVector, std::string address) {
+	for (std::vector<field>::iterator it = fieldsVector.begin();
+			it != fieldsVector.end(); it++) {
+		if (it->address.compare(address) == 0)
+			return true;
+	}
+
+	return false;
+}
+
+void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string outUniqueFileName) {
 	Logger out;
 	out.init(outFileName);
 
@@ -68,11 +84,13 @@ void UAFDetector::outputAllConflictingOps(string outFileName, string outUniqueFi
 		str.str("");
 		str.clear();
 		str << "Object " << allocID << "\n";
-		string msg = str.str();
+		std::string msg = str.str();
 		out.writeLog(msg);
 
-		string minMsg;
+		std::string minMsg;
 		IDType minUse = -1;
+
+		std::vector<field> fieldsVector;
 
 		for (std::set<IDType>::iterator freeIt = allocIt->second.freeOps.begin();
 				freeIt != allocIt->second.freeOps.end(); freeIt++) {
@@ -82,8 +100,11 @@ void UAFDetector::outputAllConflictingOps(string outFileName, string outUniqueFi
 					readIt != allocIt->second.readOps.end(); readIt++) {
 				IDType readID = *readIt;
 				IDType threadRead = opIDMap[readID].threadID;
+				std::string address = readSet[readID].startingAddress;
 
 				if (threadFree == threadRead) continue;
+
+//				if (isFieldPresent(fieldsVector, address));
 
 				str.str("");
 				str.clear();
@@ -558,7 +579,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 	bool flag = false; // To keep track of whether edges were added.
 
-	for (map<string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
+	for (map<std::string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
 
 		// ENQUEUE-ST/MT
 
@@ -702,7 +723,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 	bool flag = false; // To keep track of whether edges were added.
 
 
-	for (map<string, taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
+	for (map<std::string, taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
 
 		// If the task is not atomic, the rule does not apply
 		if (it->second.atomic == false) {
@@ -769,7 +790,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 							// source and destination for the HB edge we check.
 							if (enqOpBlock == tempBlock && enqOp == tempenqOp) continue;
 
-							string taskName = enqToTaskEnqueued[tempenqOp].taskEnqueued;
+							std::string taskName = enqToTaskEnqueued[tempenqOp].taskEnqueued;
 							if (taskName.compare("") == 0) {
 #ifdef GRAPHDEBUGFULL
 								cout << "DEBUG: Cannot find task enqueued in op " << tempenqOp << endl;
@@ -898,7 +919,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 							// source and destination for the HB edge we check.
 							if (blockI == blockIt->blockID && i == tempenqOp) continue;
 
-							string taskName = enqToTaskEnqueued[tempenqOp].taskEnqueued;
+							std::string taskName = enqToTaskEnqueued[tempenqOp].taskEnqueued;
 							if (taskName.compare("") == 0) {
 #ifdef GRAPHDEBUGFULL
 								cout << "DEBUG: Cannot find task enqueued in op " << tempenqOp << endl;
@@ -2762,7 +2783,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 		return 0;
 }
 
-int UAFDetector::filterInput(string inFileName, string outFileName) {
+int UAFDetector::filterInput(std::string inFileName, std::string outFileName) {
 	ifstream inFile;
 	inFile.open(inFileName.c_str(), ios_base::in);
 	if (!inFile.is_open()) {
@@ -2773,9 +2794,9 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 	Logger out;
 	out.init(outFileName);
 
-	string line;
-	string lineRegEx = "^ *([0-9]+) *([0-9]+) *([0-9]+) *([0-9]+) *$";
-	string objRegEx = "^ *Object *([0-9]+) *$";
+	std::string line;
+	std::string lineRegEx = "^ *([0-9]+) *([0-9]+) *([0-9]+) *([0-9]+) *$";
+	std::string objRegEx = "^ *Object *([0-9]+) *$";
 	boost::regex reg, regObj;
 	boost::cmatch matches;
 
@@ -2807,7 +2828,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 				cout << "Object-" << allocID << ":races-" << allocRacesCount << "\n";
 			allocID = -1;
 			for (unsigned i=1; i < matches.size(); i++) {
-				string match(matches[i].first, matches[i].second);
+				std::string match(matches[i].first, matches[i].second);
 				if (!match.empty() && match.compare("") != 0) {
 					allocID = atoi(match.c_str());
 					break;
@@ -2841,7 +2862,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 
 		unsigned i;
 		for (i=1; i < matches.size(); i++) {
-			string match(matches[i].first, matches[i].second);
+			std::string match(matches[i].first, matches[i].second);
 			if (!match.empty() && match.compare("") != 0) {
 				useOp = atoi(match.c_str());
 				break;
@@ -2849,7 +2870,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 		}
 
 		for (i=i+1; i < matches.size(); i++) {
-			string match(matches[i].first, matches[i].second);
+			std::string match(matches[i].first, matches[i].second);
 			if (!match.empty() && match.compare("") != 0) {
 				threadUse = atoi(match.c_str());
 				break;
@@ -2857,7 +2878,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 		}
 
 		for (i=i+1; i < matches.size(); i++) {
-			string match(matches[i].first, matches[i].second);
+			std::string match(matches[i].first, matches[i].second);
 			if (!match.empty() && match.compare("") != 0) {
 				freeOp = atoi(match.c_str());
 				break;
@@ -2865,7 +2886,7 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 		}
 
 		for (i=i+1; i < matches.size(); i++) {
-			string match(matches[i].first, matches[i].second);
+			std::string match(matches[i].first, matches[i].second);
 			if (!match.empty() && match.compare("") != 0) {
 				threadFree = atoi(match.c_str());
 				break;
@@ -2883,8 +2904,18 @@ int UAFDetector::filterInput(string inFileName, string outFileName) {
 
 		IDType useNode = opIDMap[useOp].nodeID;
 		IDType freeNode = opIDMap[freeOp].nodeID;
-		bool useToFree = graph->opEdgeExists(useNode, freeNode);
-		bool freeToUse = graph->opEdgeExists(freeNode, useNode);
+		bool useToFree = false;
+		bool freeToUse = false;
+		if (useNode == freeNode && freeOp < useOp) {
+			useToFree = false;
+			freeToUse = true;
+		} else if (useNode == freeNode) {
+			useToFree = true;
+			freeToUse = false;
+		} else {
+			useToFree = graph->opEdgeExists(useNode, freeNode);
+			freeToUse = graph->opEdgeExists(freeNode, useNode);
+		}
 
 		if (!useToFree && freeToUse) {
 			str.str("");
@@ -3390,7 +3421,7 @@ IDType UAFDetector::findDataRaces() {
 #endif
 		for (set<IDType>::iterator writeIt = allocIt->second.writeOps.begin(); writeIt != allocIt->second.writeOps.end(); writeIt++) {
 
-			string writeAddress1 = writeSet[*writeIt].startingAddress;
+			std::string writeAddress1 = writeSet[*writeIt].startingAddress;
 
 			IDType nodeWrite = opIDMap[*writeIt].nodeID;
 
@@ -3398,7 +3429,7 @@ IDType UAFDetector::findDataRaces() {
 			for (set<IDType>::iterator write2It = allocIt->second.writeOps.begin(); write2It != allocIt->second.writeOps.end(); write2It++) {
 				if (*write2It == *writeIt) continue;
 
-				string writeAddress2 = writeSet[*write2It].startingAddress;
+				std::string writeAddress2 = writeSet[*write2It].startingAddress;
 				if (writeAddress1.compare(writeAddress2) != 0) continue;
 
 				IDType nodeWrite2 = opIDMap[*write2It].nodeID;
@@ -3458,7 +3489,7 @@ IDType UAFDetector::findDataRaces() {
 			for (set<IDType>::iterator readIt = allocIt->second.readOps.begin(); readIt != allocIt->second.readOps.end(); readIt++) {
 				if (*readIt == *writeIt) continue;
 
-				string readAddress = readSet[*readIt].startingAddress;
+				std::string readAddress = readSet[*readIt].startingAddress;
 				if (writeAddress1.compare(readAddress) != 0) continue;
 
 				IDType nodeRead = opIDMap[*readIt].nodeID;
@@ -3762,7 +3793,7 @@ IDType UAFDetector::findDataRacesUsingNodes() {
 				for (set<IDType>::iterator op1It = nodeIDMap[node1].opSet.begin();
 						op1It != nodeIDMap[node1].opSet.end(); op1It++) {
 
-					string op1Address;
+					std::string op1Address;
 					IDType op1 = *op1It;
 					if (opIDMap[op1].opType.compare("write") == 0) {
 						op1Address = writeSet[op1].startingAddress;
@@ -3784,7 +3815,7 @@ IDType UAFDetector::findDataRacesUsingNodes() {
 					for (set<IDType>::iterator op2It = nodeIDMap[*nodeIt2].opSet.begin();
 							op2It != nodeIDMap[*nodeIt2].opSet.end(); op2It++) {
 
-						string op2Address;
+						std::string op2Address;
 						IDType op2 = *op2It;
 						if (opIDMap[op2].opType.compare("write") == 0)
 							op2Address = writeSet[op2].startingAddress;
@@ -4249,7 +4280,7 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 		allocThreadID = opIDMap[opAllocID].threadID;
 	}
 
-	string line1, lines23, line4, line5;
+	std::string line1, lines23, line4, line5;
 	std::stringstream str;
 
 	str << op1ID << " " << op1ThreadID
