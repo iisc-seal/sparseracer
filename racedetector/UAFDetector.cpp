@@ -2947,17 +2947,17 @@ void UAFDetector::getRaceKind(UAFDetector::raceDetails &race) {
 	race.op1Task = opIDMap[race.op1].taskID;
 	race.op2Task = opIDMap[race.op2].taskID;
 
-	if (race.op1Task.compare(race.op2Task) == 0) {
-		cout << "ERROR: Racing ops are in the same task\n";
-		cout << "ERROR: Op: " << race.op1 << ", " << race.op2 << "\n";
-		return;
-	}
-
 	if (race.op1Task.compare("") == 0 || race.op2Task.compare("") == 0) {
 		if (opIDMap[race.op1].threadID != opIDMap[race.op2].threadID)
 			race.raceType = NOTASKRACE_MULTITHREADED;
 		else
 			race.raceType = NOTASKRACE_SINGLETHREADED;
+		return;
+	}
+
+	if (race.op1Task.compare(race.op2Task) == 0) {
+		cout << "ERROR: Racing ops are in the same task\n";
+		cout << "ERROR: Op: " << race.op1 << ", " << race.op2 << "\n";
 		return;
 	}
 
