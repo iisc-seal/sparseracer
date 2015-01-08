@@ -90,6 +90,12 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+#ifdef TRACEDEBUG
+	cout << "map size: " << detectorObj.opIDMap.size() << endl;
+#endif
+	tEnd = clock();
+	cout << "Time taken for parsing: " << convertTime(tStart, tEnd) << "\n";
+
 	if (outputAllConflictingOps) {
 		detectorObj.outputAllConflictingOps(outputAllOpsFileName, outputAllOpsUniqueFileName);
 		return 0;
@@ -97,12 +103,6 @@ int main(int argc, char* argv[]) {
 
 	if (!filterInput && !runDetectorOnTrace)
 		return 0;
-
-#ifdef TRACEDEBUG
-	cout << "map size: " << detectorObj.opIDMap.size() << endl;
-#endif
-	tEnd = clock();
-	cout << "Time taken for parsing: " << convertTime(tStart, tEnd) << "\n";
 
         //return 0;
 
