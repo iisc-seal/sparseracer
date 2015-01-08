@@ -104,8 +104,6 @@ int main(int argc, char* argv[]) {
 	if (!filterInput && !runDetectorOnTrace)
 		return 0;
 
-        //return 0;
-
 	tStart = clock();
 	if (detectorObj.addEdges() < 0) {
 		cout << "ERROR while constructing HB Graph\n";
