@@ -98,7 +98,6 @@ int main(int argc, char* argv[]) {
 
 	if (outputAllConflictingOps) {
 		detectorObj.outputAllConflictingOps(outputAllOpsFileName, outputAllOpsUniqueFileName);
-		return 0;
 	}
 
 	if (!filterInput && !runDetectorOnTrace)
