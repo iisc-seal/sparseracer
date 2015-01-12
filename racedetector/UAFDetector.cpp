@@ -84,13 +84,14 @@ void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string o
 		str.str("");
 		str.clear();
 		str << "Object " << allocID << "\n";
-		std::string msg = str.str();
-		out.writeLog(msg);
+		std::string objmsg = str.str();
 
-		std::string minMsg;
+		std::string msg, minMsg;
 		IDType minUse = -1;
 
 		std::vector<field> fieldsVector;
+
+		bool firstWrite = true;
 
 		for (std::set<IDType>::iterator freeIt = allocIt->second.freeOps.begin();
 				freeIt != allocIt->second.freeOps.end(); freeIt++) {
@@ -105,6 +106,11 @@ void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string o
 				if (threadFree == threadRead) continue;
 
 //				if (isFieldPresent(fieldsVector, address));
+
+				if (firstWrite) {
+					out.writeLog(objmsg);
+					firstWrite = false;
+				}
 
 				str.str("");
 				str.clear();
@@ -126,6 +132,11 @@ void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string o
 				IDType threadWrite = opIDMap[writeID].threadID;
 
 				if (threadFree == threadWrite) continue;
+
+				if (firstWrite) {
+					out.writeLog(objmsg);
+					firstWrite = false;
+				}
 
 				str.str("");
 				str.clear();
