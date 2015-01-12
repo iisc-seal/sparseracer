@@ -57,6 +57,8 @@ int main(int argc, char* argv[]) {
 	bool outputAllConflictingOps = false;
 	bool filterInput = false;
 	bool runDetectorOnTrace = false;
+	bool multithreadedHB = false;
+	bool richHB = false;
 	string outputAllOpsFileName, outputAllOpsUniqueFileName;
 	string filterInputFileName, filterOutputFileName;
 	for (int i = 2; i < argc; i++) {
@@ -69,8 +71,12 @@ int main(int argc, char* argv[]) {
 			filterInputFileName = argv[i+1];
 			filterOutputFileName = filterInputFileName + ".filtered";
 			i++;
-		} else if (strcmp(argv[i], "-r") == 0) {
+		} else if (strcmp(argv[i], "-rm") == 0) {
 			runDetectorOnTrace = true;
+			multithreadedHB = true;
+		} else if (strcmp(argv[i], "-rr") == 0) {
+			runDetectorOnTrace = true;
+			richHB = true;
 		} else {
 			cout << "ERROR: Invalid argument " << argv[i] << "\n";
 			exit(0);
@@ -153,7 +159,11 @@ int main(int argc, char* argv[]) {
 		cout << "Time taken for finding races: " << convertTime(tStart, tEnd) << "\n";
 #endif
 
-		detectorObj.log();
+//		detectorObj.log();
+		if (multithreadedHB && !richHB)
+			detectorObj.log(true);
+		else if (!multithreadedHB && richHB)
+			detectorObj.log(false);
 	}
 
 	if (filterInput) {

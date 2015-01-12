@@ -431,7 +431,7 @@ public:
 
 	void initLog(std::string traceFileName);
 
-	void log();
+	void log(bool mt);
 
 #ifdef GRAPHDEBUG
 	void printEdges();
