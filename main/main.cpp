@@ -159,7 +159,6 @@ int main(int argc, char* argv[]) {
 		cout << "Time taken for finding races: " << convertTime(tStart, tEnd) << "\n";
 #endif
 
-//		detectorObj.log();
 		if (multithreadedHB && !richHB)
 			detectorObj.log(true);
 		else if (!multithreadedHB && richHB)

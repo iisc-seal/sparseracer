@@ -431,7 +431,7 @@ public:
 
 	void initLog(std::string traceFileName);
 
-	void log(bool mt);
+	void log(bool mt); // true if we are running mtHB, false if richHB
 
 #ifdef GRAPHDEBUG
 	void printEdges();
