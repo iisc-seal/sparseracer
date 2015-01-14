@@ -763,6 +763,21 @@ int TraceParser::parse(UAFDetector &detector) {
 							return -1;
 						}
 
+						UAFDetector::enqOpDetails enqdetails;
+						enqdetails.targetThread = targetThread;
+						enqdetails.taskEnqueued = taskEnqueued;
+
+						// Map enq op to its arguments;
+						if (detector.enqToTaskEnqueued.find(opCount) == detector.enqToTaskEnqueued.end()) {
+							detector.enqToTaskEnqueued[opCount] = enqdetails;
+						} else {
+							cout << "ERROR: Found duplicate entry for enq op " << opCount << " in enqToTaskEnqueued\n";
+							cout << "Duplicate entry:\n";
+							detector.enqToTaskEnqueued[opCount].printEnqDetails();
+							cout << endl;
+							return -1;
+						}
+
 						// Obtain the stack top to obtain the previous op in thread.
 						if (stackForThreadAndBlockOrder.isEmpty(threadID)){
 							cout << "WARNING: No previous op found for enq " << opCount
@@ -1051,21 +1066,6 @@ int TraceParser::parse(UAFDetector &detector) {
 										return -1;
 									}
 								}
-							}
-
-							UAFDetector::enqOpDetails enqdetails;
-							enqdetails.targetThread = targetThread;
-							enqdetails.taskEnqueued = taskEnqueued;
-
-							// Map enq op to its arguments;
-							if (detector.enqToTaskEnqueued.find(opCount) == detector.enqToTaskEnqueued.end()) {
-								detector.enqToTaskEnqueued[opCount] = enqdetails;
-							} else {
-								cout << "ERROR: Found duplicate entry for enq op " << opCount << " in enqToTaskEnqueued\n";
-								cout << "Duplicate entry:\n";
-								detector.enqToTaskEnqueued[opCount].printEnqDetails();
-								cout << endl;
-								return -1;
 							}
 
 							if (!firstOpInsideNestingLoop && !firstOpInsideGlobalLoop) {
