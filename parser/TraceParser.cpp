@@ -6447,6 +6447,7 @@ it++) {
 		}
 	}
 	cout << "No of atomic tasks: " << numOfAtomicTasks << "\n";
+	cout << "No of non-atomic tasks: " << detector.taskIDMap.size() - numOfAtomicTasks << "\n";
 	cout << "No of tasks with non-null parent: " << numOfTasksWithNonNullParent << "\n";
 	cout << "No of shared variables guarding nesting loops: " << detector.nestingLoopMap.size() << "\n";
 	cout << "No of nesting loops: " << numOfNestingLoops << "\n";
@@ -6464,6 +6465,7 @@ it++) {
 	cout << "No of free ops: " << detector.freeSet.size() << "\n";
 	cout << "No of read ops: " << detector.readSet.size() << "\n";
 	cout << "No of write ops: " << detector.writeSet.size() << "\n";
+	cout << "No of read + write ops: " << detector.readSet.size() + detector.writeSet.size() << "\n";
 	cout << "No of nodes: " << detector.nodeIDMap.size() << "\n";
 	cout << "Node Limit: " << NODELIMIT << "\n";
 
