@@ -297,6 +297,7 @@ public:
 	map<IDType, enqOpDetails> enqToTaskEnqueued;
 
 	// Maps the op ID of pause/resume/reset ops to the shared variable
+	// not used!
 	map<IDType, std::string> pauseResumeResetOps;
 
 	class memoryOpDetails {
@@ -352,6 +353,7 @@ public:
 
 	map<IDType, allocOpDetails> allocIDMap;
 
+	// Change this! Keep only a map from free to alloc
 	class freeOpDetails {
 	public:
 		IDType allocOpID;
@@ -397,14 +399,19 @@ public:
 		}
 	};
 
+	// not used!
 	map<IDType, lockOpDetails> waitSet;
+	// not used!
 	map<IDType, lockOpDetails> notifySet;
+	// not used!
 	map<IDType, lockOpDetails> notifyAllSet;
 
 
 	// shared variable to set of notify ops
+	// not used!
 	map<std::string, setOfOps> lockToNotify;
 	// shared variable to set of notifyall ops
+	// not used!
 	map<std::string, setOfOps> lockToNotifyAll;
 
 	// map notify op to corresponding wait
@@ -412,6 +419,7 @@ public:
 	// map notifyall op to corresponding set of wait ops
 	map<IDType, setOfOps> notifyAllToWaitSet;
 	// map wait op to corresponding notify/notifyall
+	// not used!
 	map<IDType, IDType> waitToNotify;
 
 	HBGraph* graph;
