@@ -667,6 +667,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 //			return -1;
 			continue;
 		}
+#if 0
 		if (lastBlockInTask <= 0) {
 #ifdef GRAPHDEBUGFULL
 			cout << "DEBUG: Cannot find last block of task " << it->first << endl;
@@ -676,8 +677,10 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 			continue;
 		}
 #endif
+#endif
 
-		for (IDType b1 = firstBlockInTask; (b1 > 0 && b1 <= lastBlockInTask); b1 = blockIDMap[b1].nextBlockInTask) {
+//		for (IDType b1 = firstBlockInTask; (b1 > 0 && b1 <= lastBlockInTask); b1 = blockIDMap[b1].nextBlockInTask) {
+		for (IDType b1 = firstBlockInTask; (b1 > 0); b1 = blockIDMap[b1].nextBlockInTask) {
 #ifdef SANITYCHECK
 			assert(b1 > 0);
 #endif
