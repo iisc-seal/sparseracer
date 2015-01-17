@@ -685,7 +685,8 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 			assert(b1 > 0);
 #endif
 			IDType nextBlock = blockIDMap[b1].nextBlockInTask;
-			for (IDType b2 = nextBlock; (b2 > 0 && b2 <= lastBlockInTask); b2 = blockIDMap[b2].nextBlockInTask) {
+//			for (IDType b2 = nextBlock; (b2 > 0 && b2 <= lastBlockInTask); b2 = blockIDMap[b2].nextBlockInTask) {
+			for (IDType b2 = nextBlock; b2 > 0; b2 = blockIDMap[b2].nextBlockInTask) {
 #ifdef SANITYCHECK
 				assert(b2 > 0);
 #endif
