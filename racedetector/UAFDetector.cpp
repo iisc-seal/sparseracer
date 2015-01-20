@@ -4663,6 +4663,8 @@ void UAFDetector::log(bool mt) {
 			allocIt != allocToRaceMap.end(); allocIt++) {
 		std::multiset<raceDetails> raceSet = allocIt->second;
 
+		if (raceSet.size() == 0) continue;
+
 		IDType multithreadedCount = 0;
 		IDType multithreadedAllocMemopInSameTaskCount = 0;
 		IDType multithreadedSameNestingLoopCount = 0;
