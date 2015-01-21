@@ -6359,6 +6359,30 @@ it++) {
 		}
 	}
 
+	for (std::map<std::string, UAFDetector::taskDetails>::iterator taskIt = detector.taskIDMap.begin();
+			taskIt != detector.taskIDMap.end(); taskIt++) {
+		if (taskIt->second.endOpID != -1) continue;
+		if (taskIt->second.lastResumeOpID != -1) continue;
+
+		if (taskIt->second.deqOpID == -1) continue;
+		IDType threadID = detector.opIDMap[taskIt->second.deqOpID].threadID;
+		MultiStack::stackElementType lastOpInTask = stackForNestingOrder.pop(threadID, taskIt->first);
+		if (!stackForNestingOrder.isBottom(lastOpInTask)) {
+#ifdef PERMIT
+			if (lastOpInTask.opType.compare("revoke") == 0)
+#else
+			if (lastOpInTask.opType.compare("resume") == 0)
+#endif
+				taskIt->second.lastResumeOpID = lastOpInTask.opID;
+		}
+
+		if (taskIt->second.lastBlockID != -1) continue;
+		lastOpInTask = stackForTaskOrder.pop(threadID, taskIt->first);
+		if (!stackForTaskOrder.isBottom(lastOpInTask)) {
+			taskIt->second.lastBlockID = lastOpInTask.blockID;
+		}
+	}
+
 	cout << "Finished parsing the file\n";
 
 #ifdef TRACEDEBUG

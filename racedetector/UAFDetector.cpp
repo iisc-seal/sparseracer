@@ -656,7 +656,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 		// TASK-PO
 
 		IDType firstBlockInTask = it->second.firstBlockID;
-		IDType lastBlockInTask = it->second.lastBlockID;
+//		IDType lastBlockInTask = it->second.lastBlockID;
 
 #ifdef SANITYCHECK
 		if (firstBlockInTask <= 0) {
