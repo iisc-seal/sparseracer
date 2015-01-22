@@ -4026,7 +4026,7 @@ std::string UAFDetector::findPreviousTaskOfOp(IDType op) {
 	}
 
 	if (blockID == -1) {
-		cout << "DEBUG: Cannot find previous task of op\n";
+		//cout << "DEBUG: Cannot find previous task of op\n";
 		return "";
 	}
 
