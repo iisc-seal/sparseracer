@@ -44,22 +44,22 @@ namespace MemInstrument {
       "memalign",
       "posix_memalign",
       "valloc",
-      "moz_free",
-      "moz_malloc",
-      "moz_calloc",
-      "moz_realloc",
-      "moz_strdup",
-      "moz_strndup",
-      "moz_valloc",
-      "moz_xmalloc",
-      "moz_xcalloc",
-      "moz_xrealloc",
-      "moz_xstrdup",
-      "moz_xstrndup",
-      "moz_xvalloc",
-      "mopAlloc",
-      "mopDealloc",
-      "mopInstrument",
+      /* "moz_free", */
+      /* "moz_malloc", */
+      /* "moz_calloc", */
+      /* "moz_realloc", */
+      /* "moz_strdup", */
+      /* "moz_strndup", */
+      /* "moz_valloc", */
+      /* "moz_xmalloc", */
+      /* "moz_xcalloc", */
+      /* "moz_xrealloc", */
+      /* "moz_xstrdup", */
+      /* "moz_xstrndup", */
+      /* "moz_xvalloc", */
+      /* "mopAlloc", */
+      /* "mopDealloc", */
+      /* "mopInstrument", */
       //      "MOZ_PNG_read_filt_row_p_mb_px",
       //"MOZ_PNG_do_g_to_rgb",
       //"MOZ_PNG_read_filt_row_up",
@@ -70,16 +70,16 @@ namespace MemInstrument {
       
     };
 
-    std::set<std::string> InstrumentedTypes = {
-      //      "product", 
-      "nsFrameSelection",
-      "nsGenericHTMLElement",
-      "nsHTMLEditor",
-      "nsHTMLDocument",
-      "nsWindow",
-      "PresShell"
-      "nsGlobalWindowObserver"
-    };
+    /* std::set<std::string> InstrumentedTypes = { */
+    /*   //      "product",  */
+    /*   "nsFrameSelection", */
+    /*   "nsGenericHTMLElement", */
+    /*   "nsHTMLEditor", */
+    /*   "nsHTMLDocument", */
+    /*   "nsWindow", */
+    /*   "PresShell" */
+    /*   "nsGlobalWindowObserver" */
+    /* }; */
     
     virtual void getAnalysisUsage(AnalysisUsage &AU) const;
 

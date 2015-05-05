@@ -21,47 +21,47 @@ using namespace llvm;
 
 namespace MemInstrument {
 
-  std::set<std::string> wList = {
-    "_ZN12nsThreadPool14ShutdownThreadEP9nsIThread",
-    "_ZN12nsThreadPool8ShutdownEv",
-    "_ZN15nsThreadManager8ShutdownEv",
-    "_ZN21nsThreadShutdownEvent3RunEv",
-    "_ZN21nsThreadShutdownEventC2EP8nsThreadP23nsThreadShutdownContext",
-    "_ZN21nsThreadShutdownEventD0Ev",
-    "_ZN21nsThreadShutdownEventD2Ev",
-    "_ZN24nsThreadShutdownAckEvent3RunEv",
-    "_ZN24nsThreadShutdownAckEventC2EP23nsThreadShutdownContext",
-    "_ZN24nsThreadShutdownAckEventD0Ev",
-    "_ZN24nsThreadShutdownAckEventD2Ev",
-    "_ZN8nsThread16ShutdownRequiredEv",
-    "_ZN8nsThread8ShutdownEv",
-    "_ZN8nsThread16ProcessNextEventEbPb",
-    "_ZN8nsThread16DispatchInternalEP11nsIRunnablejPNS_19nsNestedEventTargetE",
-    "_ZN8nsThread19nsNestedEventTarget8DispatchEP11nsIRunnablej",
-    "_Z23NS_ProcessPendingEventsP9nsIThreadj",
-    "_ZN20nsThreadSyncDispatch3RunEv"
-  };
+  // std::set<std::string> wList = {
+  //   "_ZN12nsThreadPool14ShutdownThreadEP9nsIThread",
+  //   "_ZN12nsThreadPool8ShutdownEv",
+  //   "_ZN15nsThreadManager8ShutdownEv",
+  //   "_ZN21nsThreadShutdownEvent3RunEv",
+  //   "_ZN21nsThreadShutdownEventC2EP8nsThreadP23nsThreadShutdownContext",
+  //   "_ZN21nsThreadShutdownEventD0Ev",
+  //   "_ZN21nsThreadShutdownEventD2Ev",
+  //   "_ZN24nsThreadShutdownAckEvent3RunEv",
+  //   "_ZN24nsThreadShutdownAckEventC2EP23nsThreadShutdownContext",
+  //   "_ZN24nsThreadShutdownAckEventD0Ev",
+  //   "_ZN24nsThreadShutdownAckEventD2Ev",
+  //   "_ZN8nsThread16ShutdownRequiredEv",
+  //   "_ZN8nsThread8ShutdownEv",
+  //   "_ZN8nsThread16ProcessNextEventEbPb",
+  //   "_ZN8nsThread16DispatchInternalEP11nsIRunnablejPNS_19nsNestedEventTargetE",
+  //   "_ZN8nsThread19nsNestedEventTarget8DispatchEP11nsIRunnablej",
+  //   "_Z23NS_ProcessPendingEventsP9nsIThreadj",
+  //   "_ZN20nsThreadSyncDispatch3RunEv"
+  // };
 
-  void FInstrument::readBlacklist(){
-    std::string line;
-    std::ifstream skippedFunctionsFile ("/home/anirudh/blacklist20.txt");
-    std::ifstream skippedDirsFile ("/home/anirudh/blacklistdirs.txt");
-    if (skippedFunctionsFile.is_open()){
-	while ( getline (skippedFunctionsFile,line) ){
-	    skipped.insert(line);
-	}
-	skippedFunctionsFile.close();
-    }
-    if (skippedDirsFile.is_open()){
-	while ( getline (skippedDirsFile,line) ){
-	    skippedDirs.insert(line);
-	}
-	skippedDirsFile.close();
-    }
+  // void FInstrument::readBlacklist(){
+  //   std::string line;
+  //   std::ifstream skippedFunctionsFile ("/home/anirudh/blacklist20.txt");
+  //   std::ifstream skippedDirsFile ("/home/anirudh/blacklistdirs.txt");
+  //   if (skippedFunctionsFile.is_open()){
+  // 	while ( getline (skippedFunctionsFile,line) ){
+  // 	    skipped.insert(line);
+  // 	}
+  // 	skippedFunctionsFile.close();
+  //   }
+  //   if (skippedDirsFile.is_open()){
+  // 	while ( getline (skippedDirsFile,line) ){
+  // 	    skippedDirs.insert(line);
+  // 	}
+  // 	skippedDirsFile.close();
+  //   }
 
-    //llvm::outs() << "Populated skipped " << skipped.size() << "\n";
-  }
-  // Hello2 - The second implementation with getAnalysisUsage implemented.
+  //   //llvm::outs() << "Populated skipped " << skipped.size() << "\n";
+  // }
+
   bool FInstrument::runOnModule(Module &M) {
     
 
@@ -90,112 +90,112 @@ namespace MemInstrument {
       if (F->isDeclaration()) continue;
       //llvm::outs() << FName << "\n";
       
-      if(skipped.find(FName) != skipped.end() && (wList.find(FName) == wList.end())){
-	//llvm::outs() << "Skipping already skipped function " << FName << "\n";
-	continue;
-      }
+      // if(skipped.find(FName) != skipped.end() && (wList.find(FName) == wList.end())){
+      // 	//llvm::outs() << "Skipping already skipped function " << FName << "\n";
+      // 	continue;
+      // }
 
 
-      // Don't instrument functions to do with nsCOMPtr and nsRefPtr and nsCOMArray
-      // and cycle collection
-      if(startsWith(FName, "_ZN10nsCOMArray") ||
-	 startsWith(FName, "_ZNK10nsCOMArray") ||
-	 startsWith(FName, "_ZN13nsTArray") ||
-	 startsWith(FName, "_ZNK13nsTArray") ||
-	 startsWith(FName, "_ZNK8nsCOMPtr") ||
-	 startsWith(FName, "_ZN8nsCOMPtr") ||
-	 startsWith(FName, "_ZNK9nsAutoPtr") ||
-	 startsWith(FName, "_ZN9nsAutoPtr") ||
-	 startsWith(FName, "_ZNK8nsRefPtr") ||
-	 startsWith(FName, "_ZN8nsRefPtr") ||
-	 startsWith(FName, "_ZN15nsGetterAddRefs") ||
-	 startsWith(FName, "NS_IsCycleCollectorThread_P") ||
-	 startsWith(FName, "NS_AtomicDecrementRefcnt") ||
-	 startsWith(FName, " NS_AtomicIncrementRefcnt") ||
-	 startsWith(FName, "_ZN16already_AddRefed") ||
-	 startsWith(FName, "xpc_UnmarkGrayObject") ||
-	 startsWith(FName, "xpc_UnmarkNonNullGrayObject") ||
-	 startsWith(FName, "_ZN10nsDocument15cycleCollection")
-	 ){
-	skipped.insert(FName);
-	//llvm::outs() << "Skipping smart pointer function " << FName << "\n";
-	continue;
-      }
+      // // Don't instrument functions to do with nsCOMPtr and nsRefPtr and nsCOMArray
+      // // and cycle collection
+      // if(startsWith(FName, "_ZN10nsCOMArray") ||
+      // 	 startsWith(FName, "_ZNK10nsCOMArray") ||
+      // 	 startsWith(FName, "_ZN13nsTArray") ||
+      // 	 startsWith(FName, "_ZNK13nsTArray") ||
+      // 	 startsWith(FName, "_ZNK8nsCOMPtr") ||
+      // 	 startsWith(FName, "_ZN8nsCOMPtr") ||
+      // 	 startsWith(FName, "_ZNK9nsAutoPtr") ||
+      // 	 startsWith(FName, "_ZN9nsAutoPtr") ||
+      // 	 startsWith(FName, "_ZNK8nsRefPtr") ||
+      // 	 startsWith(FName, "_ZN8nsRefPtr") ||
+      // 	 startsWith(FName, "_ZN15nsGetterAddRefs") ||
+      // 	 startsWith(FName, "NS_IsCycleCollectorThread_P") ||
+      // 	 startsWith(FName, "NS_AtomicDecrementRefcnt") ||
+      // 	 startsWith(FName, " NS_AtomicIncrementRefcnt") ||
+      // 	 startsWith(FName, "_ZN16already_AddRefed") ||
+      // 	 startsWith(FName, "xpc_UnmarkGrayObject") ||
+      // 	 startsWith(FName, "xpc_UnmarkNonNullGrayObject") ||
+      // 	 startsWith(FName, "_ZN10nsDocument15cycleCollection")
+      // 	 ){
+      // 	skipped.insert(FName);
+      // 	//llvm::outs() << "Skipping smart pointer function " << FName << "\n";
+      // 	continue;
+      // }
      
-      // discard js and std functions, QueryInterface, AddRef, Release, cycle collection stuff
-      std::string demangled = demangleFunctionName(FName);
-      if(startsWith(demangled, "js::") || 
-	 startsWith(demangled, "JS::") || 
-	 FName.find("CCParticipant") != std::string::npos ||
-	 FName.find("cycleCollection") != std::string::npos ||
-	 FName.find("ArrayLength") != std::string::npos ||
-	 FName.find("nsDefaultComparator") != std::string::npos ||
-	 FName.find("autoJArray") != std::string::npos ||
-	 FName.find("GetStyleDisplay") != std::string::npos ||
-	 FName.find("XPCOM_MIN") != std::string::npos ||
-	 endsWith(FName, "QueryInterfaceERK4nsIDPPv") || 
-	 endsWith(FName, "AddRefEv") ||
-	 endsWith(FName, "ReleaseEv") ||
-	 startsWith(demangled, "std::")){
-	skipped.insert(FName);
-	//llvm::outs() << "Skipping JS/std::/QI " << FName << "\n";
-	continue;
-      }
+      // // discard js and std functions, QueryInterface, AddRef, Release, cycle collection stuff
+      // std::string demangled = demangleFunctionName(FName);
+      // if(startsWith(demangled, "js::") || 
+      // 	 startsWith(demangled, "JS::") || 
+      // 	 FName.find("CCParticipant") != std::string::npos ||
+      // 	 FName.find("cycleCollection") != std::string::npos ||
+      // 	 FName.find("ArrayLength") != std::string::npos ||
+      // 	 FName.find("nsDefaultComparator") != std::string::npos ||
+      // 	 FName.find("autoJArray") != std::string::npos ||
+      // 	 FName.find("GetStyleDisplay") != std::string::npos ||
+      // 	 FName.find("XPCOM_MIN") != std::string::npos ||
+      // 	 endsWith(FName, "QueryInterfaceERK4nsIDPPv") || 
+      // 	 endsWith(FName, "AddRefEv") ||
+      // 	 endsWith(FName, "ReleaseEv") ||
+      // 	 startsWith(demangled, "std::")){
+      // 	skipped.insert(FName);
+      // 	//llvm::outs() << "Skipping JS/std::/QI " << FName << "\n";
+      // 	continue;
+      // }
       
-      // discard some frequent data structure access functions/other functions
-      if(startsWith(demangled, "nsAttrName::") ||
-	 startsWith(demangled, "nsAttrValue::") ||
-	 startsWith(demangled, "nsAttrAndChildArray::") ||
-	 startsWith(demangled, "nsIContent::GetID") ||
-	 startsWith(demangled, "nsJSContext::MaybePokeCC") ||
-	 startsWith(demangled, "nsAutoTObserverArray") ||
-	 startsWith(demangled, "nsAutoArrayPtr") ||
-	 startsWith(demangled, "mozilla::MillisecondsToMediaTime") ||
-	 startsWith(demangled, "mozilla::LinkedListElement") ||
- 	 startsWith(demangled, "mozilla::BloomFilter") ||
-	 startsWith(demangled, "nsEventStates::") ||
-	 startsWith(demangled, "nsWrapperCache::") ||
-	 startsWith(demangled, "nsINode::") ||
-	 startsWith(demangled, "nsStyleContext::") ||
-	 startsWith(demangled, "mozilla::safebrowsing::") ||
-	 startsWith(demangled, "int mozilla::safebrowsing::") ||
-	 startsWith(demangled, "vp8_") ||
-	 startsWith(demangled, "decode_") ||
-	 startsWith(demangled, "nsReadingIterator") ||
-	 startsWith(demangled, "nsCharTraits") ||
-	 startsWith(demangled, "mozilla::DebugOnly<bool>") ||
-	 startsWith(demangled, "bool operator!=<unsigned short>") ||
-	 startsWith(demangled, "unsigned int mozilla::AddToHash") ||
-	 startsWith(demangled, "unsigned int const& NS_MIN") ||
-	 startsWith(demangled, "nsCRT::IsAsciiSpace") ||
-	 startsWith(demangled, "nsCycleCollectingAutoRefCnt")
-	 ){
-	skipped.insert(FName); 
-	//llvm::outs() << "Skipping JS or std " << FName << "\n";
-	continue;
-      }
+      // // discard some frequent data structure access functions/other functions
+      // if(startsWith(demangled, "nsAttrName::") ||
+      // 	 startsWith(demangled, "nsAttrValue::") ||
+      // 	 startsWith(demangled, "nsAttrAndChildArray::") ||
+      // 	 startsWith(demangled, "nsIContent::GetID") ||
+      // 	 startsWith(demangled, "nsJSContext::MaybePokeCC") ||
+      // 	 startsWith(demangled, "nsAutoTObserverArray") ||
+      // 	 startsWith(demangled, "nsAutoArrayPtr") ||
+      // 	 startsWith(demangled, "mozilla::MillisecondsToMediaTime") ||
+      // 	 startsWith(demangled, "mozilla::LinkedListElement") ||
+      // 	 startsWith(demangled, "mozilla::BloomFilter") ||
+      // 	 startsWith(demangled, "nsEventStates::") ||
+      // 	 startsWith(demangled, "nsWrapperCache::") ||
+      // 	 startsWith(demangled, "nsINode::") ||
+      // 	 startsWith(demangled, "nsStyleContext::") ||
+      // 	 startsWith(demangled, "mozilla::safebrowsing::") ||
+      // 	 startsWith(demangled, "int mozilla::safebrowsing::") ||
+      // 	 startsWith(demangled, "vp8_") ||
+      // 	 startsWith(demangled, "decode_") ||
+      // 	 startsWith(demangled, "nsReadingIterator") ||
+      // 	 startsWith(demangled, "nsCharTraits") ||
+      // 	 startsWith(demangled, "mozilla::DebugOnly<bool>") ||
+      // 	 startsWith(demangled, "bool operator!=<unsigned short>") ||
+      // 	 startsWith(demangled, "unsigned int mozilla::AddToHash") ||
+      // 	 startsWith(demangled, "unsigned int const& NS_MIN") ||
+      // 	 startsWith(demangled, "nsCRT::IsAsciiSpace") ||
+      // 	 startsWith(demangled, "nsCycleCollectingAutoRefCnt")
+      // 	 ){
+      // 	skipped.insert(FName); 
+      // 	//llvm::outs() << "Skipping JS or std " << FName << "\n";
+      // 	continue;
+      // }
       
-      std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(FName);
-      std::string dirName;
-      if(search != funcNameToDirName.end()) {
-        dirName = search->second;
-      }
+      // std::map<std::string,std::string>::const_iterator search = funcNameToDirName.find(FName);
+      // std::string dirName;
+      // if(search != funcNameToDirName.end()) {
+      //   dirName = search->second;
+      // }
 
-      bool found = false;
-      for (std::set<std::string>::iterator it = skippedDirs.begin(); it != skippedDirs.end(); ++it){
-	if(dirName.find(*it) != std::string::npos){
-	  found = true;
-	  break;
-	}
-      }
+      // bool found = false;
+      // for (std::set<std::string>::iterator it = skippedDirs.begin(); it != skippedDirs.end(); ++it){
+      // 	if(dirName.find(*it) != std::string::npos){
+      // 	  found = true;
+      // 	  break;
+      // 	}
+      // }
       
       // we avoid skipping over functions in blacklisted directories that
       // we must instrument - the fn must not be in our whitelist
-      if(found && (wList.find(FName) == wList.end())){
-	//llvm::outs() << "Early Skipping " << FName << "\n";
-	skipped.insert(FName);
-	continue;
-      }
+      // if(found && (wList.find(FName) == wList.end())){
+      // 	//llvm::outs() << "Early Skipping " << FName << "\n";
+      // 	skipped.insert(FName);
+      // 	continue;
+      // }
 
       // if(dirName.find("nsprpub") != std::string::npos ||
       // 	 dirName.find("xpcom") != std::string::npos ||

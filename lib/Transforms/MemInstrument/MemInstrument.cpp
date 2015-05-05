@@ -18,7 +18,7 @@ namespace MemInstrument{
     PM.add(new MemInstrument::LoadStoreInstrument());
     PM.add(new MemInstrument::AllocFreeInstrument());
     PM.add(new MemInstrument::FInstrument());
-    PM.add(new MemInstrument::RunnableInstrument());
+    //    PM.add(new MemInstrument::RunnableInstrument());
     
   }
 

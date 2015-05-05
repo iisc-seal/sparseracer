@@ -46,7 +46,7 @@ namespace {
     Constant *MDallocFn;
     Constant *MAllocFn;
 
-    // Consider stroing in a sorted vector once the code is stable
+    // Consider storing in a sorted vector once the code is stable
     std::set<std::string> allocFunctions = {
       "_Znwm",  // operator new(unsigned long)
       "_Znam",  // operator new[](unsigned long)

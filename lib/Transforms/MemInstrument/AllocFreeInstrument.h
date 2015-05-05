@@ -61,16 +61,16 @@ namespace MemInstrument {
       "ZdaPvRKSt9nothrow_t"   // delete[](void*, nothrow)
     };
 
-    std::set<std::string> whiteList = {
-      "nsHTMLEditor::ContentAppended",
-      "nsHTMLEditor::ContentInserted",
-      "nsHTMLEditor::ResetRootElementAndEventTarget",
-      "nsFrameSelection::SetAncestorLimiter",
-      "nsGenericHTMLElement::Focus",
-      "nsINode::AppendChild",
-      "nsINode::RemoveChild",
-      "nsEditor::InitializeSelection"
-    };
+    /* std::set<std::string> whiteList = { */
+    /*   "nsHTMLEditor::ContentAppended", */
+    /*   "nsHTMLEditor::ContentInserted", */
+    /*   "nsHTMLEditor::ResetRootElementAndEventTarget", */
+    /*   "nsFrameSelection::SetAncestorLimiter", */
+    /*   "nsGenericHTMLElement::Focus", */
+    /*   "nsINode::AppendChild", */
+    /*   "nsINode::RemoveChild", */
+    /*   "nsEditor::InitializeSelection" */
+    /* }; */
 
     Type *IntptrTy;
     LLVMContext *Context;
