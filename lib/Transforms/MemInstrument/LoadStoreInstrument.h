@@ -59,11 +59,15 @@ namespace MemInstrument {
       "moz_xvalloc",
       "mopAlloc",
       "mopDealloc",
-      "mopInstrument"
+      "mopInstrument",
+      //      "MOZ_PNG_read_filt_row_p_mb_px",
+      //"MOZ_PNG_do_g_to_rgb",
+      //"MOZ_PNG_read_filt_row_up",
       "_Znwm",  // operator new(unsigned long)
       "_Znam",  // operator new[](unsigned long)
       "_ZdlPv", // operator delete(void*)
       "_ZdaPv" // operator delete[](void*)
+      
     };
 
     std::set<std::string> InstrumentedTypes = {

@@ -156,7 +156,7 @@ namespace MemInstrument {
 
   bool shouldInstrumentFunction(Function* F, std::string name, std::set<std::string> skippedDirs){
     if(FunctionBlacklist.find(name) != FunctionBlacklist.end()){
-      llvm::outs() << "Skipping " << name << "\n";
+      //llvm::outs() << "Skipping " << name << "\n";
       return false;
     }
 
@@ -167,7 +167,7 @@ namespace MemInstrument {
     }
 
     if(name.find("__cxx") != std::string::npos || name.find("PR_") != std::string::npos){
-      llvm::outs() << "Skipping " << name << "\n";
+      //llvm::outs() << "Skipping " << name << "\n";
       return false;
     }
     //    char *funcs = getenv("INSTRUMENTFUNCS");
@@ -188,7 +188,7 @@ namespace MemInstrument {
       }
     }
     if(found){
-      llvm::outs() << "Skipping " << name << "\n";
+      //llvm::outs() << "Skipping " << name << "\n";
       return false;
     }
     
@@ -217,7 +217,7 @@ namespace MemInstrument {
     if(name.find("PR_") != std::string::npos)
       llvm::outs() << "Missed" << name << " at " << location << "\n";
     
-    llvm::outs() << "Instrumenting " << name << " \n";
+    //llvm::outs() << "Instrumenting " << name << " \n";
     return true;
     // if(funcs == NULL)
     //   return false;
@@ -241,15 +241,17 @@ namespace MemInstrument {
     std::vector<std::string> wList = split(instrDirs, ':');
     // llvm::outs() << "Current " << name << "\n";
     for(std::vector<std::string>::iterator it = wList.begin(); it != wList.end(); ++it) {
-      // std::size_t found = name.find(*it);
-      // if (found != std::string::npos){
+      std::size_t found = name.find(*it);
+      if (found != std::string::npos){
+      	 // llvm::outs() << "Matched against " << name << "\n"; 
+      	 return true;
+      }
+       
+      // Exact matching
+      // if(name.compare(*it) == 0){
+      // 	llvm::outs() << "Matched directory " << name << "\n";
       // 	return true;
       // }
-      // llvm::outs() << "Matching against " << *it << "\n";
-      if(name.compare(*it) == 0){
-	// llvm::outs() << "Matched directory " << name << "\n";
-	return true;
-      }
     }
     
     return false;

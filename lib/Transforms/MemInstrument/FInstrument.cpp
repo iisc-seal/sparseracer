@@ -44,7 +44,7 @@ namespace MemInstrument {
 
   void FInstrument::readBlacklist(){
     std::string line;
-    std::ifstream skippedFunctionsFile ("/home/anirudh/blacklist.txt");
+    std::ifstream skippedFunctionsFile ("/home/anirudh/blacklist20.txt");
     std::ifstream skippedDirsFile ("/home/anirudh/blacklistdirs.txt");
     if (skippedFunctionsFile.is_open()){
 	while ( getline (skippedFunctionsFile,line) ){
@@ -59,7 +59,7 @@ namespace MemInstrument {
 	skippedDirsFile.close();
     }
 
-    llvm::outs() << "Populated skipped " << skipped.size() << "\n";
+    //llvm::outs() << "Populated skipped " << skipped.size() << "\n";
   }
   // Hello2 - The second implementation with getAnalysisUsage implemented.
   bool FInstrument::runOnModule(Module &M) {
@@ -91,7 +91,7 @@ namespace MemInstrument {
       //llvm::outs() << FName << "\n";
       
       if(skipped.find(FName) != skipped.end() && (wList.find(FName) == wList.end())){
-	llvm::outs() << "Skipping already skipped function " << FName << "\n";
+	//llvm::outs() << "Skipping already skipped function " << FName << "\n";
 	continue;
       }
 
@@ -109,29 +109,36 @@ namespace MemInstrument {
 	 startsWith(FName, "_ZNK8nsRefPtr") ||
 	 startsWith(FName, "_ZN8nsRefPtr") ||
 	 startsWith(FName, "_ZN15nsGetterAddRefs") ||
+	 startsWith(FName, "NS_IsCycleCollectorThread_P") ||
+	 startsWith(FName, "NS_AtomicDecrementRefcnt") ||
+	 startsWith(FName, " NS_AtomicIncrementRefcnt") ||
 	 startsWith(FName, "_ZN16already_AddRefed") ||
+	 startsWith(FName, "xpc_UnmarkGrayObject") ||
+	 startsWith(FName, "xpc_UnmarkNonNullGrayObject") ||
 	 startsWith(FName, "_ZN10nsDocument15cycleCollection")
 	 ){
 	skipped.insert(FName);
-	llvm::outs() << "Skipping smart pointer function " << FName << "\n";
+	//llvm::outs() << "Skipping smart pointer function " << FName << "\n";
 	continue;
       }
      
       // discard js and std functions, QueryInterface, AddRef, Release, cycle collection stuff
       std::string demangled = demangleFunctionName(FName);
       if(startsWith(demangled, "js::") || 
+	 startsWith(demangled, "JS::") || 
 	 FName.find("CCParticipant") != std::string::npos ||
 	 FName.find("cycleCollection") != std::string::npos ||
 	 FName.find("ArrayLength") != std::string::npos ||
 	 FName.find("nsDefaultComparator") != std::string::npos ||
 	 FName.find("autoJArray") != std::string::npos ||
 	 FName.find("GetStyleDisplay") != std::string::npos ||
+	 FName.find("XPCOM_MIN") != std::string::npos ||
 	 endsWith(FName, "QueryInterfaceERK4nsIDPPv") || 
 	 endsWith(FName, "AddRefEv") ||
 	 endsWith(FName, "ReleaseEv") ||
 	 startsWith(demangled, "std::")){
 	skipped.insert(FName);
-	llvm::outs() << "Skipping JS/std::/QI " << FName << "\n";
+	//llvm::outs() << "Skipping JS/std::/QI " << FName << "\n";
 	continue;
       }
       
@@ -153,10 +160,18 @@ namespace MemInstrument {
 	 startsWith(demangled, "mozilla::safebrowsing::") ||
 	 startsWith(demangled, "int mozilla::safebrowsing::") ||
 	 startsWith(demangled, "vp8_") ||
-	 startsWith(demangled, "decode_")
+	 startsWith(demangled, "decode_") ||
+	 startsWith(demangled, "nsReadingIterator") ||
+	 startsWith(demangled, "nsCharTraits") ||
+	 startsWith(demangled, "mozilla::DebugOnly<bool>") ||
+	 startsWith(demangled, "bool operator!=<unsigned short>") ||
+	 startsWith(demangled, "unsigned int mozilla::AddToHash") ||
+	 startsWith(demangled, "unsigned int const& NS_MIN") ||
+	 startsWith(demangled, "nsCRT::IsAsciiSpace") ||
+	 startsWith(demangled, "nsCycleCollectingAutoRefCnt")
 	 ){
 	skipped.insert(FName); 
-	llvm::outs() << "Skipping JS or std " << FName << "\n";
+	//llvm::outs() << "Skipping JS or std " << FName << "\n";
 	continue;
       }
       
@@ -177,7 +192,7 @@ namespace MemInstrument {
       // we avoid skipping over functions in blacklisted directories that
       // we must instrument - the fn must not be in our whitelist
       if(found && (wList.find(FName) == wList.end())){
-	llvm::outs() << "Early Skipping " << FName << "\n";
+	//llvm::outs() << "Early Skipping " << FName << "\n";
 	skipped.insert(FName);
 	continue;
       }
@@ -246,7 +261,10 @@ namespace MemInstrument {
     //   llvm::outs() << "Suspicious ";
     // for (std::vector<std::string>::iterator it = v_intersection.begin(); it != v_intersection.end(); ++it)
     //   llvm::outs() << *it << ' ';
-    
+    // for(std::set<std::string>::const_iterator i = skipped.begin(); i != skipped.end(); ++i) {
+    //   // process i
+    //   llvm::outs() << "Skipping:" << *i << "\n";
+    // }
     return false;
   }
     
