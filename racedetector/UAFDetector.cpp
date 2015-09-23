@@ -816,6 +816,21 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 							// FIFO-ATOMIC does not apply if the two tasks are not posted to the same thread
 							if (enqToTaskEnqueued[enqOp].targetThread != enqToTaskEnqueued[tempenqOp].targetThread) continue;
 
+							// If the first enq is of a "lower" priority, FIFO-ATOMIC does not apply.
+							if (enqToTaskEnqueued.find(tempenqOp) == enqToTaskEnqueued.end()) {
+								cout << "ERROR: Cannot find entry for op " << tempenqOp << " in enqToTaskEnqueued\n";
+								return -1;
+							}
+							if (it->second.priority == INT_MAX) {
+								cout << "ERROR: Priority is not set for task " << it->first << "\n";
+								return -1;
+							}
+							if (enqToTaskEnqueued[tempenqOp].priority == INT_MAX) {
+								cout << "ERROR: Priority is not set in enq op " << tempenqOp << "\n";
+								return -1;
+							}
+							if (it->second.priority > enqToTaskEnqueued[tempenqOp].priority) continue;
+
 							IDType nodeEnq = opIDMap[enqOp].nodeID;
 							IDType nodeTempEnq = opIDMap[tempenqOp].nodeID;
 							if (nodeEnq <= 0) {
@@ -945,6 +960,29 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 
 							// NO-PRE does not apply if the two tasks are in different threads
 							if (opIDMap[i].threadID != enqToTaskEnqueued[tempenqOp].targetThread) continue;
+
+							// NO-PRE does not apply if the first op is an enq and it has a "lower" priority
+							// than the second enqop.
+							if (opIDMap[i].opType.compare("enq") == 0) {
+								if (enqToTaskEnqueued.find(i) == enqToTaskEnqueued.end()) {
+									cout << "ERROR: Cannot find entry for op " << i << " in enqToTaskEnqueued\n";
+									return -1;
+								}
+								if (enqToTaskEnqueued.find(tempenqOp) == enqToTaskEnqueued.end()) {
+									cout << "ERROR: Cannot find entry for op " << tempenqOp << " in enqToTaskEnqueued\n";
+									return -1;
+								}
+								if (enqToTaskEnqueued[i].priority == INT_MAX) {
+									cout << "ERROR: Priority not set in enq op " << i << "\n";
+									return -1;
+								}
+								if (enqToTaskEnqueued[tempenqOp].priority == INT_MAX) {
+									cout << "ERROR: Priority not set in enq op " << tempenqOp << "\n";
+									return -1;
+								}
+								if (enqToTaskEnqueued[i].priority > enqToTaskEnqueued[tempenqOp].priority)
+									continue;
+							}
 
 							IDType nodei = opIDMap[i].nodeID;
 							IDType nodeTempEnq = opIDMap[tempenqOp].nodeID;
@@ -1538,6 +1576,26 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 					// If enqI and enqJ are the same, do not proceed
 					if (blockI == blockJ && enqI == enqJ) continue;
 
+					// If the first enq has a "lower" priority, then the rule does not apply.
+					if (enqToTaskEnqueued.find(enqI) == enqToTaskEnqueued.end()) {
+						cout << "ERROR: Cannot find entry for op " << enqI << " in enqToTaskEnqueued\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued.find(enqJ) == enqToTaskEnqueued.end()) {
+						cout << "ERROR: Cannot find entry for op " << enqJ << " in enqToTaskEnqueued\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued[enqI].priority == INT_MAX) {
+						cout << "ERROR: Priority not set in enq op " << enqI << "\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued[enqJ].priority == INT_MAX) {
+						cout << "ERROR: Priority not set in enq op " << enqJ << "\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued[enqI].priority > enqToTaskEnqueued[enqJ].priority)
+						continue;
+
 					IDType nodeEnqI = opIDMap[enqI].nodeID;
 					IDType nodeEnqJ = opIDMap[enqJ].nodeID;
 					if (nodeEnqI <= 0) {
@@ -1990,6 +2048,36 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 						if (threadK != threadL)
 							continue;
 
+						// If priority of enqK is "lower" than priority of enqL or
+						// priority of enqL is "lower" than priority of enqN, then the rule does not apply
+						if (enqToTaskEnqueued.find(enqK) == enqToTaskEnqueued.end()) {
+							cout << "ERROR: Cannot find entry for op " << enqK << " in enqToTaskEnqueued\n";
+							return -1;
+						}
+						if (enqToTaskEnqueued.find(enqL) == enqToTaskEnqueued.end()) {
+							cout << "ERROR: Cannot find entry for op " << enqL << " in enqToTaskEnqueued\n";
+							return -1;
+						}
+						if (enqToTaskEnqueued.find(enqN) == enqToTaskEnqueued.end()) {
+							cout << "ERROR: Cannot find entry for op " << enqN << " in enqToTaskEnqueued\n";
+							return -1;
+						}
+						if (enqToTaskEnqueued[enqK].priority == INT_MAX) {
+							cout << "ERROR: Priority not set in enq op " << enqK << "\n";
+							return -1;
+						}
+						if (enqToTaskEnqueued[enqL].priority == INT_MAX) {
+							cout << "ERROR: Priority not set in enq op " << enqL << "\n";
+							return -1;
+						}
+						if (enqToTaskEnqueued[enqN].priority == INT_MAX) {
+							cout << "ERROR: Priority not set in enq op " << enqN << "\n";
+							return -1;
+						}
+						if (enqToTaskEnqueued[enqK].priority > enqToTaskEnqueued[enqL].priority ||
+								enqToTaskEnqueued[enqL].priority > enqToTaskEnqueued[enqN].priority)
+							continue;
+
 						IDType nodeEnqK = opIDMap[enqK].nodeID;
 						IDType nodeEnqL = opIDMap[enqL].nodeID;
 						IDType nodeEnqN = opIDMap[enqN].nodeID;
@@ -2226,6 +2314,26 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 					}
 					// opL needs to post to the same thread as reset (opK)
 					if (threadL != threadK)
+						continue;
+
+					// If reset task has lower priority than the second enq, the rule does not apply
+					if (enqToTaskEnqueued.find(enqOfReset) == enqToTaskEnqueued.end()) {
+						cout << "ERROR: Cannot find entry for op " << enqOfReset << " in enqToTaskEnqueued\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued.find(opL) == enqToTaskEnqueued.end()) {
+						cout << "ERROR: Cannot find entry for op " << opL << " in enqToTaskEnqueued\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued[enqOfReset].priority == INT_MAX) {
+						cout << "ERROR: Priority not set in enq op " << enqOfReset << "\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued[opL].priority == INT_MAX) {
+						cout << "ERROR: Priority not set in enq op " << opL << "\n";
+						return -1;
+					}
+					if (enqToTaskEnqueued[enqOfReset].priority > enqToTaskEnqueued[opL].priority)
 						continue;
 
 #ifdef GRAPHDEBUGFULL

@@ -38,45 +38,46 @@ TraceParser::TraceParser(string traceFileName) {
 	//prefixRegEx = " *";
 	prefixRegEx = "\\s*";
 
-	intRegEx = "[0-9]+";
+	posIntRegEx = "[0-9]+";
+	intRegEx = "[-]?[0-9]+";
 	hexRegEx = "0[xX][0-9a-fA-F]+";
 
 	// The operation regular expression.
-	opRegEx = " *(threadinit) *\\( *(" + intRegEx + ") *\\) *" + "|" +
-			  " *(threadexit) *\\( *(" + intRegEx + ") *\\) *" + "|" +
-			  " *(fork) *\\( *("       + intRegEx + ") *, *(" 	   + intRegEx + ") *\\) *" + "|" +
-			  " *(join) *\\( *("       + intRegEx + ") *, *(" 	   + intRegEx + ") *\\) *" + "|" +
-			  " *(enterloop) *\\( *("  + intRegEx + ") *\\) *" + "|" +
-			  " *(exitloop) *\\( *("   + intRegEx + ") *\\) *" + "|" +
-			  " *(enq) *\\( *("        + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
-			  	  	  	  	  	  	   + intRegEx + ") *\\) *" + "|" +
-			  " *(deq) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(end) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+	opRegEx = " *(threadinit) *\\( *(" + posIntRegEx + ") *\\) *" + "|" +
+			  " *(threadexit) *\\( *(" + posIntRegEx + ") *\\) *" + "|" +
+			  " *(fork) *\\( *("       + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
+			  " *(join) *\\( *("       + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
+			  " *(enterloop) *\\( *("  + posIntRegEx + ") *\\) *" + "|" +
+			  " *(exitloop) *\\( *("   + posIntRegEx + ") *\\) *" + "|" +
+			  " *(enq) *\\( *("        + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  	  	  	  	  	  	   + posIntRegEx + ") *, *("       + intRegEx + ") *\\) *" + "|" +
+			  " *(deq) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(end) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 #ifdef PERMIT
-			  " *(permit) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(permit) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
-			  " *(revoke) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(revoke) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
 #else
-			  " *(pause) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(pause) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
 			  	  	  	  	  	  	     			  	  	  	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(resume) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(resume) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
 			  	  	  	  	  	  	     			  	  	  	   + hexRegEx + ") *\\) *" + "|" +
 #endif
-			  " *(reset) *\\( *("	   + intRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +
-			  " *(alloc) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
-			  	  	  	  	  	  	  	  	  	    		  	   + intRegEx + ") *\\) *" + "|" +
-			  " *(free) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
-			  	  	  	  	  	  	  	  	  	   	   	   	  	   + intRegEx + ") *\\) *" + "|" +
-			  " *(inc) *\\( *(" 	   + intRegEx + ") *, *\\( *(" + hexRegEx + ") *, *("
-			  	  	  	  	  	  	  	  	  	  	   	   	  	   + intRegEx + ") *\\) *\\) *" + "|" +
-			  " *(dec) *\\( *(" 	   + intRegEx + ") *, *\\( *(" + hexRegEx + ") *, *("
-			  	  	  	  	  	  	  	  	  	  	   	   	   	   + intRegEx + ") *\\) *\\) *" + "|" +
-			  " *(wait) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(notify) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(notifyall) *\\( *("  + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(read) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(write) *\\( *(" 	   + intRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *";
+			  " *(reset) *\\( *("	   + posIntRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +
+			  " *(alloc) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  	  	  	  	  	  	  	  	  	    		  	   + posIntRegEx + ") *\\) *" + "|" +
+			  " *(free) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  	  	  	  	  	  	  	  	  	   	   	   	  	   + posIntRegEx + ") *\\) *" + "|" +
+			  " *(inc) *\\( *(" 	   + posIntRegEx + ") *, *\\( *(" + hexRegEx + ") *, *("
+			  	  	  	  	  	  	  	  	  	  	   	   	  	   + posIntRegEx + ") *\\) *\\) *" + "|" +
+			  " *(dec) *\\( *(" 	   + posIntRegEx + ") *, *\\( *(" + hexRegEx + ") *, *("
+			  	  	  	  	  	  	  	  	  	  	   	   	   	   + posIntRegEx + ") *\\) *\\) *" + "|" +
+			  " *(wait) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(notify) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(notifyall) *\\( *("  + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(read) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(write) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *";
 
 	suffixRegEx = "\\s*";
 	// Regular expression for the entire line
@@ -730,9 +731,10 @@ int TraceParser::parse(UAFDetector &detector) {
 							return -1;
 						}
 
-						// Obtain 2nd & 3rd argument (i.e task enqueued & target threadID) of enq op
+						// Obtain 2nd, 3rd and 4th argument (i.e task enqueued, target threadID & priority) of enq op
 						string taskEnqueued;
 						IDType targetThread;
+						IDType priority;
 						unsigned j;
 						for (j=threadPos+1; j < matches.size(); j++) {
 							string m1(matches[j].first, matches[j].second);
@@ -749,10 +751,18 @@ int TraceParser::parse(UAFDetector &detector) {
 								break;
 							}
 						}
+						for (j=j+1; j < matches.size(); j++) {
+							string m1(matches[j].first, matches[j].second);
+							if (!m1.empty() && m1.compare(" ") != 0) {
+								priority = atoi(m1.c_str());
+								break;
+							}
+						}
 
 						if (detector.taskIDMap.find(taskEnqueued) == detector.taskIDMap.end()) {
 							UAFDetector::taskDetails taskdetails;
 							taskdetails.enqOpID = opCount;
+							taskdetails.priority = priority;
 							detector.taskIDMap[taskEnqueued] = taskdetails;
 						} else {
 							cout << "ERROR: Found duplicate entry for task " << taskEnqueued << " in taskIDMap\n";
@@ -766,6 +776,7 @@ int TraceParser::parse(UAFDetector &detector) {
 						UAFDetector::enqOpDetails enqdetails;
 						enqdetails.targetThread = targetThread;
 						enqdetails.taskEnqueued = taskEnqueued;
+						enqdetails.priority = priority;
 
 						// Map enq op to its arguments;
 						if (detector.enqToTaskEnqueued.find(opCount) == detector.enqToTaskEnqueued.end()) {

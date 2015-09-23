@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 #include <cassert>
+#include <climits>
 
 #include <config.h>
 #include <debugconfig.h>
@@ -138,6 +139,7 @@ public:
 
 		std::string parentTask; // ID of immediate parent task
 		bool atomic;
+		IDType priority;
 
 		vector<pauseResumeResetTuple> pauseResumeResetSequence;
 
@@ -153,13 +155,14 @@ public:
 
 			parentTask = "";
 			atomic = true;
+			priority = INT_MAX;
 
 			firstBlockID = -1;
 			lastBlockID = -1;
 		}
 
 		void printTaskDetails() {
-			cout << "first-pause " << firstPauseOpID
+			cout << "priority " << priority << "first-pause " << firstPauseOpID
 				 << " last-resume " << lastResumeOpID << " deq " << deqOpID
 				 << " end " << endOpID << " enq " << enqOpID
 				 << " parent task " << parentTask << " atomic " << (atomic? "true": "false")
@@ -283,14 +286,17 @@ public:
 	public:
 		std::string taskEnqueued;
 		IDType targetThread;
+		IDType priority;
 
 		enqOpDetails() {
 			taskEnqueued = "";
 			targetThread = -1;
+			priority = INT_MAX;
 		}
 
 		void printEnqDetails() {
-			cout << "Task enqueued " << taskEnqueued << " to target thread " << targetThread;
+			cout << "Task enqueued " << taskEnqueued << " (priority "
+				 << priority << ") to target thread " << targetThread;
 		}
 	};
 	// Maps the op ID of an enq operation to its arguments
