@@ -49,19 +49,19 @@ TraceParser::TraceParser(string traceFileName) {
 			  " *(join) *\\( *("       + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
 			  " *(enterloop) *\\( *("  + posIntRegEx + ") *\\) *" + "|" +
 			  " *(exitloop) *\\( *("   + posIntRegEx + ") *\\) *" + "|" +
-			  " *(enq) *\\( *("        + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(enq) *\\( *("        + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
 			  	  	  	  	  	  	   + posIntRegEx + ") *, *("       + intRegEx + ") *\\) *" + "|" +
-			  " *(deq) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(end) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+			  " *(deq) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
+			  " *(end) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
 #ifdef PERMIT
-			  " *(permit) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(permit) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
-			  " *(revoke) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(revoke) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
 #else
-			  " *(pause) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(pause) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
 			  	  	  	  	  	  	     			  	  	  	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(resume) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *, *("
+			  " *(resume) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
 			  	  	  	  	  	  	     			  	  	  	   + hexRegEx + ") *\\) *" + "|" +
 #endif
 			  " *(reset) *\\( *("	   + posIntRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +
