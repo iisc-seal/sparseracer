@@ -55,22 +55,30 @@ int main(int argc, char* argv[]) {
 	TraceParser parser(traceFileName);
 
 	bool outputAllConflictingOps = false;
-	bool filterInput = false;
+	bool filterUAFInput = false, filterRaceInput = false;
 	bool runDetectorOnTrace = false;
 	bool multithreadedHB = false;
 	bool richHB = false;
-	string outputAllOpsFileName, outputAllOpsUniqueFileName;
-	string filterInputFileName, filterOutputFileName;
+	string outputUAFAllOpsFileName, outputUAFAllOpsUniqueFileName,
+		   outputRacesAllOpsFileName, outputRacesAllOpsUniqueFileName;
+	string filterUAFInputFileName, filterUAFOutputFileName,
+		   filterRaceInputFileName, filterRaceOutputFileName;
 	for (int i = 2; i < argc; i++) {
 		if (strcmp(argv[i], "-a") == 0) {
 			outputAllConflictingOps = true;
-			outputAllOpsFileName = traceFileName + ".allconflictingops";
-			outputAllOpsUniqueFileName = traceFileName + ".allconflictingops.unique";
-		} else if (strcmp(argv[i], "-f") == 0) {
-			filterInput = true;
-			filterInputFileName = argv[i+1];
-			filterOutputFileName = filterInputFileName + ".filtered";
+			outputUAFAllOpsFileName = traceFileName + ".uaf.allconflictingops";
+			outputUAFAllOpsUniqueFileName = traceFileName + ".uaf.allconflictingops.unique";
+			outputRacesAllOpsFileName = traceFileName + ".race.allconflictingops";
+			outputRacesAllOpsUniqueFileName = traceFileName + ".race.allconflictingops.unique";
+		} else if (strcmp(argv[i], "-fu") == 0) {
+			filterUAFInput = true;
+			filterUAFInputFileName = argv[i+1];
+			filterUAFOutputFileName = filterUAFInputFileName + ".filtered";
 			i++;
+		} else if (strcmp(argv[i], "-fr") == 0) {
+			filterRaceInput = true;
+			filterRaceInputFileName = argv[i+1];
+			filterRaceOutputFileName = filterRaceInputFileName + ".filtered";
 		} else if (strcmp(argv[i], "-rm") == 0) {
 			runDetectorOnTrace = true;
 			multithreadedHB = true;
@@ -103,10 +111,11 @@ int main(int argc, char* argv[]) {
 	cout << "Time taken for parsing: " << convertTime(tStart, tEnd) << "\n";
 
 	if (outputAllConflictingOps) {
-		detectorObj.outputAllConflictingOps(outputAllOpsFileName, outputAllOpsUniqueFileName);
+		detectorObj.outputAllConflictingOps(outputUAFAllOpsFileName, outputUAFAllOpsUniqueFileName,
+				outputRacesAllOpsFileName, outputRacesAllOpsUniqueFileName);
 	}
 
-	if (!filterInput && !runDetectorOnTrace)
+	if (!filterUAFInput  && !filterRaceInput && !runDetectorOnTrace)
 		return 0;
 
 	tStart = clock();
@@ -165,8 +174,14 @@ int main(int argc, char* argv[]) {
 			detectorObj.log(false);
 	}
 
-	if (filterInput) {
-		if (detectorObj.filterInput(filterInputFileName, filterOutputFileName) < 0) {
+	if (filterUAFInput) {
+		if (detectorObj.filterInput(filterUAFInputFileName, filterUAFOutputFileName) < 0) {
+			cout << "ERROR: While filtering uafs\n";
+			return -1;
+		}
+	}
+	if (filterRaceInput) {
+		if (detectorObj.filterInput(filterRaceInputFileName, filterRaceOutputFileName) < 0) {
 			cout << "ERROR: While filtering races\n";
 			return -1;
 		}

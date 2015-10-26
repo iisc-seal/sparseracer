@@ -65,21 +65,24 @@ bool isFieldPresent(std::vector<field> fieldsVector, std::string address) {
 	return false;
 }
 
-void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string outUniqueFileName) {
-	Logger out;
-	out.init(outFileName);
+void UAFDetector::outputAllConflictingOps(std::string outUAFFileName, std::string outUAFUniqueFileName,
+		std::string outRaceFileName, std::string outRaceUniqueFileName) {
+	Logger outUAF, outRace;
+	outUAF.init(outUAFFileName);
+	outRace.init(outRaceFileName);
 
-	Logger outUniq;
-	outUniq.init(outUniqueFileName);
+	Logger outUAFUniq, outRaceUniq;
+	outUAFUniq.init(outUAFUniqueFileName);
+	outRaceUniq.init(outRaceUniqueFileName);
 
-	IDType totalRacesCount = 0;
-	IDType totalObjsWithRacesCount = 0;
+	IDType totalUAFCount = 0, totalRacesCount = 0;
+	IDType totalObjsWithUAFCount = 0, totalObjsWithRacesCount = 0;
 	std::stringstream str;
 
 	for (std::map<IDType, allocOpDetails>::iterator allocIt = allocIDMap.begin();
 			allocIt != allocIDMap.end(); allocIt++) {
 		IDType allocID = allocIt->first;
-		IDType racesCount = 0;
+		IDType uafsCount = 0, racesCount = 0;
 
 		str.str("");
 		str.clear();
@@ -108,7 +111,7 @@ void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string o
 //				if (isFieldPresent(fieldsVector, address));
 
 				if (firstWrite) {
-					out.writeLog(objmsg);
+					outUAF.writeLog(objmsg);
 					firstWrite = false;
 				}
 
@@ -116,14 +119,14 @@ void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string o
 				str.clear();
 				str << readID << " " << threadRead << " " << freeID << " " << threadFree << "\n";
 				msg = str.str();
-				out.writeLog(msg);
+				outUAF.writeLog(msg);
 
 				if (minUse == -1 || minUse > readID) {
 					minUse = readID;
 					minMsg = msg;
 				}
 
-				racesCount++;
+				uafsCount++;
 			}
 
 			for (std::set<IDType>::iterator writeIt = allocIt->second.writeOps.begin();
@@ -134,7 +137,7 @@ void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string o
 				if (threadFree == threadWrite) continue;
 
 				if (firstWrite) {
-					out.writeLog(objmsg);
+					outUAF.writeLog(objmsg);
 					firstWrite = false;
 				}
 
@@ -142,27 +145,107 @@ void UAFDetector::outputAllConflictingOps(std::string outFileName, std::string o
 				str.clear();
 				str << writeID << " " << threadWrite << " " << freeID << " " << threadFree << "\n";
 				msg = str.str();
-				out.writeLog(msg);
+				outUAF.writeLog(msg);
 
 				if (minUse == -1 || minUse > writeID) {
 					minUse = writeID;
 					minMsg = msg;
 				}
 
-				racesCount++;
+				uafsCount++;
 			}
 		}
 
 		if (minUse != -1) {
-			outUniq.writeLog(minMsg);
+			outUAFUniq.writeLog(minMsg);
+			totalObjsWithUAFCount++;
+		}
+
+		firstWrite = true;
+		minUse = -1;
+		for (std::set<IDType>::iterator wIt = allocIt->second.writeOps.begin();
+				wIt != allocIt->second.writeOps.end(); wIt++) {
+			IDType writeOp = *wIt;
+			IDType threadWrite = opIDMap[writeOp].threadID;
+			std::string writeAddress = writeSet[writeOp].startingAddress;
+			for (std::set<IDType>::iterator rIt = allocIt->second.readOps.begin();
+					rIt != allocIt->second.readOps.end(); rIt++) {
+				IDType readOp = *rIt;
+				IDType threadRead = opIDMap[readOp].threadID;
+				std::string readAddress = readSet[readOp].startingAddress;
+
+				if (threadWrite == threadRead) continue;
+				if (writeAddress.compare(readAddress) != 0) continue;
+
+				if (firstWrite) {
+					outRace.writeLog(objmsg);
+					firstWrite = false;
+				}
+
+				str.str("");
+				str.clear();
+				str << readOp << " " << threadRead << " " << writeOp << " " << threadWrite << "\n";
+				msg = str.str();
+				outRace.writeLog(msg);
+
+				if (minUse == -1 || minUse > readOp) {
+					minUse = readOp;
+					minMsg = msg;
+				}
+				if (minUse > writeOp) {
+					minUse = writeOp;
+					minMsg = msg;
+				}
+
+				racesCount++;
+			}
+			for (std::set<IDType>::iterator w2It = allocIt->second.writeOps.begin();
+					w2It != allocIt->second.writeOps.end(); w2It++) {
+				IDType write2Op = *w2It;
+				IDType threadWrite2 = opIDMap[write2Op].threadID;
+				std::string write2Address = writeSet[write2Op].startingAddress;
+
+				if (writeOp == write2Op) continue;
+				if (threadWrite == threadWrite2) continue;
+				if (writeAddress.compare(write2Address) != 0) continue;
+
+				if (firstWrite) {
+					outRace.writeLog(objmsg);
+					firstWrite = false;
+				}
+
+				str.str("");
+				str.clear();
+				str << writeOp << " " << threadWrite << " " << write2Op << " " << threadWrite2 << "\n";
+				msg = str.str();
+				outRace.writeLog(msg);
+
+				if (minUse == -1 || minUse > writeOp) {
+					minUse = writeOp;
+					minMsg = msg;
+				}
+				if (minUse > write2Op) {
+					minUse = write2Op;
+					minMsg = msg;
+				}
+
+				racesCount++;
+			}
+		}
+		if (minUse != -1) {
+			outRaceUniq.writeLog(minMsg);
 			totalObjsWithRacesCount++;
 		}
 
-		cout << "Object-" << allocID << ":races-" << racesCount << "\n";
+		cout << "Object-" << allocID << ":uafs-" << uafsCount << ":races-"
+			 << racesCount << "\n";
+		totalUAFCount += uafsCount;
 		totalRacesCount += racesCount;
 	}
 
 	cout << "Total objects: " << allocIDMap.size() << "\n";
+	cout << "Objects with uafs: " << totalObjsWithUAFCount << "\n";
+	cout << "Total uafs: " << totalUAFCount << "\n";
 	cout << "Objects with races: " << totalObjsWithRacesCount << "\n";
 	cout << "Total races: " << totalRacesCount << "\n";
 }
@@ -4757,12 +4840,16 @@ void UAFDetector::log(IDType op1ID, IDType op2ID, IDType opAllocID,
 void UAFDetector::log(bool mt) {
 
 	IDType onlyMultithreadedAllUAFs = 0;
+	IDType onlyMultithreadedAllRaces = 0;
 	IDType onlyMultithreadedUniqueObjects = 0;
 	IDType onlySinglethreadedAllUAFs = 0;
+	IDType onlySinglethreadedAllRaces = 0;
 	IDType onlySinglethreadedUniqueObjects = 0;
 	IDType bothMultithreadedAllUAFs = 0;
+	IDType bothMultithreadedAllRaces = 0;
 	IDType bothMultithreadedUniqueObjects = 0;
 	IDType bothSinglethreadedAllUAFs = 0;
+	IDType bothSinglethreadedAllRaces = 0;
 	IDType bothSinglethreadedUniqueObjects = 0;
 
 	IDType totalAllocs = allocIDMap.size();
@@ -4773,110 +4860,247 @@ void UAFDetector::log(bool mt) {
 
 		if (raceSet.size() == 0) continue;
 
-		IDType multithreadedCount = 0;
-		IDType multithreadedAllocMemopInSameTaskCount = 0;
-		IDType multithreadedSameNestingLoopCount = 0;
-		IDType multithreadedNoTaskCount = 0;
+		IDType multithreadedUAFCount = 0, multithreadedRaceCount = 0, multithreadedCount = 0;
+		IDType multithreadedUAFAllocMemopInSameTaskCount = 0, multithreadedRaceAllocMemopInSameTaskCount = 0,
+				multithreadedAllocMemopInSameTaskCount = 0;
+		IDType multithreadedUAFSameNestingLoopCount = 0, multithreadedRaceSameNestingLoopCount = 0,
+				multithreadedSameNestingLoopCount = 0;
+		IDType multithreadedUAFNoTaskCount = 0, multithreadedRaceNoTaskCount = 0,
+				multithreadedNoTaskCount = 0;
 
 		raceDetails tempRace;
+		// check for MULTITHREADED uaf
 		tempRace.uafOrRace = true;
 		tempRace.raceType = MULTITHREADED;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retMultithreaded = raceSet.equal_range(tempRace);
-		if (retMultithreaded.first != retMultithreaded.second)
-			multithreadedCount = std::distance(retMultithreaded.first, retMultithreaded.second);
+			retMultithreadedUAF = raceSet.equal_range(tempRace);
+		if (retMultithreadedUAF.first != retMultithreadedUAF.second)
+			multithreadedUAFCount = std::distance(retMultithreadedUAF.first, retMultithreadedUAF.second);
 		else
-			multithreadedCount = 0;
+			multithreadedUAFCount = 0;
+		// check for MULTITHREADED race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = MULTITHREADED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retMultithreadedRace = raceSet.equal_range(tempRace);
+		if (retMultithreadedRace.first != retMultithreadedRace.second)
+			multithreadedRaceCount = std::distance(retMultithreadedRace.first, retMultithreadedRace.second);
+		else
+			multithreadedRaceCount = 0;
+		multithreadedCount = multithreadedUAFCount + multithreadedRaceCount;
 
+		// check for MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retMultithreadedAllocMemopInSameTask = raceSet.equal_range(tempRace);
-		if (retMultithreadedAllocMemopInSameTask.first != retMultithreadedAllocMemopInSameTask.second)
-			multithreadedAllocMemopInSameTaskCount = std::distance(retMultithreadedAllocMemopInSameTask.first,
-					retMultithreadedAllocMemopInSameTask.second);
+			retMultithreadedUAFAllocMemopInSameTask = raceSet.equal_range(tempRace);
+		if (retMultithreadedUAFAllocMemopInSameTask.first != retMultithreadedUAFAllocMemopInSameTask.second)
+			multithreadedUAFAllocMemopInSameTaskCount = std::distance(retMultithreadedUAFAllocMemopInSameTask.first,
+					retMultithreadedUAFAllocMemopInSameTask.second);
 		else
-			multithreadedAllocMemopInSameTaskCount = 0;
+			multithreadedUAFAllocMemopInSameTaskCount = 0;
+		// check for MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = MULTITHREADED_ALLOC_MEMOP_IN_SAME_TASK;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retMultithreadedRaceAllocMemopInSameTask = raceSet.equal_range(tempRace);
+		if (retMultithreadedRaceAllocMemopInSameTask.first != retMultithreadedRaceAllocMemopInSameTask.second)
+			multithreadedRaceAllocMemopInSameTaskCount = std::distance(retMultithreadedRaceAllocMemopInSameTask.first,
+					retMultithreadedRaceAllocMemopInSameTask.second);
+		else
+			multithreadedRaceAllocMemopInSameTaskCount = 0;
+		multithreadedAllocMemopInSameTaskCount = multithreadedUAFAllocMemopInSameTaskCount + multithreadedRaceAllocMemopInSameTaskCount;
 
+		// check for MULTITHREADED_FROM_SAME_NESTING_LOOP uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = MULTITHREADED_FROM_SAME_NESTING_LOOP;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retMultithreadedSameNestingLoop = raceSet.equal_range(tempRace);
-		if (retMultithreadedSameNestingLoop.first != retMultithreadedSameNestingLoop.second)
-			multithreadedSameNestingLoopCount = std::distance(retMultithreadedSameNestingLoop.first,
-					retMultithreadedSameNestingLoop.second);
+			retMultithreadedUAFSameNestingLoop = raceSet.equal_range(tempRace);
+		if (retMultithreadedUAFSameNestingLoop.first != retMultithreadedUAFSameNestingLoop.second)
+			multithreadedUAFSameNestingLoopCount = std::distance(retMultithreadedUAFSameNestingLoop.first,
+					retMultithreadedUAFSameNestingLoop.second);
 		else
-			multithreadedSameNestingLoopCount = 0;
+			multithreadedUAFSameNestingLoopCount = 0;
+		// check for MULTITHREADED_FROM_SAME_NESTING_LOOP race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = MULTITHREADED_FROM_SAME_NESTING_LOOP;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retMultithreadedRaceSameNestingLoop = raceSet.equal_range(tempRace);
+		if (retMultithreadedRaceSameNestingLoop.first != retMultithreadedRaceSameNestingLoop.second)
+			multithreadedRaceSameNestingLoopCount = std::distance(retMultithreadedRaceSameNestingLoop.first,
+					retMultithreadedRaceSameNestingLoop.second);
+		else
+			multithreadedRaceSameNestingLoopCount = 0;
+		multithreadedSameNestingLoopCount = multithreadedUAFSameNestingLoopCount + multithreadedRaceSameNestingLoopCount;
 
+		// check for NOTASKRACE_MULTITHREADED uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = NOTASKRACE_MULTITHREADED;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retMultithreadedNoTask = raceSet.equal_range(tempRace);
-		if (retMultithreadedNoTask.first != retMultithreadedNoTask.second)
-			multithreadedNoTaskCount = std::distance(retMultithreadedNoTask.first,
-					retMultithreadedNoTask.second);
+			retMultithreadedUAFNoTask = raceSet.equal_range(tempRace);
+		if (retMultithreadedUAFNoTask.first != retMultithreadedUAFNoTask.second)
+			multithreadedUAFNoTaskCount = std::distance(retMultithreadedUAFNoTask.first,
+					retMultithreadedUAFNoTask.second);
 		else
-			multithreadedNoTaskCount = 0;
+			multithreadedUAFNoTaskCount = 0;
+		// check for NOTASKRACE_MULTITHREADED race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = NOTASKRACE_MULTITHREADED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retMultithreadedRaceNoTask = raceSet.equal_range(tempRace);
+		if (retMultithreadedRaceNoTask.first != retMultithreadedRaceNoTask.second)
+			multithreadedRaceNoTaskCount = std::distance(retMultithreadedRaceNoTask.first,
+					retMultithreadedRaceNoTask.second);
+		else
+			multithreadedRaceNoTaskCount = 0;
+		multithreadedNoTaskCount = multithreadedUAFNoTaskCount + multithreadedRaceNoTaskCount;
 
-		IDType singlethreadedCount = 0;
-		IDType singlethreadedNestedNestedCount = 0;
-		IDType singlethreadedNestedPrimaryCount = 0;
-		IDType singlethreadedNestedTasksOrderedCount = 0;
-		IDType singlethreadedNonAtomicWithOtherCount = 0;
-		IDType singlethreadedNoTaskCount = 0;
+		IDType singlethreadedUAFCount = 0, singlethreadedRaceCount = 0, singlethreadedCount = 0;
+		IDType singlethreadedUAFNestedNestedCount = 0, singlethreadedRaceNestedNestedCount = 0,
+				singlethreadedNestedNestedCount = 0;
+		IDType singlethreadedUAFNestedPrimaryCount = 0, singlethreadedRaceNestedPrimaryCount = 0,
+				singlethreadedNestedPrimaryCount = 0;
+		IDType singlethreadedUAFNestedTasksOrderedCount = 0, singlethreadedRaceNestedTasksOrderedCount = 0,
+				singlethreadedNestedTasksOrderedCount = 0;
+		IDType singlethreadedUAFNonAtomicWithOtherCount = 0, singlethreadedRaceNonAtomicWithOtherCount = 0,
+				singlethreadedNonAtomicWithOtherCount = 0;
+		IDType singlethreadedUAFNoTaskCount = 0, singlethreadedRaceNoTaskCount = 0,
+				singlethreadedNoTaskCount = 0;
 
+		// check for SINGLETHREADED uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = SINGLETHREADED;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retSinglethreaded = raceSet.equal_range(tempRace);
-		if (retSinglethreaded.first != retSinglethreaded.second)
-			singlethreadedCount = std::distance(retSinglethreaded.first,
-					retSinglethreaded.second);
+			retSinglethreadedUAF = raceSet.equal_range(tempRace);
+		if (retSinglethreadedUAF.first != retSinglethreadedUAF.second)
+			singlethreadedUAFCount = std::distance(retSinglethreadedUAF.first,
+					retSinglethreadedUAF.second);
 		else
-			singlethreadedCount = 0;
+			singlethreadedUAFCount = 0;
+		// check for SINGLETHREADED race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = SINGLETHREADED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retSinglethreadedRace = raceSet.equal_range(tempRace);
+		if (retSinglethreadedRace.first != retSinglethreadedRace.second)
+			singlethreadedRaceCount = std::distance(retSinglethreadedRace.first,
+					retSinglethreadedRace.second);
+		else
+			singlethreadedRaceCount = 0;
+		singlethreadedCount = singlethreadedUAFCount + singlethreadedRaceCount;
 
+		// check for NESTED_NESTED uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = NESTED_NESTED;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retSinglethreadedNestedNested = raceSet.equal_range(tempRace);
-		if (retSinglethreadedNestedNested.first != retSinglethreadedNestedNested.second)
-			singlethreadedNestedNestedCount = std::distance(retSinglethreadedNestedNested.first,
-					retSinglethreadedNestedNested.second);
+			retSinglethreadedUAFNestedNested = raceSet.equal_range(tempRace);
+		if (retSinglethreadedUAFNestedNested.first != retSinglethreadedUAFNestedNested.second)
+			singlethreadedUAFNestedNestedCount = std::distance(retSinglethreadedUAFNestedNested.first,
+					retSinglethreadedUAFNestedNested.second);
 		else
-			singlethreadedNestedNestedCount = 0;
+			singlethreadedUAFNestedNestedCount = 0;
+		// check for NESTED_NESTED race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = NESTED_NESTED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retSinglethreadedRaceNestedNested = raceSet.equal_range(tempRace);
+		if (retSinglethreadedRaceNestedNested.first != retSinglethreadedRaceNestedNested.second)
+			singlethreadedRaceNestedNestedCount = std::distance(retSinglethreadedRaceNestedNested.first,
+					retSinglethreadedRaceNestedNested.second);
+		else
+			singlethreadedRaceNestedNestedCount = 0;
+		singlethreadedNestedNestedCount = singlethreadedUAFNestedNestedCount + singlethreadedRaceNestedNestedCount;
 
+		// check for NESTED_PRIMARY uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = NESTED_PRIMARY;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retSinglethreadedNestedPrimary = raceSet.equal_range(tempRace);
-		if (retSinglethreadedNestedPrimary.first != retSinglethreadedNestedPrimary.second)
-			singlethreadedNestedPrimaryCount = std::distance(retSinglethreadedNestedPrimary.first,
-					retSinglethreadedNestedPrimary.second);
+			retSinglethreadedUAFNestedPrimary = raceSet.equal_range(tempRace);
+		if (retSinglethreadedUAFNestedPrimary.first != retSinglethreadedUAFNestedPrimary.second)
+			singlethreadedUAFNestedPrimaryCount = std::distance(retSinglethreadedUAFNestedPrimary.first,
+					retSinglethreadedUAFNestedPrimary.second);
 		else
-			singlethreadedNestedPrimaryCount = 0;
+			singlethreadedUAFNestedPrimaryCount = 0;
+		// check for NESTED_PRIMARY race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = NESTED_PRIMARY;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retSinglethreadedRaceNestedPrimary = raceSet.equal_range(tempRace);
+		if (retSinglethreadedRaceNestedPrimary.first != retSinglethreadedRaceNestedPrimary.second)
+			singlethreadedRaceNestedPrimaryCount = std::distance(retSinglethreadedRaceNestedPrimary.first,
+					retSinglethreadedRaceNestedPrimary.second);
+		else
+			singlethreadedRaceNestedPrimaryCount = 0;
+		singlethreadedNestedPrimaryCount = singlethreadedUAFNestedPrimaryCount + singlethreadedRaceNestedPrimaryCount;
 
+		// check for NESTED_WITH_TASKS_ORDERED uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = NESTED_WITH_TASKS_ORDERED;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retSinglethreadedNestedTasksOrdered = raceSet.equal_range(tempRace);
-		if (retSinglethreadedNestedTasksOrdered.first != retSinglethreadedNestedTasksOrdered.second)
-			singlethreadedNestedTasksOrderedCount = std::distance(retSinglethreadedNestedTasksOrdered.first,
-					retSinglethreadedNestedTasksOrdered.second);
+			retSinglethreadedUAFNestedTasksOrdered = raceSet.equal_range(tempRace);
+		if (retSinglethreadedUAFNestedTasksOrdered.first != retSinglethreadedUAFNestedTasksOrdered.second)
+			singlethreadedUAFNestedTasksOrderedCount = std::distance(retSinglethreadedUAFNestedTasksOrdered.first,
+					retSinglethreadedUAFNestedTasksOrdered.second);
 		else
-			singlethreadedNestedTasksOrderedCount = 0;
+			singlethreadedUAFNestedTasksOrderedCount = 0;
+		// check for NESTED_WITH_TASKS_ORDERED race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = NESTED_WITH_TASKS_ORDERED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retSinglethreadedRaceNestedTasksOrdered = raceSet.equal_range(tempRace);
+		if (retSinglethreadedRaceNestedTasksOrdered.first != retSinglethreadedRaceNestedTasksOrdered.second)
+			singlethreadedRaceNestedTasksOrderedCount = std::distance(retSinglethreadedRaceNestedTasksOrdered.first,
+					retSinglethreadedRaceNestedTasksOrdered.second);
+		else
+			singlethreadedRaceNestedTasksOrderedCount = 0;
+		singlethreadedNestedTasksOrderedCount = singlethreadedUAFNestedTasksOrderedCount + singlethreadedRaceNestedTasksOrderedCount;
 
+		// check for NONATOMIC_WITH_OTHER uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = NONATOMIC_WITH_OTHER;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retSinglethreadedNonAtomicWithOther = raceSet.equal_range(tempRace);
-		if (retSinglethreadedNonAtomicWithOther.first != retSinglethreadedNonAtomicWithOther.second)
-			singlethreadedNonAtomicWithOtherCount = std::distance(retSinglethreadedNonAtomicWithOther.first,
-					retSinglethreadedNonAtomicWithOther.second);
+			retSinglethreadedUAFNonAtomicWithOther = raceSet.equal_range(tempRace);
+		if (retSinglethreadedUAFNonAtomicWithOther.first != retSinglethreadedUAFNonAtomicWithOther.second)
+			singlethreadedUAFNonAtomicWithOtherCount = std::distance(retSinglethreadedUAFNonAtomicWithOther.first,
+					retSinglethreadedUAFNonAtomicWithOther.second);
 		else
-			singlethreadedNonAtomicWithOtherCount = 0;
+			singlethreadedUAFNonAtomicWithOtherCount = 0;
+		// check for NONATOMIC_WITH_OTHER race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = NONATOMIC_WITH_OTHER;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retSinglethreadedRaceNonAtomicWithOther = raceSet.equal_range(tempRace);
+		if (retSinglethreadedRaceNonAtomicWithOther.first != retSinglethreadedRaceNonAtomicWithOther.second)
+			singlethreadedRaceNonAtomicWithOtherCount = std::distance(retSinglethreadedRaceNonAtomicWithOther.first,
+					retSinglethreadedRaceNonAtomicWithOther.second);
+		else
+			singlethreadedRaceNonAtomicWithOtherCount = 0;
+		singlethreadedNonAtomicWithOtherCount = singlethreadedUAFNonAtomicWithOtherCount + singlethreadedRaceNonAtomicWithOtherCount;
 
+		// check for NOTASKRACE_SINGLETHREADED uaf
+		tempRace.uafOrRace = true;
 		tempRace.raceType = NOTASKRACE_SINGLETHREADED;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
-			retSinglethreadedNoTask = raceSet.equal_range(tempRace);
-		if (retSinglethreadedNoTask.first != retSinglethreadedNoTask.second)
-			singlethreadedNoTaskCount = std::distance(retSinglethreadedNoTask.first,
-					retSinglethreadedNoTask.second);
+			retSinglethreadedUAFNoTask = raceSet.equal_range(tempRace);
+		if (retSinglethreadedUAFNoTask.first != retSinglethreadedUAFNoTask.second)
+			singlethreadedUAFNoTaskCount = std::distance(retSinglethreadedUAFNoTask.first,
+					retSinglethreadedUAFNoTask.second);
 		else
-			singlethreadedNoTaskCount = 0;
+			singlethreadedUAFNoTaskCount = 0;
+		// check for NOTASKRACE_SINGLETHREADED race
+		tempRace.uafOrRace = false;
+		tempRace.raceType = NOTASKRACE_SINGLETHREADED;
+		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
+			retSinglethreadedRaceNoTask = raceSet.equal_range(tempRace);
+		if (retSinglethreadedRaceNoTask.first != retSinglethreadedRaceNoTask.second)
+			singlethreadedRaceNoTaskCount = std::distance(retSinglethreadedRaceNoTask.first,
+					retSinglethreadedRaceNoTask.second);
+		else
+			singlethreadedRaceNoTaskCount = 0;
+		singlethreadedNoTaskCount = singlethreadedUAFNoTaskCount + singlethreadedRaceNoTaskCount;
 
 		IDType fpCount = 0;
+		tempRace.uafOrRace = true;
 		tempRace.raceType = SINGLETHREADED_ALLOC_MEMOP_IN_SAME_TASK_FP;
 		std::pair<std::multiset<raceDetails>::iterator, std::multiset<raceDetails>::iterator>
 			retFP = raceSet.equal_range(tempRace);
@@ -4894,31 +5118,46 @@ void UAFDetector::log(bool mt) {
 		if (singlethreadedCount == 0 && singlethreadedNestedNestedCount == 0 &&
 				singlethreadedNestedPrimaryCount == 0 && singlethreadedNestedTasksOrderedCount == 0 &&
 				singlethreadedNoTaskCount == 0 && singlethreadedNonAtomicWithOtherCount == 0) {
-			onlyMultithreadedAllUAFs += multithreadedAllocMemopInSameTaskCount +
-					multithreadedCount + multithreadedNoTaskCount +
-					multithreadedSameNestingLoopCount;
+			onlyMultithreadedAllUAFs += multithreadedUAFAllocMemopInSameTaskCount +
+					multithreadedUAFCount + multithreadedUAFNoTaskCount +
+					multithreadedUAFSameNestingLoopCount;
+			onlyMultithreadedAllRaces += multithreadedRaceAllocMemopInSameTaskCount +
+					multithreadedRaceCount + multithreadedRaceNoTaskCount +
+					multithreadedRaceSameNestingLoopCount;
 
 			bool objFound = false;
 			if (multithreadedSameNestingLoopCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreadedSameNestingLoop.first;
-						it != retMultithreadedSameNestingLoop.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAFSameNestingLoop.first;
+						it != retMultithreadedUAFSameNestingLoop.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRaceSameNestingLoop.first;
+						it != retMultithreadedRaceSameNestingLoop.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_MULTITHREADED);
 			} else if (multithreadedAllocMemopInSameTaskCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreadedAllocMemopInSameTask.first;
-						it != retMultithreadedAllocMemopInSameTask.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAFAllocMemopInSameTask.first;
+						it != retMultithreadedUAFAllocMemopInSameTask.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRaceAllocMemopInSameTask.first;
+						it != retMultithreadedRaceAllocMemopInSameTask.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_MULTITHREADED);
 			} else if (multithreadedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreaded.first;
-						it != retMultithreaded.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAF.first;
+						it != retMultithreadedUAF.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRace.first;
+						it != retMultithreadedRace.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_MULTITHREADED);
 			} else if (multithreadedNoTaskCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreadedNoTask.first;
-						it != retMultithreadedNoTask.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAFNoTask.first;
+						it != retMultithreadedUAFNoTask.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRaceNoTask.first;
+						it != retMultithreadedRaceNoTask.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_MULTITHREADED);
 			} else if (fpCount == 0) {
 				cout << "ERROR: Identified only MULTITHREADED object, but all counts are zero!\n";
 				return;
@@ -4928,41 +5167,62 @@ void UAFDetector::log(bool mt) {
 				onlyMultithreadedUniqueObjects++;
 		} else if (multithreadedAllocMemopInSameTaskCount == 0 && multithreadedCount == 0 &&
 				multithreadedNoTaskCount == 0 && multithreadedSameNestingLoopCount == 0) {
-			onlySinglethreadedAllUAFs += singlethreadedCount + singlethreadedNestedNestedCount +
-					singlethreadedNestedPrimaryCount + singlethreadedNestedTasksOrderedCount +
-					singlethreadedNoTaskCount + singlethreadedNonAtomicWithOtherCount;
+			onlySinglethreadedAllUAFs += singlethreadedUAFCount + singlethreadedUAFNestedNestedCount +
+					singlethreadedUAFNestedPrimaryCount + singlethreadedUAFNestedTasksOrderedCount +
+					singlethreadedUAFNoTaskCount + singlethreadedUAFNonAtomicWithOtherCount;
+			onlySinglethreadedAllRaces += singlethreadedRaceCount + singlethreadedRaceNestedNestedCount +
+					singlethreadedRaceNestedPrimaryCount + singlethreadedRaceNestedTasksOrderedCount +
+					singlethreadedRaceNoTaskCount + singlethreadedRaceNonAtomicWithOtherCount;
 
 			bool objFound = false;
 			if (singlethreadedNestedTasksOrderedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNestedTasksOrdered.first;
-						it != retSinglethreadedNestedTasksOrdered.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNestedTasksOrdered.first;
+						it != retSinglethreadedUAFNestedTasksOrdered.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNestedTasksOrdered.first;
+						it != retSinglethreadedRaceNestedTasksOrdered.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_SINGLETHREADED);
 			} else if (singlethreadedNestedNestedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNestedNested.first;
-						it != retSinglethreadedNestedNested.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNestedNested.first;
+						it != retSinglethreadedUAFNestedNested.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNestedNested.first;
+						it != retSinglethreadedRaceNestedNested.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_SINGLETHREADED);
 			} else if (singlethreadedNestedPrimaryCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNestedPrimary.first;
-						it != retSinglethreadedNestedPrimary.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNestedPrimary.first;
+						it != retSinglethreadedUAFNestedPrimary.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNestedPrimary.first;
+						it != retSinglethreadedRaceNestedPrimary.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_SINGLETHREADED);
 			} else if (singlethreadedNonAtomicWithOtherCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNonAtomicWithOther.first;
-						it != retSinglethreadedNonAtomicWithOther.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNonAtomicWithOther.first;
+						it != retSinglethreadedUAFNonAtomicWithOther.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNonAtomicWithOther.first;
+						it != retSinglethreadedRaceNonAtomicWithOther.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_SINGLETHREADED);
 			} else if (singlethreadedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreaded.first;
-						it != retSinglethreaded.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAF.first;
+						it != retSinglethreadedUAF.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRace.first;
+						it != retSinglethreadedRace.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_SINGLETHREADED);
 			} else if (singlethreadedNoTaskCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNoTask.first;
-						it != retSinglethreadedNoTask.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNoTask.first;
+						it != retSinglethreadedUAFNoTask.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, ONLY_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNoTask.first;
+						it != retSinglethreadedRaceNoTask.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, ONLY_SINGLETHREADED);
 			} else if (fpCount == 0) {
 				cout << "ERROR: Identified only SINGLETHREADED object, but all counts are zero!\n";
 				return;
@@ -4971,34 +5231,52 @@ void UAFDetector::log(bool mt) {
 			if (objFound)
 				onlySinglethreadedUniqueObjects++;
 		} else {
-			bothMultithreadedAllUAFs += multithreadedAllocMemopInSameTaskCount +
-					multithreadedCount + multithreadedNoTaskCount +
-					multithreadedSameNestingLoopCount;
-			bothSinglethreadedAllUAFs += singlethreadedCount + singlethreadedNestedNestedCount +
-					singlethreadedNestedPrimaryCount + singlethreadedNestedTasksOrderedCount +
-					singlethreadedNoTaskCount + singlethreadedNonAtomicWithOtherCount;
+			bothMultithreadedAllUAFs += multithreadedUAFAllocMemopInSameTaskCount +
+					multithreadedUAFCount + multithreadedUAFNoTaskCount +
+					multithreadedUAFSameNestingLoopCount;
+			bothSinglethreadedAllUAFs += singlethreadedUAFCount + singlethreadedUAFNestedNestedCount +
+					singlethreadedUAFNestedPrimaryCount + singlethreadedUAFNestedTasksOrderedCount +
+					singlethreadedUAFNoTaskCount + singlethreadedUAFNonAtomicWithOtherCount;
+			bothMultithreadedAllRaces += multithreadedRaceAllocMemopInSameTaskCount +
+					multithreadedRaceCount + multithreadedRaceNoTaskCount +
+					multithreadedRaceSameNestingLoopCount;
+			bothSinglethreadedAllRaces += singlethreadedRaceCount + singlethreadedRaceNestedNestedCount +
+					singlethreadedRaceNestedPrimaryCount + singlethreadedRaceNestedTasksOrderedCount +
+					singlethreadedRaceNoTaskCount + singlethreadedRaceNonAtomicWithOtherCount;
 
 			bool objFound = false;
 			if (multithreadedSameNestingLoopCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreadedSameNestingLoop.first;
-						it != retMultithreadedSameNestingLoop.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAFSameNestingLoop.first;
+						it != retMultithreadedUAFSameNestingLoop.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRaceSameNestingLoop.first;
+						it != retMultithreadedRaceSameNestingLoop.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_MULTITHREADED);
 			} else if (multithreadedAllocMemopInSameTaskCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreadedAllocMemopInSameTask.first;
-						it != retMultithreadedAllocMemopInSameTask.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAFAllocMemopInSameTask.first;
+						it != retMultithreadedUAFAllocMemopInSameTask.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRaceAllocMemopInSameTask.first;
+						it != retMultithreadedRaceAllocMemopInSameTask.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_MULTITHREADED);
 			} else if (multithreadedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreaded.first;
-						it != retMultithreaded.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAF.first;
+						it != retMultithreadedUAF.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRace.first;
+						it != retMultithreadedRace.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_MULTITHREADED);
 			} else if (multithreadedNoTaskCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retMultithreadedNoTask.first;
-						it != retMultithreadedNoTask.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedUAFNoTask.first;
+						it != retMultithreadedUAFNoTask.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_MULTITHREADED);
+				for (std::multiset<raceDetails>::iterator it = retMultithreadedRaceNoTask.first;
+						it != retMultithreadedRaceNoTask.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_MULTITHREADED);
 			} else if (fpCount == 0) {
 				cout << "ERROR: Identified both MULTITHREADED object, but all counts are zero!\n";
 				return;
@@ -5010,34 +5288,52 @@ void UAFDetector::log(bool mt) {
 			objFound = false;
 			if (singlethreadedNestedTasksOrderedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNestedTasksOrdered.first;
-						it != retSinglethreadedNestedTasksOrdered.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNestedTasksOrdered.first;
+						it != retSinglethreadedUAFNestedTasksOrdered.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNestedTasksOrdered.first;
+						it != retSinglethreadedRaceNestedTasksOrdered.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_SINGLETHREADED);
 			} else if (singlethreadedNestedNestedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNestedNested.first;
-						it != retSinglethreadedNestedNested.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNestedNested.first;
+						it != retSinglethreadedUAFNestedNested.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNestedNested.first;
+						it != retSinglethreadedRaceNestedNested.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_SINGLETHREADED);
 			} else if (singlethreadedNestedPrimaryCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNestedPrimary.first;
-						it != retSinglethreadedNestedPrimary.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNestedPrimary.first;
+						it != retSinglethreadedUAFNestedPrimary.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNestedPrimary.first;
+						it != retSinglethreadedRaceNestedPrimary.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_SINGLETHREADED);
 			} else if (singlethreadedNonAtomicWithOtherCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNonAtomicWithOther.first;
-						it != retSinglethreadedNonAtomicWithOther.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNonAtomicWithOther.first;
+						it != retSinglethreadedUAFNonAtomicWithOther.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNonAtomicWithOther.first;
+						it != retSinglethreadedRaceNonAtomicWithOther.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_SINGLETHREADED);
 			} else if (singlethreadedCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreaded.first;
-						it != retSinglethreaded.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAF.first;
+						it != retSinglethreadedUAF.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRace.first;
+						it != retSinglethreadedRace.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_SINGLETHREADED);
 			} else if (singlethreadedNoTaskCount != 0) {
 				objFound = true;
-				for (std::multiset<raceDetails>::iterator it = retSinglethreadedNoTask.first;
-						it != retSinglethreadedNoTask.second; it++)
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedUAFNoTask.first;
+						it != retSinglethreadedUAFNoTask.second; it++)
 					log (it->op1, it->op2, it->allocID, true, it->raceType, logAll, BOTH_SINGLETHREADED);
+				for (std::multiset<raceDetails>::iterator it = retSinglethreadedRaceNoTask.first;
+						it != retSinglethreadedRaceNoTask.second; it++)
+					log (it->op1, it->op2, it->allocID, false, it->raceType, logAll, BOTH_SINGLETHREADED);
 			} else if (fpCount == 0) {
 				cout << "ERROR: Identified both SINGLETHREADED object, but all counts are zero!\n";
 				return;
@@ -5050,15 +5346,19 @@ void UAFDetector::log(bool mt) {
 	}
 
 	cout << "OUTPUT: Total allocs in trace: " << totalAllocs << "\n";
-	cout << "OUTPUT: Allocs with races: " << onlyMultithreadedUniqueObjects + onlySinglethreadedUniqueObjects +
+	cout << "OUTPUT: Allocs with uafs/races: " << onlyMultithreadedUniqueObjects + onlySinglethreadedUniqueObjects +
 			bothMultithreadedUniqueObjects << "\n";
 	cout << "OUTPUT: UAFs - only multithreaded: " << onlyMultithreadedAllUAFs << "\n";
+	cout << "OUTPUT: Races - only multithreaded: " << onlyMultithreadedAllRaces << "\n";
 	cout << "OUTPUT: Objects - only multithreaded: " << onlyMultithreadedUniqueObjects << "\n";
 	cout << "OUTPUT: UAFs - only singlethreaded: " << onlySinglethreadedAllUAFs << "\n";
+	cout << "OUTPUT: Races - only singlethreaded: " << onlySinglethreadedAllRaces << "\n";
 	cout << "OUTPUT: Objects - only singlethreaded: " << onlySinglethreadedUniqueObjects << "\n";
 	cout << "OUTPUT: UAFs - both multithreaded: " << bothMultithreadedAllUAFs << "\n";
+	cout << "OUTPUT: Races - both multithreaded: " << bothMultithreadedAllRaces << "\n";
 	cout << "OUTPUT: Objects - both multithreaded: " << bothMultithreadedUniqueObjects << "\n";
 	cout << "OUTPUT: UAFs - both singlethreaded: " << bothSinglethreadedAllUAFs << "\n";
+	cout << "OUTPUT: Races - both singlethreaded: " << bothSinglethreadedAllRaces << "\n";
 	cout << "OUTPUT: Objects - both singlethreaded: " << bothSinglethreadedUniqueObjects << "\n";
 
 //	cout << "README: UAFs - only multithreaded - are all the UAFs reported on objects that only had multithreaded races\n";
