@@ -5,69 +5,70 @@ target triple = "x86_64-unknown-linux-gnu"
 %class.Cylinder = type { %class.Circle*, double }
 %class.Circle = type { double }
 
-@.str = private unnamed_addr constant [10 x i8] c"foo at %x\00", align 1
-@.str1 = private unnamed_addr constant [11 x i8] c"base at %x\00", align 1
+@.str = private unnamed_addr constant [12 x i8] c"foo at %x \0A\00", align 1
+@.str1 = private unnamed_addr constant [13 x i8] c"base at %x \0A\00", align 1
 
 ; Function Attrs: uwtable
 define i32 @main() #0 {
-  %1 = alloca i32, align 4
+entry:
+  %retval = alloca i32, align 4
   %foo = alloca %class.Cylinder*, align 8
-  %2 = alloca i8*
-  %3 = alloca i32
-  store i32 0, i32* %1
+  %exn.slot = alloca i8*
+  %ehselector.slot = alloca i32
+  store i32 0, i32* %retval
   call void @llvm.dbg.declare(metadata !{%class.Cylinder** %foo}, metadata !60), !dbg !62
-  %4 = call noalias i8* @_Znwm(i64 16) #6, !dbg !62
-  %5 = bitcast i8* %4 to %class.Cylinder*, !dbg !62
-  invoke void @_ZN8CylinderC2Edd(%class.Cylinder* %5, double 1.000000e+01, double 2.000000e+01)
-          to label %6 unwind label %15, !dbg !62
+  %call = call noalias i8* @_Znwm(i64 16) #6, !dbg !62
+  %0 = bitcast i8* %call to %class.Cylinder*, !dbg !62
+  invoke void @_ZN8CylinderC2Edd(%class.Cylinder* %0, double 1.000000e+01, double 2.000000e+01)
+          to label %invoke.cont unwind label %lpad, !dbg !62
 
-; <label>:6                                       ; preds = %0
-  store %class.Cylinder* %5, %class.Cylinder** %foo, align 8, !dbg !63
-  %7 = load %class.Cylinder** %foo, align 8, !dbg !65
-  %8 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([10 x i8]* @.str, i32 0, i32 0), %class.Cylinder* %7), !dbg !65
-  %9 = load %class.Cylinder** %foo, align 8, !dbg !66
-  %10 = icmp eq %class.Cylinder* %9, null, !dbg !66
-  br i1 %10, label %14, label %11, !dbg !66
+invoke.cont:                                      ; preds = %entry
+  store %class.Cylinder* %0, %class.Cylinder** %foo, align 8, !dbg !63
+  %1 = load %class.Cylinder** %foo, align 8, !dbg !65
+  %call1 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([12 x i8]* @.str, i32 0, i32 0), %class.Cylinder* %1), !dbg !65
+  %2 = load %class.Cylinder** %foo, align 8, !dbg !66
+  %isnull = icmp eq %class.Cylinder* %2, null, !dbg !66
+  br i1 %isnull, label %delete.end, label %delete.notnull, !dbg !66
 
-; <label>:11                                      ; preds = %6
-  invoke void @_ZN8CylinderD2Ev(%class.Cylinder* %9)
-          to label %12 unwind label %19, !dbg !67
+delete.notnull:                                   ; preds = %invoke.cont
+  invoke void @_ZN8CylinderD2Ev(%class.Cylinder* %2)
+          to label %invoke.cont3 unwind label %lpad2, !dbg !67
 
-; <label>:12                                      ; preds = %11
-  %13 = bitcast %class.Cylinder* %9 to i8*, !dbg !69
-  call void @_ZdlPv(i8* %13) #7, !dbg !69
-  br label %14, !dbg !69
+invoke.cont3:                                     ; preds = %delete.notnull
+  %3 = bitcast %class.Cylinder* %2 to i8*, !dbg !69
+  call void @_ZdlPv(i8* %3) #7, !dbg !69
+  br label %delete.end, !dbg !69
 
-; <label>:14                                      ; preds = %12, %6
+delete.end:                                       ; preds = %invoke.cont3, %invoke.cont
   ret i32 0, !dbg !71
 
-; <label>:15                                      ; preds = %0
-  %16 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+lpad:                                             ; preds = %entry
+  %4 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
           cleanup, !dbg !72
-  %17 = extractvalue { i8*, i32 } %16, 0, !dbg !72
-  store i8* %17, i8** %2, !dbg !72
-  %18 = extractvalue { i8*, i32 } %16, 1, !dbg !72
-  store i32 %18, i32* %3, !dbg !72
-  call void @_ZdlPv(i8* %4) #7, !dbg !72
-  br label %24, !dbg !72
+  %5 = extractvalue { i8*, i32 } %4, 0, !dbg !72
+  store i8* %5, i8** %exn.slot, !dbg !72
+  %6 = extractvalue { i8*, i32 } %4, 1, !dbg !72
+  store i32 %6, i32* %ehselector.slot, !dbg !72
+  call void @_ZdlPv(i8* %call) #7, !dbg !72
+  br label %eh.resume, !dbg !72
 
-; <label>:19                                      ; preds = %11
-  %20 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+lpad2:                                            ; preds = %delete.notnull
+  %7 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
           cleanup, !dbg !72
-  %21 = extractvalue { i8*, i32 } %20, 0, !dbg !72
-  store i8* %21, i8** %2, !dbg !72
-  %22 = extractvalue { i8*, i32 } %20, 1, !dbg !72
-  store i32 %22, i32* %3, !dbg !72
-  %23 = bitcast %class.Cylinder* %9 to i8*, !dbg !72
-  call void @_ZdlPv(i8* %23) #7, !dbg !72
-  br label %24, !dbg !72
+  %8 = extractvalue { i8*, i32 } %7, 0, !dbg !72
+  store i8* %8, i8** %exn.slot, !dbg !72
+  %9 = extractvalue { i8*, i32 } %7, 1, !dbg !72
+  store i32 %9, i32* %ehselector.slot, !dbg !72
+  %10 = bitcast %class.Cylinder* %2 to i8*, !dbg !72
+  call void @_ZdlPv(i8* %10) #7, !dbg !72
+  br label %eh.resume, !dbg !72
 
-; <label>:24                                      ; preds = %19, %15
-  %25 = load i8** %2, !dbg !73
-  %26 = load i32* %3, !dbg !73
-  %27 = insertvalue { i8*, i32 } undef, i8* %25, 0, !dbg !73
-  %28 = insertvalue { i8*, i32 } %27, i32 %26, 1, !dbg !73
-  resume { i8*, i32 } %28, !dbg !73
+eh.resume:                                        ; preds = %lpad2, %lpad
+  %exn = load i8** %exn.slot, !dbg !73
+  %sel = load i32* %ehselector.slot, !dbg !73
+  %lpad.val = insertvalue { i8*, i32 } undef, i8* %exn, 0, !dbg !73
+  %lpad.val4 = insertvalue { i8*, i32 } %lpad.val, i32 %sel, 1, !dbg !73
+  resume { i8*, i32 } %lpad.val4, !dbg !73
 }
 
 ; Function Attrs: nounwind readnone
@@ -78,51 +79,52 @@ declare noalias i8* @_Znwm(i64) #2
 
 ; Function Attrs: uwtable
 define linkonce_odr void @_ZN8CylinderC2Edd(%class.Cylinder* %this, double %r, double %h) unnamed_addr #0 align 2 {
-  %1 = alloca %class.Cylinder*, align 8
-  %2 = alloca double, align 8
-  %3 = alloca double, align 8
-  %4 = alloca i8*
-  %5 = alloca i32
-  store %class.Cylinder* %this, %class.Cylinder** %1, align 8
-  call void @llvm.dbg.declare(metadata !{%class.Cylinder** %1}, metadata !76), !dbg !77
-  store double %r, double* %2, align 8
-  call void @llvm.dbg.declare(metadata !{double* %2}, metadata !78), !dbg !79
-  store double %h, double* %3, align 8
-  call void @llvm.dbg.declare(metadata !{double* %3}, metadata !80), !dbg !79
-  %6 = load %class.Cylinder** %1
-  %7 = getelementptr inbounds %class.Cylinder* %6, i32 0, i32 1, !dbg !79
-  %8 = load double* %3, align 8, !dbg !79
-  store double %8, double* %7, align 8, !dbg !79
-  %9 = call noalias i8* @_Znwm(i64 8) #6, !dbg !81
-  %10 = bitcast i8* %9 to %class.Circle*, !dbg !81
-  %11 = load double* %2, align 8, !dbg !81
-  invoke void @_ZN6CircleC2Ed(%class.Circle* %10, double %11)
-          to label %12 unwind label %17, !dbg !81
+entry:
+  %this.addr = alloca %class.Cylinder*, align 8
+  %r.addr = alloca double, align 8
+  %h.addr = alloca double, align 8
+  %exn.slot = alloca i8*
+  %ehselector.slot = alloca i32
+  store %class.Cylinder* %this, %class.Cylinder** %this.addr, align 8
+  call void @llvm.dbg.declare(metadata !{%class.Cylinder** %this.addr}, metadata !76), !dbg !77
+  store double %r, double* %r.addr, align 8
+  call void @llvm.dbg.declare(metadata !{double* %r.addr}, metadata !78), !dbg !79
+  store double %h, double* %h.addr, align 8
+  call void @llvm.dbg.declare(metadata !{double* %h.addr}, metadata !80), !dbg !79
+  %this1 = load %class.Cylinder** %this.addr
+  %height = getelementptr inbounds %class.Cylinder* %this1, i32 0, i32 1, !dbg !79
+  %0 = load double* %h.addr, align 8, !dbg !79
+  store double %0, double* %height, align 8, !dbg !79
+  %call = call noalias i8* @_Znwm(i64 8) #6, !dbg !81
+  %1 = bitcast i8* %call to %class.Circle*, !dbg !81
+  %2 = load double* %r.addr, align 8, !dbg !81
+  invoke void @_ZN6CircleC2Ed(%class.Circle* %1, double %2)
+          to label %invoke.cont unwind label %lpad, !dbg !81
 
-; <label>:12                                      ; preds = %0
-  %13 = getelementptr inbounds %class.Cylinder* %6, i32 0, i32 0, !dbg !83
-  store %class.Circle* %10, %class.Circle** %13, align 8, !dbg !83
-  %14 = getelementptr inbounds %class.Cylinder* %6, i32 0, i32 0, !dbg !85
-  %15 = load %class.Circle** %14, align 8, !dbg !85
-  %16 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([11 x i8]* @.str1, i32 0, i32 0), %class.Circle* %15), !dbg !85
+invoke.cont:                                      ; preds = %entry
+  %base = getelementptr inbounds %class.Cylinder* %this1, i32 0, i32 0, !dbg !83
+  store %class.Circle* %1, %class.Circle** %base, align 8, !dbg !83
+  %base2 = getelementptr inbounds %class.Cylinder* %this1, i32 0, i32 0, !dbg !85
+  %3 = load %class.Circle** %base2, align 8, !dbg !85
+  %call3 = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([13 x i8]* @.str1, i32 0, i32 0), %class.Circle* %3), !dbg !85
   ret void, !dbg !86
 
-; <label>:17                                      ; preds = %0
-  %18 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
+lpad:                                             ; preds = %entry
+  %4 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
           cleanup, !dbg !87
-  %19 = extractvalue { i8*, i32 } %18, 0, !dbg !87
-  store i8* %19, i8** %4, !dbg !87
-  %20 = extractvalue { i8*, i32 } %18, 1, !dbg !87
-  store i32 %20, i32* %5, !dbg !87
-  call void @_ZdlPv(i8* %9) #7, !dbg !87
-  br label %21, !dbg !87
+  %5 = extractvalue { i8*, i32 } %4, 0, !dbg !87
+  store i8* %5, i8** %exn.slot, !dbg !87
+  %6 = extractvalue { i8*, i32 } %4, 1, !dbg !87
+  store i32 %6, i32* %ehselector.slot, !dbg !87
+  call void @_ZdlPv(i8* %call) #7, !dbg !87
+  br label %eh.resume, !dbg !87
 
-; <label>:21                                      ; preds = %17
-  %22 = load i8** %4, !dbg !88
-  %23 = load i32* %5, !dbg !88
-  %24 = insertvalue { i8*, i32 } undef, i8* %22, 0, !dbg !88
-  %25 = insertvalue { i8*, i32 } %24, i32 %23, 1, !dbg !88
-  resume { i8*, i32 } %25, !dbg !88
+eh.resume:                                        ; preds = %lpad
+  %exn = load i8** %exn.slot, !dbg !88
+  %sel = load i32* %ehselector.slot, !dbg !88
+  %lpad.val = insertvalue { i8*, i32 } undef, i8* %exn, 0, !dbg !88
+  %lpad.val4 = insertvalue { i8*, i32 } %lpad.val, i32 %sel, 1, !dbg !88
+  resume { i8*, i32 } %lpad.val4, !dbg !88
 }
 
 declare i32 @__gxx_personality_v0(...)
@@ -134,36 +136,38 @@ declare i32 @printf(i8*, ...) #4
 
 ; Function Attrs: nounwind uwtable
 define linkonce_odr void @_ZN8CylinderD2Ev(%class.Cylinder* %this) unnamed_addr #5 align 2 {
-  %1 = alloca %class.Cylinder*, align 8
-  store %class.Cylinder* %this, %class.Cylinder** %1, align 8
-  call void @llvm.dbg.declare(metadata !{%class.Cylinder** %1}, metadata !90), !dbg !91
-  %2 = load %class.Cylinder** %1
-  %3 = getelementptr inbounds %class.Cylinder* %2, i32 0, i32 0, !dbg !92
-  %4 = load %class.Circle** %3, align 8, !dbg !92
-  %5 = icmp eq %class.Circle* %4, null, !dbg !92
-  br i1 %5, label %8, label %6, !dbg !92
+entry:
+  %this.addr = alloca %class.Cylinder*, align 8
+  store %class.Cylinder* %this, %class.Cylinder** %this.addr, align 8
+  call void @llvm.dbg.declare(metadata !{%class.Cylinder** %this.addr}, metadata !90), !dbg !91
+  %this1 = load %class.Cylinder** %this.addr
+  %base = getelementptr inbounds %class.Cylinder* %this1, i32 0, i32 0, !dbg !92
+  %0 = load %class.Circle** %base, align 8, !dbg !92
+  %isnull = icmp eq %class.Circle* %0, null, !dbg !92
+  br i1 %isnull, label %delete.end, label %delete.notnull, !dbg !92
 
-; <label>:6                                       ; preds = %0
-  %7 = bitcast %class.Circle* %4 to i8*, !dbg !94
-  call void @_ZdlPv(i8* %7) #7, !dbg !94
-  br label %8, !dbg !94
+delete.notnull:                                   ; preds = %entry
+  %1 = bitcast %class.Circle* %0 to i8*, !dbg !94
+  call void @_ZdlPv(i8* %1) #7, !dbg !94
+  br label %delete.end, !dbg !94
 
-; <label>:8                                       ; preds = %6, %0
+delete.end:                                       ; preds = %delete.notnull, %entry
   ret void, !dbg !96
 }
 
 ; Function Attrs: nounwind uwtable
 define linkonce_odr void @_ZN6CircleC2Ed(%class.Circle* %this, double %r) unnamed_addr #5 align 2 {
-  %1 = alloca %class.Circle*, align 8
-  %2 = alloca double, align 8
-  store %class.Circle* %this, %class.Circle** %1, align 8
-  call void @llvm.dbg.declare(metadata !{%class.Circle** %1}, metadata !97), !dbg !98
-  store double %r, double* %2, align 8
-  call void @llvm.dbg.declare(metadata !{double* %2}, metadata !99), !dbg !100
-  %3 = load %class.Circle** %1
-  %4 = getelementptr inbounds %class.Circle* %3, i32 0, i32 0, !dbg !100
-  %5 = load double* %2, align 8, !dbg !100
-  store double %5, double* %4, align 8, !dbg !100
+entry:
+  %this.addr = alloca %class.Circle*, align 8
+  %r.addr = alloca double, align 8
+  store %class.Circle* %this, %class.Circle** %this.addr, align 8
+  call void @llvm.dbg.declare(metadata !{%class.Circle** %this.addr}, metadata !97), !dbg !98
+  store double %r, double* %r.addr, align 8
+  call void @llvm.dbg.declare(metadata !{double* %r.addr}, metadata !99), !dbg !100
+  %this1 = load %class.Circle** %this.addr
+  %radius = getelementptr inbounds %class.Circle* %this1, i32 0, i32 0, !dbg !100
+  %0 = load double* %r.addr, align 8, !dbg !100
+  store double %0, double* %radius, align 8, !dbg !100
   ret void, !dbg !100
 }
 

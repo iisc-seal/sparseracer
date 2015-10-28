@@ -31,13 +31,15 @@ namespace MemInstrument {
 
     Type *Void = Type::getVoidTy(*Context);
     const Type *SBP = Type::getInt8PtrTy(*Context);
-    std::string allocInstrFnName("_Z8mopAllociiPcS_S_");
-    std::string dallocInstrFnName("_Z10mopDeallociiPcS_S_");
-    MAllocFn = M.getOrInsertFunction("mopAlloc", Void,
+    std::string allocInstrFnName("_Z8mopAllocliPcS_S_");
+    std::string dallocInstrFnName("_Z10mopDeallocliPcS_S_");
+    //std::string allocInstrFnName("mopAlloc");
+    //std::string dallocInstrFnName("mopDealloc");
+    MAllocFn = M.getOrInsertFunction(allocInstrFnName, Void,
 				     IntptrTy, Type::getInt64Ty(*Context), 
 				     SBP, SBP, SBP,
 				     (Type*)0);
-    MDallocFn = M.getOrInsertFunction("mopDealloc", Void,
+    MDallocFn = M.getOrInsertFunction(dallocInstrFnName, Void,
 				      IntptrTy, Type::getInt64Ty(*Context), 
 				      SBP, SBP, SBP,
 				      (Type*)0);
@@ -195,10 +197,10 @@ namespace MemInstrument {
 					    std::string fName, const TargetLibraryInfo *TLI,
 					    IRBuilder<> IRB) {
 
-    // Original->print(llvm::outs());
-    // llvm::outs() << "\n";
-    // Succ->print(llvm::outs());
-    // llvm::outs() << "\n";
+    //Original->print(llvm::outs());
+    //llvm::outs() << "\n";
+    //Succ->print(llvm::outs());
+    //llvm::outs() << "\n";
 
     Type *AllocatedType = nullptr;
     if(BitCastInst* BCI = dyn_cast<BitCastInst>(Succ))

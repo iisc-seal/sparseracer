@@ -42,9 +42,11 @@ namespace MemInstrument {
 
   public:
     static char ID; // Pass identification, replacement for typeid
-  FInstrument() : ModulePass(ID) {ID = 0; readBlacklist();}
+  FInstrument() : ModulePass(ID) {ID = 0; 
+      //readBlacklist();
+    }
     bool runOnModule(Module &M) override;
-    void readBlacklist();
+    //void readBlacklist();
     void instrumentEntry(Function *F);
     void instrumentExits(Function *F, std::vector<BasicBlock*> exitBlocks);
     void getAnalysisUsage(AnalysisUsage &AU) const override;

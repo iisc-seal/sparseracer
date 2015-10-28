@@ -33,8 +33,9 @@ namespace MemInstrument {
     //                               UIntPtr, Type::getInt32Ty(*Context),Type::getInt32Ty(*Context),
     //                               (Type*)0);
     const Type *SBP = Type::getInt8PtrTy(*Context);
-    std::string mopName("_Z13mopInstrumentiiPcS_S_");
-    MopFn = M.getOrInsertFunction("mopInstrument", Void,
+    std::string mopName("_Z13mopInstrumentliPcS_S_");
+    //std::string mopName("mopInstrument");
+    MopFn = M.getOrInsertFunction(mopName, Void,
 				  IntptrTy, Type::getInt64Ty(*Context),
 				  SBP, SBP, SBP,
 				  (Type*)0);
@@ -47,7 +48,7 @@ namespace MemInstrument {
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       //if (F->isDeclaration()) continue;
       std::string fName = F->getName().str();
-      
+      //llvm::outs() << "Processing " << fName << "\n";
       std::string dirName = "";
 
       // Try to abort early based on the directories to be instrumented
@@ -217,25 +218,23 @@ namespace MemInstrument {
 
       
       // llvm::outs() << "Considering " << fName << " in " << getFileName(BI) << " \n";
-      if(dName.compare("")==0)
-	if(!shouldInstrumentDirectory(getDirName(BI))  &&
-	  // fName.find("assign_assuming_AddRef") == std::string::npos)
-	 //	  && fName.find("CheckAcquire") == std::string::npos )
-	   !shouldInstrumentFile(getFileName(BI)))
-	 continue;
+      // if(dName.compare("")==0)
+      // 	if(!shouldInstrumentDirectory(getDirName(BI))  &&
+      // 	   !shouldInstrumentFile(getFileName(BI)))
+      // 	 continue;
       
-      // llvm::outs() << "Processing " << fName << " in " << getFileName(BI) << " \n";
-      // llvm::outs() << "shouldInstrumentFile " << shouldInstrumentFile(getFileName(BI)) << " \n";
+      //llvm::outs() << "Processing " << fName << " in " << getFileName(BI) << " \n";
+      //llvm::outs() << "shouldInstrumentFile " << shouldInstrumentFile(getFileName(BI)) << " \n";
       if (isa<LoadInst>(BI)) {
 	//errs() << "<";
 	// Instrument LOAD here
-	//llvm::outs() << "\n Load: " << getDirName(BI) << "\n";
+	//llvm::outs() << "\n Load: " << *BI << "\n";
 	LoadStoreInstrument::Instrument(BI, false, fName);
       } else {
 	if (isa<StoreInst>(BI)) {
 	  //errs() << ">";
 	  // Instrument STORE here
-	  // llvm::outs() << "\n Store: " << *BI << "\n";
+	  //llvm::outs() << "\n Store: " << *BI << "\n";
 	  LoadStoreInstrument::Instrument(BI, true, fName);
 	} else {
 	  //errs() << " ";

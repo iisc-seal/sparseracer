@@ -72,15 +72,17 @@ namespace MemInstrument {
     // PrintFunc = M.getOrInsertFunction("printf", Type::getInt32Ty(*Context), SBP, true, (Type*)0);
     // Function *Printf = dyn_cast<Function>(PrintFunc);
     // Printf->setCallingConv(CallingConv::C);
-    // errs() << "Runs the thing! \n";
+    llvm::outs() << "Running FInstrument............. \n";
     // errs() << Printf->getName() << "\n";
       
     std::vector<Type*> Params;
     Params.push_back(PointerType::getUnqual(Type::getInt8Ty(*Context))); // fName as the first
     Params.push_back(Type::getInt32Ty(*Context));  // enter/exit bit as the second
     // Get the logger function (takes an i8* followed by an int)
-    Logger = M.getOrInsertFunction("fInstrument",
+    Logger = M.getOrInsertFunction("_Z11fInstrumentPci",
 				   FunctionType::get(Type::getVoidTy(*Context), Params, false));
+    //Logger = M.getOrInsertFunction("fInstrument",
+    //FunctionType::get(Type::getVoidTy(*Context), Params, false));
     //errs() << PrintF->getName() << "\n";
 
     std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
@@ -88,7 +90,7 @@ namespace MemInstrument {
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       std::string FName = F->getName().str();
       if (F->isDeclaration()) continue;
-      //llvm::outs() << FName << "\n";
+      llvm::outs() << "Instrumenting function " << FName << "\n";
       
       // if(skipped.find(FName) != skipped.end() && (wList.find(FName) == wList.end())){
       // 	//llvm::outs() << "Skipping already skipped function " << FName << "\n";
@@ -229,7 +231,7 @@ namespace MemInstrument {
       // }
 
       FInstrument::instrumentEntry(F);
-
+      //llvm::outs() << "Instrumenting " << FName << "\n";
       // if(demangled.find("nsXBLBinding::InstallImplementation") != std::string::npos){
       // 	llvm::outs() << "After Entry: \n";
       // 	for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I)
