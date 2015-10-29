@@ -1062,10 +1062,25 @@ int TraceParser::parse(UAFDetector &detector) {
 									}
 
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 									blockdetails.enqSet.insert(opCount);
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -1914,9 +1929,25 @@ it++) {
 									}
 
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -1944,9 +1975,25 @@ it++) {
 									}
 
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
 									detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -2399,7 +2446,6 @@ it++) {
 									assert(previousOpInTask.taskID.compare(task) == 0);
 #endif
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 								}
@@ -2828,9 +2874,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -3210,9 +3272,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -3625,9 +3703,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -4108,9 +4202,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -4552,6 +4662,7 @@ it++) {
 											existingEntry.printBlockDetails();
 											return -1;
 										}
+										existingEntry.nextBlockInThread = blockCount;
 										detector.blockIDMap.erase(detector.blockIDMap.find(blockIDOfPreviousOp));
 										detector.blockIDMap[blockIDOfPreviousOp] = existingEntry;
 									}
@@ -4586,9 +4697,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -5108,9 +5235,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -5547,9 +5690,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -5894,9 +6053,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;
@@ -6241,9 +6416,25 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
-									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
+
+									if (detector.blockIDMap.find(previousOpInThread.blockID) == detector.blockIDMap.end()) {
+										cout << "ERROR: Cannot find entry for block " << previousOpInThread.blockID << " in blockIDMap\n";
+										cout << "ERROR: Block contains op " << previousOpInThread.opID << "\n";
+										return -1;
+									} else {
+										existingEntry = detector.blockIDMap[previousOpInThread.blockID];
+#ifdef SANITYCHECK
+										assert(existingEntry.threadID == threadID);
+#endif
+										if (existingEntry.lastOpInBlock != previousOpInThread.opID) {
+											existingEntry.lastOpInBlock = previousOpInThread.opID;
+										}
+										existingEntry.nextBlockInThread = blockCount;
+										detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInThread.blockID));
+										detector.blockIDMap[previousOpInThread.blockID] = existingEntry;
+									}
 
 									blockdetails.firstOpInBlock = opCount;
 									blockdetails.prevBlockInThread = previousOpInThread.blockID;

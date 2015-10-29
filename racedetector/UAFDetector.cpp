@@ -648,7 +648,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 					if (addEdgeRetValue == 1) {
 						flag = true;
 //#ifdef GRAPHDEBUG
-						cout << "LOOP-PO edge (" << nodeJ << ", " << nodeI << ") -- #op-edges "   << graph->numOfOpEdges
+						cout << "LOOP-PO edge (" << nodeJ << ", " << nodeI << ") -- block edge (" << b2 << ", " << b1 << ") -- #op-edges "   << graph->numOfOpEdges
 							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 //#endif
 #ifdef GRAPHDEBUGFULL
