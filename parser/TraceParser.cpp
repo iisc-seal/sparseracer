@@ -1062,6 +1062,7 @@ int TraceParser::parse(UAFDetector &detector) {
 									}
 
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -1913,6 +1914,7 @@ it++) {
 									}
 
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -2397,6 +2399,7 @@ it++) {
 									assert(previousOpInTask.taskID.compare(task) == 0);
 #endif
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 								}
@@ -2825,6 +2828,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -3206,6 +3210,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -3620,6 +3625,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -4102,6 +4108,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -4579,6 +4586,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -5100,6 +5108,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -5538,6 +5547,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -5884,6 +5894,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
@@ -6230,6 +6241,7 @@ it++) {
 
 									}
 									existingEntry.nextBlockInTask = blockCount;
+									existingEntry.nextBlockInThread = blockCount;
 									detector.blockIDMap.erase(detector.blockIDMap.find(previousOpInTask.blockID));
 									detector.blockIDMap[previousOpInTask.blockID] = existingEntry;
 
