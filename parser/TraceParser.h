@@ -8,7 +8,8 @@
 #include <fstream>
 #include <racedetector/UAFDetector.h>
 #include <logging/Logger.h>
-using namespace std;
+
+#include <config.h>
 
 #ifndef TRACEPARSER_H_
 #define TRACEPARSER_H_
@@ -19,24 +20,28 @@ using namespace std;
  */
 class TraceParser {
 public:
-	TraceParser(char* traceFileName, Logger &logger);
+	TraceParser(string traceFileName);
 	virtual ~TraceParser();
 
+	std::string traceName;
+
 	// checks whether each line from the trace file is a valid operation
-	int parse(UAFDetector &detector, Logger &logger);
+	int parse(UAFDetector &detector);
 
 
 private:
 	ifstream traceFile;
 
-	string opRegEx,		// regex for all valid operations
-		   intRegEx, 	// regex for integers (used as threadIDs)
-		   hexRegEx,	// regex for hexadecimal numbers (used as taskID, memory address, etc)
-		   prefixRegEx, // regex for prefix (if any) of each line in the trace file
-		   finalRegEx;  // regex for a valid line in the trace file
+	std::string opRegEx;	 // regex for all valid operations
+	std::string posIntRegEx;
+	std::string intRegEx; 	 // regex for integers (used as threadIDs)
+	std::string hexRegEx;	 // regex for hexadecimal numbers (used as taskID, memory address, etc)
+	std::string prefixRegEx; // regex for prefix (if any) of each line in the trace file
+	std::string suffixRegEx; // regex for suffix (if any) of each line in the trace file
+	std::string finalRegEx;  // regex for a valid line in the trace file
 
 	long long opCount;		// no of operations in the trace
-	long long blockCount;	// no of blocks in the trace
+	long long nodeCount;	// no of nodes in the trace/graph
 };
 
 #endif /* TRACEPARSER_H_ */

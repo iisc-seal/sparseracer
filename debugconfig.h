@@ -1,8 +1,9 @@
 #define TRACEDEBUG
-#define GRAPHDEBUG
+//#define GRAPHDEBUG
 //#define ACCESS
-#define ADDITIONS
+//#define ADDITIONS
 //#define LOCKS
 //#define GRAPHDEBUGFULL
 //#define HACKS
 //#define DEBUGLINES
+#define PERMIT
