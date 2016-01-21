@@ -1,5 +1,5 @@
 #define TRACEDEBUG
-//#define GRAPHDEBUG
+#define GRAPHDEBUG
 //#define ACCESS
 //#define ADDITIONS
 //#define LOCKS

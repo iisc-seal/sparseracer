@@ -5,115 +5,169 @@
  *      Author: shalini
  */
 
-#include <racedetector/HBGraph.h>
+#include <racedetector/UAFDetector.h>
 #include <iostream>
 #include <list>
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
+typedef std::multiset<HBGraph::adjListNode>::iterator nodeIterator;
 
 HBGraph::HBGraph(){
-	totalNodes = 0;
+	totalOps = 0;
+	numOfOpEdges = 0;
+	opIDMap = map<IDType, UAFDetector::opDetails>();
+	nodeIDMap = map<IDType, UAFDetector::setOfOps>();
+
+	opAdjList = std::map<IDType, adjListType*>();
+	opAdjMatrix = NULL;
+	opEdgeTypeMatrix = NULL;
 }
 
-HBGraph::HBGraph(long long countOfOps, long long countOfNodes) {
+HBGraph::HBGraph(IDType countOfOps,
+		map<IDType, UAFDetector::opDetails> opMap,
+		map<IDType, UAFDetector::setOfOps> nodeMap) {
 	totalOps = countOfOps;
-	totalNodes = countOfNodes;
+	numOfOpEdges = 0;
 
-	adjMatrix = (bool**) malloc(sizeof(bool*) * (totalNodes+1));
-	if (adjMatrix == NULL) {
-		cout << "ERROR: Cannot allocate memory for adjMatrix\n";
-	}
-	adjList = new HBGraph::adjListType [totalNodes+1];
+	opIDMap = opMap;
+	nodeIDMap = nodeMap;
 
-	for (long long i=1; i <= totalNodes; i++) {
-		adjList[i].head = NULL;
-		adjMatrix[i] = (bool*) calloc((totalNodes+1) , sizeof(bool));
+	opAdjMatrix = (bool**) malloc(sizeof(bool*) * (totalOps+1));
+	opEdgeTypeMatrix = (bool**) malloc(sizeof(bool*) * (totalOps+1));
+
+	if (opAdjMatrix == NULL) {
+		cout << "ERROR: Cannot allocate memory for opAdjMatrix\n";
 	}
-	if (adjMatrix[1][1] == true) {
-//	if (matrixElement(0,0) == true) {
-		cout << "True\n";
-	} else if (adjMatrix[1][1] == false) {
-//	} else if (matrixElement(0,0) == false) {
-		cout << "False\n";
-	} else {
-		cout << "Neither True nor False\n";
+	if (opEdgeTypeMatrix == NULL) {
+		cout << "ERROR: Cannot allocate memory for opEdgeTypeMatrix\n";
 	}
 
+	opAdjList = std::map<IDType, adjListType*>();
+
+	for (IDType i=1; i <= totalOps; i++) {
+		opAdjMatrix[i] = (bool*) calloc((totalOps+1) , sizeof(bool));
+		opEdgeTypeMatrix[i] = (bool*) calloc((totalOps+1), sizeof(bool));
+	}
 }
 
 HBGraph::~HBGraph() {
 }
 
-int HBGraph::addSingleEdge(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp) {
+int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, bool edgeType) {
 
-	assert(sourceBlock >= 1 && sourceBlock <= totalNodes);
-	assert(destinationBlock >= 1 && destinationBlock <= totalNodes);
-	assert(sourceOp >= 1 && sourceOp <= totalOps);
-	assert(destinationOp >= 1 && destinationOp <= totalOps);
+#ifdef SANITYCHECK
+	assert(1 <= sourceNode      && sourceNode <= totalOps);
+	assert(1 <= destinationNode && destinationNode <= totalOps);
+	assert(sourceNode != destinationNode);
+#endif
 
-	if (opEdgeExists(destinationBlock, sourceBlock, destinationOp, sourceOp) == 1) {
-		cout << "ERROR: Edge exists from block " << destinationBlock << " op " << destinationOp << " to block " << sourceBlock << " op " << sourceOp << endl;
-		cout << "We are trying to edge from block " << sourceBlock << " op " << sourceOp << " to block " << destinationBlock << " op " << destinationOp << endl;
-		return -1;
-	}
-	if (sourceBlock == destinationBlock && sourceOp == destinationOp) {
-		cout << "ERROR: Adding self-loop edge on " << sourceOp << endl;
-		return -1;
-	}
-	int retValue = opEdgeExists(sourceBlock, destinationBlock, sourceOp, destinationOp);
-	if (retValue == 0) {
-		adjMatrix[sourceBlock][destinationBlock] = true;
-			
-		struct adjListNode* destNode = createNewNode(destinationBlock, sourceOp, destinationOp);
-		destNode->next = adjList[sourceBlock].head;
-		adjList[sourceBlock].head = destNode;
+	int retOpValue = opEdgeExists(sourceNode, destinationNode);
+	if (retOpValue == 0) {
+#ifdef SANITYCHECK
+		if (opEdgeExists(destinationNode, sourceNode) == 1) {
+			cout << "ERROR: Edge exists from " << destinationNode << " to " << sourceNode 	   << endl;
+			cout << "Trying to add edge from " << sourceNode		<< " to " << destinationNode << endl;
+			return -1;
+		}
+
+#endif
+
+		opAdjMatrix[sourceNode][destinationNode] = true;
+		opEdgeTypeMatrix[sourceNode][destinationNode] = edgeType;
+
+		if (opAdjList.find(sourceNode) == opAdjList.end()) {
+			adjListNode* newNode = new adjListNode(destinationNode);
+			adjListType* newList = new adjListType;
+			newList->head = newNode;
+			opAdjList[sourceNode] = newList;
+		} else {
+			adjListNode* newNode = new adjListNode(destinationNode);
+			newNode->next = opAdjList[sourceNode]->head;
+			opAdjList[sourceNode]->head = newNode;
+		}
+
+		numOfOpEdges++;
+
 		return 1;
-	} else if (retValue == 1)
+	} else if (retOpValue == 1)
 		return 0;
 	else
 		return -1;
 
-	return 0;
+	return -1;
 }
 
-int HBGraph::opEdgeExists(long long sourceBlock, long long destinationBlock, long long sourceOp, long long destinationOp) {
+// currNode is the adjListNode containing destinationOp in the adjacency list of sourceOp
+int HBGraph::removeOpEdge(IDType sourceNode, IDType destinationNode) {
+#ifdef SANITYCHECK
+	assert(1 <= sourceNode && sourceNode <= totalOps);
+	assert(1 <= destinationNode && destinationNode <= totalOps);
+#endif
 
-	assert(adjMatrix[sourceBlock][destinationBlock] == true || adjMatrix[sourceBlock][destinationBlock] == false);
-	// Checking if adjMatrix and adjList are in sync.
-	if (!adjMatrix[sourceBlock][destinationBlock] && !opEdgeExistsinList(sourceBlock, destinationBlock, sourceOp, destinationOp))
-		return 0;
-	else if (!adjMatrix[sourceBlock][destinationBlock]) {
-		cout << "ERROR: Edge exists in adjList, not in adjMatrix: " << sourceBlock << " -> " << destinationBlock << endl;
-		return -1;
-	} else if (!opEdgeExistsinList(sourceBlock, destinationBlock, sourceOp, destinationOp)) {
-		cout << "ERROR: Edge exists in adjMatrix, not in adjList: " << sourceOp << " -> " << destinationOp << endl;
-		return -1;
-	} else
-		return 1;
-}
-
-void HBGraph::printGraph(bool flag) {
-//	cout << endl << totalNodes;
-	if (flag) {
-	cout << endl << "Matrix";
-	for (long long i=1; i <= totalNodes; i++) {
-		cout << endl << i << ": ";
-		for (long long j=1; j <= totalNodes; j++) {
-//			cout << matrixElement(i, j) << " ";
-			cout << adjMatrix[i][j] << " ";
-		}
-	}
-	cout << "\n";
-	}
-
-//	cout << "List";
-	for (long long i=1; i <= totalNodes; i++) {
-		cout << endl << i << ": ";
-		struct adjListNode* currNode = adjList[i].head;
+	if (opAdjList.find(sourceNode) != opAdjList.end()) {
+		adjListNode* currNode = opAdjList[sourceNode]->head;
+		adjListNode* prevNode = NULL;
 		while (currNode != NULL) {
-			cout << currNode->sourceOp << "->" << currNode->destinationOp << "   ";
+			if (currNode->nodeID == destinationNode) {
+				if (!prevNode) {
+					opAdjList[sourceNode]->head = currNode->next;
+					delete currNode;
+					break;
+				} else {
+					prevNode->next = currNode->next;
+					delete currNode;
+					break;
+				}
+			}
+			prevNode = currNode;
 			currNode = currNode->next;
 		}
 	}
+
+	opAdjMatrix[sourceNode][destinationNode] = false;
+	opEdgeTypeMatrix[sourceNode][destinationNode] = false;
+	numOfOpEdges--;
+	return 0;
+}
+
+int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode) {
+#ifdef SANITYCHECK
+	assert(sourceNode > 0);
+	assert(destinationNode > 0);
+	if (sourceNode == destinationNode) {
+		cout << "ERROR: sourceNode == destinationNode: " << sourceNode << "\n";
+	}
+	assert(sourceNode != destinationNode);
+	assert(opAdjMatrix[sourceNode][destinationNode] == true || opAdjMatrix[sourceNode][destinationNode] == false);
+	assert(opAdjMatrix[sourceNode][destinationNode] == opEdgeExistsinList(sourceNode, destinationNode));
+#endif
+
+	if (opAdjMatrix[sourceNode][destinationNode])
+		return 1;
+	else
+		return 0;
+
+}
+
+void HBGraph::printGraph() {
+
+	cout << "\nOp Edges:";
+	for (IDType i=1; i <= totalOps; i++) {
+		cout << endl << i << ": ";
+		if (opAdjList.find(i) == opAdjList.end())
+			cout << "";
+		else {
+			adjListNode* currNode = opAdjList[i]->head;
+			while (currNode != NULL) {
+				cout << currNode->nodeID << " ";
+				currNode = currNode->next;
+			}
+		}
+	}
 	cout << "\n";
+}
+
+bool HBGraph::isSTEdge(IDType sourceNode, IDType destinationNode) {
+	return opEdgeTypeMatrix[sourceNode][destinationNode];
 }

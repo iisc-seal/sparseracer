@@ -1,4 +1,11 @@
 racedetector/HBGraph.d: ../racedetector/HBGraph.cpp \
- ../racedetector/HBGraph.h
+ ../racedetector/UAFDetector.h ../config.h ../debugconfig.h \
+ ../logging/Logger.h
 
-../racedetector/HBGraph.h:
+../racedetector/UAFDetector.h:
+
+../config.h:
+
+../debugconfig.h:
+
+../logging/Logger.h:

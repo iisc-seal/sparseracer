@@ -13,7 +13,6 @@ MultiStack::MultiStack() {
 	bottom.opID = -1;
 	bottom.opType = "";
 	bottom.taskID = "";
-	bottom.blockID = -1;
 	bottom.threadID = -1;
 
 	stack.push_back(bottom);

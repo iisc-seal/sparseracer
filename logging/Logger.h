@@ -15,10 +15,11 @@ using namespace std;
 
 class Logger {
 public:
-	Logger(string fileName);
+	void init(string fileName);
+	Logger();
 	virtual ~Logger();
 
-//	void writeLog(string message);
+	void writeLog(string message);
 	void writeLog();
 	void initLog();
 
