@@ -343,13 +343,11 @@ int UAFDetector::addEdges() {
 			graph->printGraph();
 #endif
 
-#if 0
 		// TRANS-ST/MT
 #ifdef GRAPHDEBUG
 		cout << "Adding Trans-ST/MT edges\n";
 #endif
 		retValue = addTransSTOrMTEdges();
-//		cout << "Transitive with criterion";
 		if (retValue == 1) edgeAdded = true;
 		else if (retValue == -1) {
 			cout << "ERROR: While adding TRANS-ST/MT edges\n";
@@ -358,7 +356,6 @@ int UAFDetector::addEdges() {
 			cout << "ERROR: Unknown return value from addTransSTOrMTEdges()\n";
 			return -1;
 		}
-#endif
 
 		if (!edgeAdded) // If no edges were added in this iteration, stop.
 			break;
@@ -2382,79 +2379,50 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 		return 0;
 }
 
-#if 0
 int UAFDetector::addTransSTOrMTEdges() {
 	bool flag = false;
 
 	// Adding TRANS-ST/MT Edges
-
-	for (map<IDType, UAFDetector::blockDetails>::iterator it = blockIDMap.begin(); it != blockIDMap.end(); it++) {
-		IDType blockI = it->first;
-
+	std::set<IDType> processedNodes;
+	for (std::map<IDType, UAFDetector::opDetails>::iterator oIt = opIDMap.begin();
+			oIt != opIDMap.end(); oIt++) {
+		IDType opI = oIt->first;
 #ifdef SANITYCHECK
-		assert(blockI > 0);
+		assert(opI > 0);
 #endif
+		if (opIDMap.find(opI) == opIDMap.end()) {
+			cout << "ERROR: Cannot find entry for op " << opI << " in opIDMap\n";
+			return -1;
+		}
+		IDType nodeI = opIDMap[opI].nodeID;
+		if (nodeI <= 0) {
+			cout << "ERROR: Cannot find node of op " << opI << "\n";
+			return -1;
+		}
+		if (processedNodes.find(nodeI) != processedNodes.end()) continue;
+		processedNodes.insert(nodeI);
 
-		for (std::multiset<HBGraph::adjListNode>::iterator blockIIt = graph->blockAdjList[blockI].begin();
-				blockIIt != graph->blockAdjList[blockI].end(); blockIIt++) {
-			IDType blockK = blockIIt->blockID;
+		IDType threadI = opIDMap[opI].threadID;
 
-#ifdef SANITYCHECK
-			if (blockK <= 0) {
-				cout << "ERROR: Invalid block edge from " << blockI << endl;
-				return -1;
-			}
-#endif
+		// If there are no edges from op, skip
+		if (graph->opAdjList.find(nodeI) == graph->opAdjList.end()) continue;
+		HBGraph::adjListNode* currNode1 = graph->opAdjList[nodeI]->head;
+		for (; currNode1 != NULL; currNode1 = currNode1->next) {
+			IDType nodeK = currNode1->nodeID;
+			// Find thread of nodeK
+			IDType opK = *(nodeIDMap[nodeK].opSet.begin());
+			IDType threadK = opIDMap[opK].threadID;
+			bool edgeType1 = graph->isSTEdge(nodeI, nodeK);
 
-			if (blockI == blockK) {
-#ifdef GRAPHDEBUGFULL
-				cout << "DEBUG: TRANS-edge: blockI: " << blockI << " blockK: " << blockK << "\n";
-				cout << "DEBUG: TRANS-edge: Inferring edge to same block\n";
-#endif
-				continue;
-			}
+			if (graph->opAdjList.find(nodeK) == graph->opAdjList.end()) continue;
+			HBGraph::adjListNode* currNode2 = graph->opAdjList[nodeK]->head;
+			for (; currNode2 != NULL; currNode2 = currNode2->next) {
+				IDType nodeJ = currNode2->nodeID;
+				// Find thread of nodeJ
+				IDType opJ = *(nodeIDMap[nodeJ].opSet.begin());
+				IDType threadJ = opIDMap[opJ].threadID;
+				bool edgeType2 = graph->isSTEdge(nodeK, nodeJ);
 
-			for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
-					blockKIt != graph->blockAdjList[blockK].end(); blockKIt++) {
-				IDType blockJ = blockKIt->blockID;
-
-#ifdef SANITYCHECK
-				if (blockJ <= 0) {
-					cout << "ERROR: Invalid block edge from " << blockK << endl;
-					return -1;
-				}
-#endif
-
-				// If blockK == blockJ, we are trying to infer the same edges from blockI to blockK/blockJ
-				// Redundant
-				// Similarly, other cases
-				if (blockI == blockK || blockK == blockJ || blockI == blockJ) {
-#ifdef GRAPHDEBUGFULL
-					cout << "DEBUG: TRANS-edge: blockI: " << blockI << " blockK: " << blockK
-						 << " blockJ: " << blockJ << "\n";
-					cout << "DEBUG: TRANS-edge: Inferring edge to same block\n";
-#endif
-					continue;
-				}
-
-				IDType threadI = it->second.threadID;
-				IDType threadK = blockIDMap[blockK].threadID;
-				IDType threadJ = blockIDMap[blockJ].threadID;
-
-#ifdef SANITYCHECK
-				if (threadI < 0) {
-					cout << "ERROR: Cannot find thread ID of block " << blockI << endl;
-					return -1;
-				}
-				if (threadJ < 0) {
-					cout << "ERROR: Cannot find thread JD of block " << blockJ << endl;
-					return -1;
-				}
-				if (threadK < 0) {
-					cout << "ERROR: Cannot find thread KD of block " << blockK << endl;
-					return -1;
-				}
-#endif
 				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
 #ifdef GRAPHDEBUGFULL
 					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
@@ -2464,285 +2432,34 @@ int UAFDetector::addTransSTOrMTEdges() {
 					continue;
 				}
 
-				IDType tempOp1, tempOp2;
-				tempOp1 = blockIDMap[blockI].lastOpInBlock;
-				tempOp2 = blockIDMap[blockJ].firstOpInBlock;
-
-#ifdef SANITYCHECK
-				if (tempOp1 <= 0) {
-					cout << "ERROR: Cannot find last op of block " << blockI << endl;
-					return -1;
-				}
-				if (tempOp2 <= 0) {
-					cout << "ERROR: Cannot find first op of block " << blockJ << endl;
-					return -1;
-				}
-#endif
-
-				IDType nodeTempOp1 = opIDMap[tempOp1].nodeID;
-				IDType nodeTempOp2 = opIDMap[tempOp2].nodeID;
-				if (nodeTempOp1 <= 0) {
-					cout << "ERROR: Invalid node ID for op " << tempOp1 << "\n";
-					return -1;
-				}
-				if (nodeTempOp2 <= 0) {
-					cout << "ERROR: Invalid node ID for op " << tempOp2 << "\n";
-					return -1;
-				}
-				int retValue = graph->opEdgeExists(nodeTempOp1, nodeTempOp2, blockI, blockJ);
-				if (retValue == 1) {
-#ifdef GRAPHDEBUGFULL
-					cout << "DEBUG: TRANS-edge: Edge already exists from blockI: " << blockI
-						 << " (node " << nodeTempOp1 << ") to blockJ: " << blockJ << " (node "
-						 << nodeTempOp2 << ")\n";
+				bool transEdgeType;
+				if (threadI != threadJ)
+					transEdgeType = false;
+				else if (edgeType1 && edgeType2)
+					transEdgeType = true;
+				else {
+					// threadI == threadJ and the contributing edges are not ST
+//							validTransEdge = false;
+					// Not a valid transitive edge
+#ifdef GRAPHDEBUG
+					cout << "Not a valid transitive edge " << nodeI << ", " << nodeJ << "\n";
 #endif
 					continue;
 				}
-				else if (retValue == -1) {
-					cout << "ERROR: While checking node edge from " << nodeTempOp1 << " to " << nodeTempOp2 << endl;
-					return -1;
-				}
 
-				IDType opI, opJ, firstOp;
-				int addEdgeRetValue;
-				int edgeType1, edgeType2; // used to check the transitivity criterion
-				opI = blockIDMap[blockI].lastOpInBlock;
-				firstOp = blockIDMap[blockI].firstOpInBlock;
-#ifdef SANITYCHECK
-				if (opI <= 0) {
-					cout << "ERROR: Cannot find last op of block " << blockI << endl;
-					return -1;
-				}
-				if (firstOp <= 0) {
-					cout << "ERROR: Cannot find first op of block " << blockI << endl;
-					return -1;
-				}
-#endif
-				IDType nodeI = 0;
-				IDType prevNodeI = 0;
-
-//				bool validTransEdge = true;
-				while (opI > 0 && opI >= firstOp) {
-					// Find the earliest op in blockK such that there exists edge (opI, op)
-					IDType minOpInK = -1, minNodeInK = -1;
-					bool edgeTypeOfMinNodeInK;
-					opJ = -1;
-
-					nodeI = opIDMap[opI].nodeID;
-					if (nodeI <= 0) {
-						cout << "ERROR: Invalid nodeID for op " << opI << "\n";
-						return -1;
-					}
-
-					if (prevNodeI != 0) {
-						if (prevNodeI == nodeI) {
-							opI = opIDMap[opI].prevOpInBlock;
-							continue;
-						}
-					}
-					prevNodeI = nodeI;
-
-					// Loop through adjacency list of opI
-					HBGraph::adjListNode destNode(blockK);
-					std::pair<std::multiset<HBGraph::adjListNode>::iterator, std::multiset<HBGraph::adjListNode>::iterator> ret =
-							graph->opAdjList[nodeI].equal_range(destNode);
-
-					if (ret.first != ret.second) {
-						IDType count = 0;
-						for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first;
-								retIt != ret.second; retIt++) {
-							count++;
-							IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
-#ifdef EXTRADEBUGINFO
-							cout << "DEBUG: opDest = " << opDest << "\n";
-#endif
-							if (minOpInK == -1 || minOpInK > opDest) {
-								minOpInK = opDest;
-								minNodeInK = retIt->nodeID;
-								edgeTypeOfMinNodeInK = graph->isSTEdge(nodeI, minNodeInK);
-							}
-						}
-
-						if (count > 1) {
-							graph->removeOpEdgesToBlock(ret.first, ret.second, nodeI, blockK);
-
-							if (minOpInK > 0) {
-								if (minNodeInK <= 0) {
-									cout << "ERROR: Invalid node ID for op " << minOpInK << "\n";
-									return -1;
-								}
-								// Restore the edge from opI to the earliest op in blockK
-								addEdgeRetValue = graph->addOpEdge(nodeI, minNodeInK, edgeTypeOfMinNodeInK);
-								if (addEdgeRetValue == 1) {
-#ifdef GRAPHDEBUGFULL
-									cout << "Restored edge from " << nodeI
-										 << " to " << minNodeInK << "\n";
-#endif
-								} else if (addEdgeRetValue == 0) {
-#ifdef GRAPHDEBUGFULL
-									cout << "Did not add restoration edge from "
-										 << nodeI << " to " << minNodeInK << "\n";
-#endif
-								} else {
-									cout << "ERROR: While adding restoration edge from "
-										 << nodeI << " to " << minNodeInK << "\n";
-									return -1;
-								}
-							}
-#ifdef PRINTGRAPH
-							graph->printGraph();
-#endif
-						} else if (count < 1) {
-							cout << "ERROR: While finding edges from op " << opI
-								 << " to ops in block " << blockK << "\n";
-							cout << "ERROR: equal_range() gives a non-empty range, "
-								 << " distance() gives count < 1\n";
-							return -1;
-						}
-					} else {
-						minOpInK = -1;
-					}
-
-					if (minOpInK <= 0) {
-#ifdef GRAPHDEBUGFULL
-						cout << "DEBUG: Did not find any edge from op " << opI
-							 << " (node " << nodeI << ")"
-							 << " to any ops in block " << blockK << "\n";
-#endif
-						opI = opIDMap[opI].prevOpInBlock;
-						continue;
-					}
-
-					edgeType1 = edgeTypeOfMinNodeInK;
-
-					IDType nodeTempOp = 0;
-					IDType prevNodeTempOp = 0;
-
-					for (IDType tempOp = minOpInK;
-							tempOp > 0 && tempOp <= blockIDMap[blockK].lastOpInBlock;
-							tempOp = opIDMap[tempOp].nextOpInBlock) {
-						// Find the earliest op in blockJ such that there exists edge (tempOp, op)
-						IDType minOpInJ = -1, minNodeInJ = -1;
-						bool edgeTypeOfMinNodeInJ;
-
-						nodeTempOp = opIDMap[tempOp].nodeID;
-						if (nodeTempOp <= 0) {
-							cout << "ERROR: Invalid node ID for op " << tempOp << "\n";
-							return -1;
-						}
-
-						// The loop steps through the nextOp map of the block. Now that we have ops merged into nodes,
-						// the loop should really be stepping through nextNode map. To take care of that, I record the
-						// previous node analyzed.
-						if (prevNodeTempOp != 0) {
-							if (prevNodeTempOp == nodeTempOp)
-								continue;
-						}
-						prevNodeTempOp = nodeTempOp;
-
-						// Loop through adjacency list of tempOp
-						HBGraph::adjListNode destNode(blockJ);
-						std::pair<std::multiset<HBGraph::adjListNode>::iterator, std::multiset<HBGraph::adjListNode>::iterator> ret =
-								graph->opAdjList[nodeTempOp].equal_range(destNode);
-						if (ret.first != ret.second) {
-							IDType count = 0;
-							for (std::multiset<HBGraph::adjListNode>::iterator retIt = ret.first;
-									retIt != ret.second; retIt++) {
-								count++;
-								IDType opDest = *(nodeIDMap[retIt->nodeID].opSet.begin());
-#ifdef EXTRADEBUGINFO
-								cout << "DEBUG: opDest = " << opDest << "\n";
-#endif
-								if (minOpInJ == -1 || minOpInJ > opDest) {
-									minOpInJ = opDest;
-									minNodeInJ = retIt->nodeID;
-									edgeTypeOfMinNodeInJ = graph->isSTEdge(nodeTempOp, minNodeInJ);
-								}
-							}
-
-							if (count > 1) {
-								graph->removeOpEdgesToBlock(ret.first, ret.second, nodeTempOp, blockJ);
-#ifdef PRINTGRAPH
-								graph->printGraph();
-#endif
-
-								if (minOpInJ > 0) {
-									if (minNodeInJ <= 0) {
-										cout << "ERROR: Invalid node ID for op " << minOpInJ << "\n";
-										return -1;
-									}
-									// Restore the edge from tempOp to the earliest op in blockJ
-									addEdgeRetValue = graph->addOpEdge(nodeTempOp, minNodeInJ, edgeTypeOfMinNodeInJ);
-									if (addEdgeRetValue == 1) {
-#ifdef GRAPHDEBUGFULL
-										cout << "Restored edge from " << nodeTempOp << " to " << minNodeInJ << endl;
-#endif
-									} else if (addEdgeRetValue == 0) {
-#ifdef GRAPHDEBUGFULL
-										cout << "Did not add restoration edge from " << nodeTempOp << " to " << minNodeInJ << endl;
-#endif
-									} else {
-										cout << "ERROR: While adding restoration edge from " << nodeTempOp << " to " << minNodeInJ << endl;
-										return -1;
-									}
-								}
-							} else if (count < 1) {
-								cout << "ERROR: While finding edges from op " << tempOp
-									 << " to ops in block " << blockJ << "\n";
-								cout << "ERROR: equal_range() gives a non-empty range, "
-									 << " distance() gives count < 1\n";
-								return -1;
-							}
-						} else
-							minOpInJ = -1;
-
-						if (minOpInJ > 0) {
-							if (opJ == -1 || opJ > minOpInJ)
-								opJ = minOpInJ;
-						}
-
-						edgeType2 = edgeTypeOfMinNodeInJ;
-					}
-
-					if (opJ > 0) {
-						IDType nodeJ = opIDMap[opJ].nodeID;
-						if (nodeJ <= 0) {
-							cout << "ERROR: Invalid node ID for op " << opJ << "\n";
-							return -1;
-						}
-						bool transEdgeType;
-						if (threadI != threadJ)
-							transEdgeType = false;
-						else if (edgeType1 && edgeType2)
-							transEdgeType = true;
-						else {
-							// threadI == threadJ and the contributing edges are not ST
-//							validTransEdge = false;
-							// Not a valid transitive edge
-							cout << "Not a valid transitive edge " << nodeI << ", " << nodeJ << "\n";
-							opI = opIDMap[opI].prevOpInBlock;
-							continue;
-						}
-						addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, transEdgeType);
-						if (addEdgeRetValue == 1) {
-							flag = true;
+				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, transEdgeType);
+				if (addEdgeRetValue == 1) {
 #ifdef GRAPHDEBUG
-							cout << "TRANS-ST/MT Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
-								 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+					cout << "R7: TRANS-ST/MT Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
+						 << "\n";
 #endif
-							if (opI == blockIDMap[blockI].lastOpInBlock && opJ == blockIDMap[blockJ].firstOpInBlock)
-								break;
 #ifdef GRAPHDEBUGFULL
-						} else if (addEdgeRetValue == 0) {
-							cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+				} else if (addEdgeRetValue == 0) {
+					cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
 #endif
-						} else if (addEdgeRetValue == -1) {
-							cout << "ERROR: While adding TRANS-ST/MT edge " << nodeI << " to " << nodeJ << endl;
-							return -1;
-						}
-					}
-
-					opI = opIDMap[opI].prevOpInBlock;
+				} else if (addEdgeRetValue == -1) {
+					cout << "ERROR: While adding TRANS-ST/MT edge " << nodeI << " to " << nodeJ << endl;
+					return -1;
 				}
 			}
 		}
@@ -2753,7 +2470,6 @@ int UAFDetector::addTransSTOrMTEdges() {
 	else
 		return 0;
 }
-#endif
 
 int UAFDetector::filterInput(std::string inFileName, std::string outFileName) {
 	ifstream inFile;

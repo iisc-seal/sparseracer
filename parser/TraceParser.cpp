@@ -1750,6 +1750,7 @@ it++) {
 								UAFDetector::taskDetails taskdetails;
 								taskdetails.endOpID = opCount;
 								taskdetails.firstOpInTaskID = opCount;
+								taskdetails.lastOpInTaskID = opCount;
 								detector.taskIDMap[task] = taskdetails;
 							} else {
 								UAFDetector::taskDetails existingEntry = detector.taskIDMap[task];
@@ -1761,6 +1762,7 @@ it++) {
 #endif
 								existingEntry.endOpID = opCount;
 								existingEntry.firstOpInTaskID = opCount;
+								existingEntry.lastOpInTaskID = opCount;
 								detector.taskIDMap.erase(detector.taskIDMap.find(task));
 								detector.taskIDMap[task] = existingEntry;
 							}
@@ -1819,6 +1821,7 @@ it++) {
 							} else {
 								UAFDetector::taskDetails existingEntry = detector.taskIDMap[task];
 								existingEntry.endOpID = opCount;
+								existingEntry.lastOpInTaskID = opCount;
 								if (!stackForNestingOrder.isEmpty(threadID)) {
 									MultiStack::stackElementType topOfNestingStack = stackForNestingOrder.peek(threadID);
 #ifdef PERMIT
@@ -4388,6 +4391,7 @@ it++) {
 		}
 
 		lastOpInTask = stackForTaskOrder.pop(threadID, taskIt->first);
+		taskIt->second.lastOpInTaskID = lastOpInTask.opID;
 	}
 
 	cout << "Finished parsing the file\n";

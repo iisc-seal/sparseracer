@@ -150,6 +150,7 @@ public:
 			enqOpID = -1;
 
 			firstOpInTaskID = -1;
+			lastOpInTaskID = -1;
 
 			parentTask = "";
 			atomic = true;
