@@ -269,11 +269,13 @@ int UAFDetector::addEdges() {
 		return -1;
 	}
 
+#ifdef LOCKS
 	// WAIT-NOTIFY
 	if (add_WaitNotify_Edges() < 0) {
 		cout << "ERROR: While adding WAIT-NOTIFY edges\n";
 		return -1;
 	}
+#endif
 
 	bool edgeAdded = false;
 	while (true) {
@@ -376,6 +378,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 
 	for (map<IDType, UAFDetector::threadDetails>::iterator it = threadIDMap.begin(); it != threadIDMap.end(); it++) {
 
+#ifdef ADVANCEDRULES
 		// Adding FORK edges
 
 		IDType opI, opJ;
@@ -466,6 +469,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 			}
 #endif
 		}
+#endif
 
 
 		// Adding LOOP-PO edges
@@ -1073,6 +1077,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 				}
 
 				if (threadOfPauseOp != threadOfResetOp) {
+#ifdef ADVANCEDRULES
 					opJ = resetOp;
 					IDType nodeI = opIDMap[opI].nodeID;
 					IDType nodeJ = opIDMap[opJ].nodeID;
@@ -1099,6 +1104,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							return -1;
 						}
 					}
+#endif
 				} else {
 					std::string taskOfResetOp = opIDMap[resetOp].taskID;
 					std::string taskOfPauseOp = opIDMap[pauseOp].taskID;
@@ -1217,6 +1223,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 				opJ = resumeOp;
 
 				if (threadOfResetOp != threadOfResumeOp) {
+#ifdef ADVANCEDRULES
 					IDType nodeI = opIDMap[opI].nodeID;
 					IDType nodeJ = opIDMap[opJ].nodeID;
 					if (nodeI <= 0) {
@@ -1242,6 +1249,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							return -1;
 						}
 					}
+#endif
 				} else {
 					std::string taskOfResetOp = opIDMap[resetOp].taskID;
 					std::string taskOfResumeOp = opIDMap[resumeOp].taskID;
@@ -1350,6 +1358,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 		return 0;
 }
 
+#ifdef LOCKS
 int UAFDetector::add_WaitNotify_Edges() {
 	bool flag = false;
 
@@ -1478,6 +1487,7 @@ int UAFDetector::add_WaitNotify_Edges() {
 	else
 		return 0;
 }
+#endif
 
 int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 	bool flag = false;
@@ -1753,6 +1763,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 			}
 #endif
 
+#ifdef ADVANCEDRULES
 			if (nodeOfResumeOp > 0 && threadI >= 0) {
 				// If there are no edges from resume, skip
 				if (graph->opAdjList.find(nodeOfResumeOp) == graph->opAdjList.end()) continue;
@@ -1857,6 +1868,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				cout << "ERROR: Cannot find thread of resume op " << resumeOp << "\n";
 				return -1;
 			}
+#endif
 
 			// R10: ENQRESET-ST-1
 			IDType enqK = it->second.enqOpID;
@@ -2283,7 +2295,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
-									cout << "ENQRESET-ST-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									cout << "R11: ENQRESET-ST-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 										 << "\n";
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -2308,6 +2320,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 						}
 
 					} else {
+#ifdef ADVANCEDRULES
 						// ENQRESET-ST-3
 						std::string sharedVariable = it->first;
 						bool foundFlag = false;
@@ -2368,6 +2381,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 							cout << "DEBUG: Skipping ENQRESET-ST-3 edge from op " << opI << " to this task\n";
 #endif
 						}
+#endif
 					}
 				}
 			}
@@ -2423,6 +2437,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 				IDType threadJ = opIDMap[opJ].threadID;
 				bool edgeType2 = graph->isSTEdge(nodeK, nodeJ);
 
+#ifdef ADVANCEDRULES
 				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
 #ifdef GRAPHDEBUGFULL
 					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
@@ -2446,6 +2461,13 @@ int UAFDetector::addTransSTOrMTEdges() {
 #endif
 					continue;
 				}
+#else
+				if (!(threadI == threadK && threadK == threadJ)) {
+					cout << "ERROR: Transitive closure over nodes from different threads\n";
+					return -1;
+				}
+				bool transEdgeType = true;
+#endif
 
 				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, transEdgeType);
 				if (addEdgeRetValue == 1) {

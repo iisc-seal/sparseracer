@@ -23,9 +23,6 @@
 // To use long long datatype
 // #define LARGEST
 
-// To process inc() and dec() ops in the trace
-// #define REFCOUNT
-
 // To find data races also
 // #define DATARACE
 
@@ -40,6 +37,9 @@
 
 // To use extra rules
 // #define EXTRARULES
+
+// To enable MT and Cascaded loop rules
+// #define ADVANCEDRULES
 
 #ifdef SMALL
 typedef int IDType;
