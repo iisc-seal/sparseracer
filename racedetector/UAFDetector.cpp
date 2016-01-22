@@ -1042,6 +1042,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 						}
 					}
 				}
+				prevNodei = nodei;
 			}
 		}
 	}
