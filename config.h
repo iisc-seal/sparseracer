@@ -2,7 +2,8 @@
  #define NODELIMIT 15000
 
 // Flag to give up when reaching nodelimit
- #define RUNOVERNODELIMIT
+// #define RUNOVERNODELIMIT
+
 // To use access ops rather than read/write ops
 // #define ACCESS
 

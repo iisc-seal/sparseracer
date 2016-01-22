@@ -630,6 +630,59 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 
 	for (map<std::string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
 
+		// TASK-PO
+
+		IDType firstOpInTask = it->second.firstOpInTaskID;
+
+#ifdef SANITYCHECK
+		if (firstOpInTask <= 0) {
+#ifdef GRAPHDEBUGFULL
+			cout << "DEBUG: Cannot find first op of task " << it->first << endl;
+			cout << "DEBUG: Skipping TASK-PO edges for this task\n";
+#endif
+			continue;
+		}
+#endif
+
+		for (IDType opI = firstOpInTask; (opI > 0); opI = opIDMap[opI].nextOpInTask) {
+			IDType nodeI = opIDMap[opI].nodeID;
+			if (nodeI <= 0) {
+				cout << "ERROR: Invalid node ID for op " << opI << "\n";
+				return -1;
+			}
+
+			IDType nextOp = opIDMap[opI].nextOpInTask;
+			IDType prevNodeJ = -1;
+			for (IDType opJ = nextOp; opJ > 0; opJ = opIDMap[opJ].nextOpInTask) {
+				IDType nodeJ = opIDMap[opJ].nodeID;
+				if (nodeJ <= 0) {
+					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
+					return -1;
+				} else {
+					// If prevNodeJ = nodeJ, then we would have already added the edge
+					if (nodeJ == prevNodeJ) continue;
+					// We do not add edges to the same node
+					if (nodeI == nodeJ) continue;
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
+					if (addEdgeRetValue == 1) {
+						flag = true;
+#ifdef GRAPHDEBUG
+						cout << "R3: TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+							 << "\n";
+#endif
+#ifdef GRAPHDEBUGFULL
+					} else if (addEdgeRetValue == 0) {
+						cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding TASK-PO Op edge from " << nodeI << " to " << nodeJ << endl;
+						return -1;
+					}
+				}
+				prevNodeJ = nodeJ;
+			}
+		}
+
 		// R4: ENQUEUE-ST/MT
 
 		IDType enqOp = it->second.enqOpID;
@@ -696,58 +749,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 			}
 		}
 
-		// TASK-PO
 
-		IDType firstOpInTask = it->second.firstOpInTaskID;
-
-#ifdef SANITYCHECK
-		if (firstOpInTask <= 0) {
-#ifdef GRAPHDEBUGFULL
-			cout << "DEBUG: Cannot find first op of task " << it->first << endl;
-			cout << "DEBUG: Skipping TASK-PO edges for this task\n";
-#endif
-			continue;
-		}
-#endif
-
-		for (IDType opI = firstOpInTask; (opI > 0); opI = opIDMap[opI].nextOpInTask) {
-			IDType nodeI = opIDMap[opI].nodeID;
-			if (nodeI <= 0) {
-				cout << "ERROR: Invalid node ID for op " << opI << "\n";
-				return -1;
-			}
-
-			IDType nextOp = opIDMap[opI].nextOpInTask;
-			IDType prevNodeJ = -1;
-			for (IDType opJ = nextOp; opJ > 0; opJ = opIDMap[opJ].nextOpInTask) {
-				IDType nodeJ = opIDMap[opJ].nodeID;
-				if (nodeJ <= 0) {
-					cout << "ERROR: Invalid node ID for op " << opJ << "\n";
-					return -1;
-				} else {
-					// If prevNodeJ = nodeJ, then we would have already added the edge
-					if (nodeJ == prevNodeJ) continue;
-					// We do not add edges to the same node
-					if (nodeI == nodeJ) continue;
-					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
-					if (addEdgeRetValue == 1) {
-						flag = true;
-#ifdef GRAPHDEBUG
-						cout << "R3: TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
-							 << "\n";
-#endif
-#ifdef GRAPHDEBUGFULL
-					} else if (addEdgeRetValue == 0) {
-						cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
-#endif
-					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding TASK-PO Op edge from " << nodeI << " to " << nodeJ << endl;
-						return -1;
-					}
-				}
-				prevNodeJ = nodeJ;
-			}
-		}
 	}
 
 	if (flag)

@@ -72,9 +72,11 @@ TraceParser::TraceParser(string traceFileName) {
 			  	  	  	  	  	  	  	  	  	  	   	   	  	   + posIntRegEx + ") *\\) *\\) *" + "|" +
 			  " *(dec) *\\( *(" 	   + posIntRegEx + ") *, *\\( *(" + hexRegEx + ") *, *("
 			  	  	  	  	  	  	  	  	  	  	   	   	   	   + posIntRegEx + ") *\\) *\\) *" + "|" +
+#ifdef LOCKS
 			  " *(wait) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(notify) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(notifyall) *\\( *("  + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
+#endif
 			  " *(read) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *" + "|" +
 			  " *(write) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + hexRegEx + ") *\\) *";
 
@@ -3644,7 +3646,9 @@ it++) {
 							}
 						}
 
-					} else if (match.compare("wait") == 0) {
+					}
+#ifdef LOCKS
+					else if (match.compare("wait") == 0) {
 
 						nodeCount++;
 						opdetails.nodeID = nodeCount;
@@ -4327,6 +4331,7 @@ it++) {
 							}
 						}
 					}
+#endif
 
 					if (detector.opIDMap.find(opCount) == detector.opIDMap.end()) {
 						detector.opIDMap[opCount] = opdetails;
