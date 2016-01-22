@@ -258,6 +258,7 @@ int TraceParser::parse(UAFDetector &detector) {
 #endif
 								existingEntry.threadexitOpID = opCount;
 								existingEntry.firstOpID = opCount;
+								existingEntry.lastOpInThreadID = opCount;
 								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
 								detector.threadIDMap[threadID] = existingEntry;
 							}
@@ -297,6 +298,7 @@ int TraceParser::parse(UAFDetector &detector) {
 							} else {
 								UAFDetector::threadDetails existingEntry = detector.threadIDMap[threadID];
 								existingEntry.threadexitOpID = opCount;
+								existingEntry.lastOpInThreadID = opCount;
 								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
 								detector.threadIDMap[threadID] = existingEntry;
 							}
@@ -486,6 +488,16 @@ int TraceParser::parse(UAFDetector &detector) {
 								detector.opIDMap[previousOpInThread.opID] = existingEntry;
 							}
 
+							// Set exitloopID for the current thread
+							if (detector.threadIDMap.find(threadID) == detector.threadIDMap.end()) {
+								cout << "ERROR: Cannot find entry for thread " << threadID << " in threadIDMap\n";
+								return -1;
+							} else {
+								UAFDetector::threadDetails existingEntry = detector.threadIDMap[threadID];
+								existingEntry.exitloopID = opCount;
+								detector.threadIDMap.erase(detector.threadIDMap.find(threadID));
+								detector.threadIDMap[threadID] = existingEntry;
+							}
 
 							stackForThreadOrder.push(stackElement);
 							stackForGlobalLoop.stackClear(threadID);

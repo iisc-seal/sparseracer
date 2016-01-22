@@ -478,6 +478,8 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 		IDType firstOpInThread = it->second.firstOpID;
 		IDType lastOpInThread = it->second.lastOpInThreadID;
 
+		IDType loopExitOp = enterloop;
+
 #ifdef SANITYCHECK
 		if (firstOpInThread <= 0) {
 #ifdef GRAPHDEBUGFULL
@@ -491,7 +493,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 			cout << "WARNING: Cannot find enterloop of thread " << it->first << endl;
 			cout << "WARNING: Skipping LOOP-PO edges for thread " << it->first << endl;
 #endif
-			continue;
+			loopExitOp = lastOpInThread;
 		}
 		if (lastOpInThread <= 0) {
 #ifdef GRAPHDEBUGFULL
@@ -503,7 +505,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 #endif
 
 		// R1: Add edge from ops before enterloop to all ops subsequent to them
-		for (IDType opI = firstOpInThread; (opI > 0 && opI <= enterloop); opI = opIDMap[opI].nextOpInThread) {
+		for (IDType opI = firstOpInThread; (opI > 0 && opI <= loopExitOp); opI = opIDMap[opI].nextOpInThread) {
 
 			IDType nextOpAfterOpI = opIDMap[opI].nextOpInThread;
 
@@ -546,7 +548,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 						cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
 #endif
 					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding LOOP-PO Op edge from " << nodeI << " to " << nodeJ << endl;
+						cout << "ERROR: While adding R1: LOOP-PO Op edge from " << nodeI << " to " << nodeJ << endl;
 						return -1;
 					}
 				}
@@ -598,7 +600,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 					if (nodeI == prevNodeI) continue;
 					// We do not add edges to the same node
 					if (nodeI == nodeJ) continue;
-					int addEdgeRetValue = graph->addOpEdge(nodeJ, nodeI, true);
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true);
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
@@ -610,7 +612,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 						cout << "DEBUG: Edge (" << nodeJ << ", " << nodeI << ") already implied in the graph\n";
 #endif
 					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding LOOP-PO Op edge from " << nodeJ << " to " << nodeI << endl;
+						cout << "ERROR: While adding R2: LOOP-PO Op edge from " << nodeJ << " to " << nodeI << endl;
 						return -1;
 					}
 				}
@@ -2164,7 +2166,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 			IDType enqOfReset = taskIDMap[taskK].enqOpID;
 			if (enqOfReset <= 0) {
 #ifdef GRAPHDEBUG
-				cout << "ERROR: Cannot find enq of task " << taskK << "\n";
+				cout << "DEBUG: Cannot find enq of task " << taskK << "\n";
 #endif
 				continue;
 			}
