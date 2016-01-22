@@ -2373,7 +2373,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 			IDType enqOfReset = taskIDMap[taskK].enqOpID;
 			if (enqOfReset <= 0) {
 #ifdef GRAPHDEBUG
-				cout << "ERROR: Cannot find enq of task " << taskK << "\n";
+				cout << "WARNING: Cannot find enq of task " << taskK << "\n";
 #endif
 				continue;
 			}
