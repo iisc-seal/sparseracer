@@ -4595,6 +4595,7 @@ it++) {
 		it->second.printDetails();
 		cout << "\n";
 	}
+#ifdef LOCKS
 	cout << "\nMap - wait\n";
 	for (map<IDType, UAFDetector::lockOpDetails>::iterator it = detector.waitSet.begin(); it != detector.waitSet.end(); it++) {
 		cout << "Wait: " << it->first << "\n";
@@ -4639,6 +4640,7 @@ it++) {
 	for (map<IDType, IDType>::iterator it = detector.waitToNotify.begin(); it != detector.waitToNotify.end(); it++) {
 		cout << "Wait " << it->first << " --> Notify " << it->second << "\n";
 	}
+#endif
 #endif
 
 	// Initialize HB Graph
