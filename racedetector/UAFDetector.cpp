@@ -678,73 +678,6 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 	bool flag = false; // To keep track of whether edges were added.
 
 	for (map<std::string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
-
-		// R4: ENQUEUE-ST/MT
-
-		IDType enqOp = it->second.enqOpID;
-		IDType deqOp = it->second.deqOpID;
-
-		if (enqOp > 0 && deqOp > 0) {
-			IDType nodeEnq = opIDMap[enqOp].nodeID;
-			IDType nodeDeq = opIDMap[deqOp].nodeID;
-			if (nodeEnq <= 0) {
-				cout << "ERROR: Invalid node ID for op " << enqOp << "\n";
-				return -1;
-			} else if (nodeDeq <= 0) {
-				cout << "ERROR: Invalid node ID for op " << deqOp << "\n";
-				return -1;
-			} else {
-				IDType threadEnq = opIDMap[enqOp].threadID;
-				IDType threadDeq = opIDMap[deqOp].threadID;
-				if (threadEnq < 0) {
-					cout << "ERROR: Invalid thread ID for op " << enqOp << "\n";
-					return -1;
-				}
-				if (threadDeq < 0) {
-					cout << "ERROR: Invalid thread ID for op " << deqOp << "\n";
-					return -1;
-				}
-				bool edgeType;
-				if (threadEnq == threadDeq) {
-					edgeType = true;
-				} else {
-					edgeType = false;
-#ifndef ADVANCEDRULES
-					// We do not add the MT edge if ADVANCEDRULES are not enabled
-					continue;
-#endif
-				}
-				int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq, edgeType);
-				if (addEdgeRetValue == 1) {
-					flag = true;
-#ifdef GRAPHDEBUG
-					cout << "R4: ENQUEUE-ST/MT edge (" << nodeEnq << ", " << nodeDeq << ") -- #op-edges "   << graph->numOfOpEdges
-						 << " -- #block-edges " << graph->numOfBlockEdges << endl;
-#endif
-#ifdef GRAPHDEBUGFULL
-				} else if (addEdgeRetValue == 0) {
-					cout << "DEBUG: Edge (" << nodeEnq << ", " << nodeDeq << ") already implied in the graph\n";
-#endif
-				} else if (addEdgeRetValue == -1) {
-					cout << "ERROR: While adding ENQUEUE-ST/MT Op edge from " << nodeEnq << " to " << nodeDeq << endl;
-					return -1;
-				}
-			}
-		} else {
-			if (enqOp <= 0) {
-#ifdef GRAPHDEBUGFULL
-				cout << "DEBUG: Cannot find enq op of task " << it->first << endl;
-				cout << "DEBUG: Skipping ENQUEUE-ST/MT edge for this task\n";
-#endif
-			}
-			if (deqOp <= 0) {
-#ifdef GRAPHDEBUGFULL
-				cout << "DEBUG: Cannot find deq op of task " << it->first << endl;
-				cout << "DEBUG: Skipping ENQUEUE-ST/MT edge for this task\n";
-#endif
-			}
-		}
-
 		// TASK-PO
 
 		IDType firstBlockInTask = it->second.firstBlockID;
@@ -815,6 +748,74 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 				}
 			}
 		}
+
+		// R4: ENQUEUE-ST/MT
+
+		IDType enqOp = it->second.enqOpID;
+		IDType deqOp = it->second.deqOpID;
+
+		if (enqOp > 0 && deqOp > 0) {
+			IDType nodeEnq = opIDMap[enqOp].nodeID;
+			IDType nodeDeq = opIDMap[deqOp].nodeID;
+			if (nodeEnq <= 0) {
+				cout << "ERROR: Invalid node ID for op " << enqOp << "\n";
+				return -1;
+			} else if (nodeDeq <= 0) {
+				cout << "ERROR: Invalid node ID for op " << deqOp << "\n";
+				return -1;
+			} else {
+				IDType threadEnq = opIDMap[enqOp].threadID;
+				IDType threadDeq = opIDMap[deqOp].threadID;
+				if (threadEnq < 0) {
+					cout << "ERROR: Invalid thread ID for op " << enqOp << "\n";
+					return -1;
+				}
+				if (threadDeq < 0) {
+					cout << "ERROR: Invalid thread ID for op " << deqOp << "\n";
+					return -1;
+				}
+				bool edgeType;
+				if (threadEnq == threadDeq) {
+					edgeType = true;
+				} else {
+					edgeType = false;
+#ifndef ADVANCEDRULES
+					// We do not add the MT edge if ADVANCEDRULES are not enabled
+					continue;
+#endif
+				}
+				int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq, edgeType);
+				if (addEdgeRetValue == 1) {
+					flag = true;
+#ifdef GRAPHDEBUG
+					cout << "R4: ENQUEUE-ST/MT edge (" << nodeEnq << ", " << nodeDeq << ") -- #op-edges "   << graph->numOfOpEdges
+						 << " -- #block-edges " << graph->numOfBlockEdges << endl;
+#endif
+#ifdef GRAPHDEBUGFULL
+				} else if (addEdgeRetValue == 0) {
+					cout << "DEBUG: Edge (" << nodeEnq << ", " << nodeDeq << ") already implied in the graph\n";
+#endif
+				} else if (addEdgeRetValue == -1) {
+					cout << "ERROR: While adding ENQUEUE-ST/MT Op edge from " << nodeEnq << " to " << nodeDeq << endl;
+					return -1;
+				}
+			}
+		} else {
+			if (enqOp <= 0) {
+#ifdef GRAPHDEBUGFULL
+				cout << "DEBUG: Cannot find enq op of task " << it->first << endl;
+				cout << "DEBUG: Skipping ENQUEUE-ST/MT edge for this task\n";
+#endif
+			}
+			if (deqOp <= 0) {
+#ifdef GRAPHDEBUGFULL
+				cout << "DEBUG: Cannot find deq op of task " << it->first << endl;
+				cout << "DEBUG: Skipping ENQUEUE-ST/MT edge for this task\n";
+#endif
+			}
+		}
+
+
 	}
 
 	if (flag)
