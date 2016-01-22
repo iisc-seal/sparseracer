@@ -3183,7 +3183,7 @@ it++) {
 #endif
 
 								if (!firstOpInsideNestingLoop) {
-									if (previousOpInThread.taskID.compare("") != 0)
+									if (previousOpInThread.taskID.compare("") != 0 && previousOpInThread.opType.compare("end") != 0)
 										existingEntry.nextOpInTask = opCount;
 								}
 								existingEntry.nextOpInThread = opCount;
