@@ -487,14 +487,14 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 			continue;
 		}
 		if (enterloop <= 0) {
-#ifdef GRAPHWARNINGFULL
+#ifdef GRAPHDEBUGFULL
 			cout << "WARNING: Cannot find enterloop of thread " << it->first << endl;
 			cout << "WARNING: Skipping LOOP-PO edges for thread " << it->first << endl;
 #endif
 			continue;
 		}
 		if (lastOpInThread <= 0) {
-#ifdef GRAPHWARNINGFULL
+#ifdef GRAPHDEBUGFULL
 			cout << "WARNING: Cannot find last op of thread " << it->first << endl;
 			cout << "WARNING: Skipping LOOP-PO edges for this thread\n";
 #endif
@@ -656,10 +656,15 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 					return -1;
 				}
 				bool edgeType;
-				if (threadEnq == threadDeq)
+				if (threadEnq == threadDeq) {
 					edgeType = true;
-				else
+				} else {
 					edgeType = false;
+#ifndef ADVANCEDRULES
+					// We do not add the MT edge if ADVANCEDRULES are not enabled
+					continue;
+#endif
+				}
 				int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq, edgeType);
 				if (addEdgeRetValue == 1) {
 					flag = true;
@@ -2463,10 +2468,16 @@ int UAFDetector::addTransSTOrMTEdges() {
 				}
 #else
 				if (!(threadI == threadK && threadK == threadJ)) {
-					cout << "ERROR: Transitive closure over nodes from different threads\n";
-					return -1;
+					// Transitive closure over nodes from different threads
+					continue;
 				}
 				bool transEdgeType = true;
+				if (edgeType1 && edgeType2)
+					transEdgeType = true;
+				else {
+					transEdgeType = false;
+					continue;
+				}
 #endif
 
 				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, transEdgeType);
