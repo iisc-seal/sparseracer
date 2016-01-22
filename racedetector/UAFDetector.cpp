@@ -273,11 +273,13 @@ int UAFDetector::addEdges() {
 		return -1;
 	}
 
+#ifdef LOCKS
 	// WAIT-NOTIFY
 	if (add_WaitNotify_Edges() < 0) {
 		cout << "ERROR: While adding WAIT-NOTIFY edges\n";
 		return -1;
 	}
+#endif
 
 	bool edgeAdded = false;
 	while (true) {
@@ -386,6 +388,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 		// Adding FORK edges
 
 		IDType opI, opJ;
+#ifdef ADVANCEDRULES
 		opI = it->second.forkOpID;
 		opJ = it->second.threadinitOpID;
 
@@ -473,6 +476,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 			}
 #endif
 		}
+#endif
 
 
 		// Adding LOOP-PO edges
@@ -507,7 +511,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 		}
 #endif
 
-		// Add edge from ops/blocks before enterloop to all ops/blocks subsequent to them
+		// R1: Add edge from ops/blocks before enterloop to all ops/blocks subsequent to them
 
 		for (IDType b1 = blockI; (b1 > 0 && b1 <= enterloopBlock); b1 = blockIDMap[b1].nextBlockInThread) {
 
@@ -554,7 +558,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
-						cout << "LOOP-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+						cout << "R1: LOOP-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -591,7 +595,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 		}
 #endif
 
-		// Add edge from ops/blocks after enterloop to all ops/blocks after exitloop
+		// R2: Add edge from ops/blocks after enterloop to all ops/blocks after exitloop
 
 		for (IDType b1 = exitloopBlock; (b1 > 0 && b1 <= lastBlockInThread); b1 = blockIDMap[b1].nextBlockInThread) {
 
@@ -647,10 +651,10 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 					int addEdgeRetValue = graph->addOpEdge(nodeJ, nodeI, true);
 					if (addEdgeRetValue == 1) {
 						flag = true;
-//#ifdef GRAPHDEBUG
-						cout << "LOOP-PO edge (" << nodeJ << ", " << nodeI << ") -- block edge (" << b2 << ", " << b1 << ") -- #op-edges "   << graph->numOfOpEdges
+#ifdef GRAPHDEBUG
+						cout << "R2: LOOP-PO edge (" << nodeJ << ", " << nodeI << ") -- block edge (" << b2 << ", " << b1 << ") -- #op-edges "   << graph->numOfOpEdges
 							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
-//#endif
+#endif
 #ifdef GRAPHDEBUGFULL
 					} else if (addEdgeRetValue == 0) {
 						cout << "DEBUG: Edge (" << nodeJ << ", " << nodeI << ") already implied in the graph\n";
@@ -675,7 +679,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 
 	for (map<std::string, UAFDetector::taskDetails>::iterator it = taskIDMap.begin(); it != taskIDMap.end(); it++) {
 
-		// ENQUEUE-ST/MT
+		// R4: ENQUEUE-ST/MT
 
 		IDType enqOp = it->second.enqOpID;
 		IDType deqOp = it->second.deqOpID;
@@ -701,15 +705,20 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 					return -1;
 				}
 				bool edgeType;
-				if (threadEnq == threadDeq)
+				if (threadEnq == threadDeq) {
 					edgeType = true;
-				else
+				} else {
 					edgeType = false;
+#ifndef ADVANCEDRULES
+					// We do not add the MT edge if ADVANCEDRULES are not enabled
+					continue;
+#endif
+				}
 				int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq, edgeType);
 				if (addEdgeRetValue == 1) {
 					flag = true;
 #ifdef GRAPHDEBUG
-					cout << "ENQUEUE-ST/MT edge (" << nodeEnq << ", " << nodeDeq << ") -- #op-edges "   << graph->numOfOpEdges
+					cout << "R4: ENQUEUE-ST/MT edge (" << nodeEnq << ", " << nodeDeq << ") -- #op-edges "   << graph->numOfOpEdges
 						 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -762,13 +771,11 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 #endif
 #endif
 
-//		for (IDType b1 = firstBlockInTask; (b1 > 0 && b1 <= lastBlockInTask); b1 = blockIDMap[b1].nextBlockInTask) {
 		for (IDType b1 = firstBlockInTask; (b1 > 0); b1 = blockIDMap[b1].nextBlockInTask) {
 #ifdef SANITYCHECK
 			assert(b1 > 0);
 #endif
 			IDType nextBlock = blockIDMap[b1].nextBlockInTask;
-//			for (IDType b2 = nextBlock; (b2 > 0 && b2 <= lastBlockInTask); b2 = blockIDMap[b2].nextBlockInTask) {
 			for (IDType b2 = nextBlock; b2 > 0; b2 = blockIDMap[b2].nextBlockInTask) {
 #ifdef SANITYCHECK
 				assert(b2 > 0);
@@ -794,7 +801,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
-						cout << "TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+						cout << "R4: TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -847,7 +854,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 			continue;
 		}
 
-		// Adding FIFO-ATOMIC edges.
+		// Adding R5: FIFO-ATOMIC edges.
 		IDType enqOp = it->second.enqOpID;
 		if (enqOp <= 0) {
 #ifdef GRAPHDEBUGFULL
@@ -946,7 +953,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
-											cout << "FIFO-ATOMIC edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											cout << "R5: FIFO-ATOMIC edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -969,7 +976,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 			}
 		}
 
-		// NO-PRE edges
+		// R6: NO-PRE edges
 
 		IDType i = it->second.deqOpID;
 		IDType opI = it->second.endOpID;
@@ -1139,7 +1146,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
-											cout << "NO-PRE edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											cout << "R6: NO-PRE edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1199,6 +1206,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 				}
 
 				if (threadOfPauseOp != threadOfResetOp) {
+#ifdef ADVANCEDRULES
 					opJ = resetOp;
 					IDType nodeI = opIDMap[opI].nodeID;
 					IDType nodeJ = opIDMap[opJ].nodeID;
@@ -1225,6 +1233,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							return -1;
 						}
 					}
+#endif
 				} else {
 					std::string taskOfResetOp = opIDMap[resetOp].taskID;
 					std::string taskOfPauseOp = opIDMap[pauseOp].taskID;
@@ -1250,7 +1259,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
-									cout << "PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									cout << "R8: PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1292,7 +1301,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							if (addEdgeRetValue == 1) {
 								flag = true;
 #ifdef GRAPHDEBUG
-								cout << "PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+								cout << "R8: PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 									 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 							} else if (addEdgeRetValue == 0) {
@@ -1321,7 +1330,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 #endif
 			}
 
-			// RESUME-ST/MT
+			// R9: RESUME-ST/MT
 			if (resetOp > 0 && resumeOp > 0) {
 
 				IDType threadOfResumeOp = opIDMap[resumeOp].threadID;
@@ -1339,6 +1348,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 				opJ = resumeOp;
 
 				if (threadOfResetOp != threadOfResumeOp) {
+#ifdef ADVANCEDRULES
 					IDType nodeI = opIDMap[opI].nodeID;
 					IDType nodeJ = opIDMap[opJ].nodeID;
 					if (nodeI <= 0) {
@@ -1364,6 +1374,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							return -1;
 						}
 					}
+#endif
 				} else {
 					std::string taskOfResetOp = opIDMap[resetOp].taskID;
 					std::string taskOfResumeOp = opIDMap[resumeOp].taskID;
@@ -1389,7 +1400,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
-									cout << "RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									cout << "R9: RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1432,7 +1443,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 							if (addEdgeRetValue == 1) {
 								flag = true;
 #ifdef GRAPHDEBUG
-								cout << "RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+								cout << "R9: RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 									 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 							} else if (addEdgeRetValue == 0) {
@@ -1468,6 +1479,7 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 		return 0;
 }
 
+#ifdef LOCKS
 int UAFDetector::add_WaitNotify_Edges() {
 	bool flag = false;
 
@@ -1596,6 +1608,7 @@ int UAFDetector::add_WaitNotify_Edges() {
 	else
 		return 0;
 }
+#endif
 
 int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 	bool flag = false;
@@ -1615,7 +1628,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 		// If the task is atomic, FIFO-NESTED rule does not apply.
 		if (it->second.atomic == true) continue;
 
-		// FIFO-NESTED-1
+		// R12: FIFO-NESTED-1
 		IDType enqI, blockI;
 		opI = it->second.firstPauseOpID;
 		enqI = it->second.enqOpID;
@@ -1715,7 +1728,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
-									cout << "FIFO-NESTED-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									cout << "R12: FIFO-NESTED-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1747,7 +1760,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 		}
 
 
-		// FIFO-NESTED-2
+		// R13: FIFO-NESTED-2
 		opI = it->second.endOpID;
 		IDType opL = it->second.lastResumeOpID;
 
@@ -1858,7 +1871,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 											if (addEdgeRetValue == 1) {
 												flag = true;
 #ifdef GRAPHDEBUG
-												cout << "FIFO-NESTED-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												cout << "R13: FIFO-NESTED-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 													 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1925,6 +1938,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 			}
 #endif
 
+#ifdef ADVANCEDRULES
 			if (blockOfResumeOp > 0 && threadI >= 0) {
 				for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockOfResumeOp].begin();
 						blockIt != graph->blockAdjList[blockOfResumeOp].end(); blockIt++) {
@@ -2052,8 +2066,9 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 				cout << "ERROR: Cannot find thread of resume op " << resumeOp << "\n";
 				return -1;
 			}
+#endif
 
-			// ENQRESET-ST-1
+			// R10: ENQRESET-ST-1
 			IDType enqK = it->second.enqOpID;
 			IDType resetOp = prIt->resetOp;
 
@@ -2222,7 +2237,7 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 											if (addEdgeRetValue == 1) {
 												flag = true;
 #ifdef GRAPHDEBUG
-												cout << "ENQRESET-ST-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												cout << "R10: ENQRESET-ST-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 													 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -2474,7 +2489,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 							}
 
 							if (opM == lastResumeOftaskM) {
-								// ENQRESET-ST-2
+								// R11: ENQRESET-ST-2
 								opI = taskIDMap[taskM].endOpID;
 
 								if (opI <= 0) {
@@ -2541,6 +2556,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 								}
 
 							} else {
+#ifdef ADVANCEDRULES
 								// ENQRESET-ST-3
 								std::string sharedVariable = it->first;
 								bool foundFlag = false;
@@ -2602,6 +2618,7 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 									cout << "DEBUG: Skipping ENQRESET-ST-3 edge from op " << opI << " to this task\n";
 #endif
 								}
+#endif
 							}
 						} else if (retValue == -1) {
 							cout << "ERROR: While checking edge from " << nodeK << " to " << nodeL << endl;
@@ -2690,6 +2707,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 					return -1;
 				}
 #endif
+#ifdef ADVANCEDRULES
 				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
 #ifdef GRAPHDEBUGFULL
 					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
@@ -2698,6 +2716,12 @@ int UAFDetector::addTransSTOrMTEdges() {
 #endif
 					continue;
 				}
+#else
+				if (!(threadI == threadK && threadK == threadJ)) {
+					// Transitive closure over nodes from different threads
+					continue;
+				}
+#endif
 
 				IDType tempOp1, tempOp2;
 				tempOp1 = blockIDMap[blockI].lastOpInBlock;
@@ -2945,6 +2969,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 							cout << "ERROR: Invalid node ID for op " << opJ << "\n";
 							return -1;
 						}
+#ifdef ADVANCEDRULES
 						bool transEdgeType;
 						if (threadI != threadJ)
 							transEdgeType = false;
@@ -2958,6 +2983,15 @@ int UAFDetector::addTransSTOrMTEdges() {
 							opI = opIDMap[opI].prevOpInBlock;
 							continue;
 						}
+#else
+						bool transEdgeType;
+						if (edgeType1 && edgeType2)
+							transEdgeType = true;
+						else {
+							transEdgeType = false;
+							continue;
+						}
+#endif
 						addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, transEdgeType);
 						if (addEdgeRetValue == 1) {
 							flag = true;
