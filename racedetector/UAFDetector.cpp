@@ -1011,6 +1011,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 #endif
 
 		if (i > 0 && opI > 0) {
+			IDType prevBlockI = -1;
 			for(; (i > 0 && i <= opI); i = opIDMap[i].nextOpInTask) {
 				IDType blockI = opIDMap[i].blockID;
 #ifdef SANITYCHECK
@@ -1020,6 +1021,8 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 				}
 #endif
 				if (blockI > 0) {
+					// If prevBlockI = blockI, then we would have added those edges
+					if (prevBlockI == blockI) continue;
 					for (std::multiset<HBGraph::adjListNode>::iterator blockIt = graph->blockAdjList[blockI].begin();
 							blockIt != graph->blockAdjList[blockI].end(); blockIt++) {
 #ifdef SANITYCHECK
@@ -1165,6 +1168,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 							}
 						}
 					}
+					prevBlockI = blockI;
 				}
 			}
 		}
