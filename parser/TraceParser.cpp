@@ -4613,8 +4613,9 @@ it++) {
 
 								if (!firstOpInsideNestingLoop) {
 									existingEntry.nextOpInBlock = opCount;
-									if (previousOpInThread.taskID.compare("") != 0)
-										existingEntry.nextOpInTask = opCount;
+									if (previousOpInThread.taskID.compare("") != 0 && 
+										previousOpInThread.opType.compare("end") != 0)
+									    existingEntry.nextOpInTask = opCount;
 								}
 								existingEntry.nextOpInThread = opCount;
 								detector.opIDMap.erase(detector.opIDMap.find(previousOpInThread.opID));
