@@ -358,6 +358,9 @@ int UAFDetector::addEdges() {
 			cout << "ERROR: Unknown return value from addTransSTOrMTEdges()\n";
 			return -1;
 		}
+#ifdef GRAPHDEBUG
+		cout << "DEBUG: edgeAdded = " << edgeAdded << "\n";
+#endif
 
 		if (!edgeAdded) // If no edges were added in this iteration, stop.
 			break;
@@ -2487,6 +2490,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 				int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, transEdgeType);
 				if (addEdgeRetValue == 1) {
+					flag = true;
 #ifdef GRAPHDEBUG
 					cout << "R7: TRANS-ST/MT Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
 						 << "\n";
