@@ -345,6 +345,9 @@ int UAFDetector::addEdges() {
 			graph->printGraph();
 #endif
 
+		if (!edgeAdded)
+			break;
+
 		// TRANS-ST/MT
 #ifdef GRAPHDEBUG
 		cout << "Adding Trans-ST/MT edges\n";
