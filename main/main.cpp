@@ -28,15 +28,18 @@ std::string convertTime(clock_t startTime, clock_t endTime) {
 		stream << milliseconds << "ms";
 		time = stream.str();
 	} else {
-		int hrs = elapsed_secs / 3600;
-		unsigned long long remaining = elapsed_secs % 3600;
+		double remaining = (double) (endTime - startTime)/CLOCKS_PER_SEC;
+		int hrs = remaining / 3600;
+		//unsigned long long remaining = elapsed_secs % 3600;
+		remaining = (remaining/3600 - hrs) * 3600;
 
 		int mins = remaining / 60;
-		remaining = remaining % 60;
+		remaining = (remaining/60 - mins) * 60;
 
 		int secs = remaining;
+		int milliseconds = (remaining - secs)*1000;
 
-		stream << hrs << "h" << mins << "m" << secs << "s";
+		stream << hrs << "h" << mins << "m" << secs << "s" << milliseconds << "ms";
 		time = stream.str();
 	}
 
