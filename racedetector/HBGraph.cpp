@@ -140,7 +140,7 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode) {
 	}
 	assert(sourceNode != destinationNode);
 	assert(opAdjMatrix[sourceNode][destinationNode] == true || opAdjMatrix[sourceNode][destinationNode] == false);
-	assert(opAdjMatrix[sourceNode][destinationNode] == opEdgeExistsinList(sourceNode, destinationNode));
+	//assert(opAdjMatrix[sourceNode][destinationNode] == opEdgeExistsinList(sourceNode, destinationNode));
 #endif
 
 	if (opAdjMatrix[sourceNode][destinationNode])
