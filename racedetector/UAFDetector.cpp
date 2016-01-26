@@ -692,16 +692,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 //			return -1;
 			continue;
 		}
-#if 0
-		if (lastBlockInTask <= 0) {
-#ifdef GRAPHDEBUGFULL
-			cout << "DEBUG: Cannot find last block of task " << it->first << endl;
-			cout << "DEBUG: Skipping TASK-PO edges for this task\n";
-#endif
-//			return -1;
-			continue;
-		}
-#endif
+
 #endif
 
 		for (IDType b1 = firstBlockInTask; (b1 > 0); b1 = blockIDMap[b1].nextBlockInTask) {
@@ -734,7 +725,7 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
-						cout << "R4: TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+						cout << "R3: TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
 							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -775,28 +766,48 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 					return -1;
 				}
 				bool edgeType;
+				IDType startingNode;
 				if (threadEnq == threadDeq) {
 					edgeType = true;
+					// We add edge from last op of block containing enq to deq
+					IDType blockEnq = opIDMap[enqOp].blockID;
+					if (blockEnq < 0) {
+						cout << "ERROR: Cannot find block ID of op " << enqOp << "\n";
+						return -1;
+					}
+					IDType firstOp = blockIDMap[blockEnq].firstOpInBlock;
+					if (firstOp < 0) {
+						cout << "ERROR: Cannot find first op of block " << blockEnq << "\n";
+						return -1;
+					}
+					IDType firstOpNode = opIDMap[firstOp].nodeID;
+					if (firstOpNode < 0) {
+						cout << "ERROR: Cannot find node ID of op " << firstOp << "\n";
+						return -1;
+					}
+					startingNode = firstOpNode;
 				} else {
 					edgeType = false;
 #ifndef ADVANCEDRULES
 					// We do not add the MT edge if ADVANCEDRULES are not enabled
 					continue;
+#else
+					startingNode = nodeEnq;
 #endif
 				}
-				int addEdgeRetValue = graph->addOpEdge(nodeEnq, nodeDeq, edgeType);
+				int addEdgeRetValue = graph->addOpEdge(startingNode, nodeDeq, edgeType);
 				if (addEdgeRetValue == 1) {
 					flag = true;
 #ifdef GRAPHDEBUG
-					cout << "R4: ENQUEUE-ST/MT edge (" << nodeEnq << ", " << nodeDeq << ") -- #op-edges "   << graph->numOfOpEdges
+					cout << "R4: ENQUEUE-ST/MT edge (" << startingNode << ", " << nodeDeq << ") -- #op-edges "   << graph->numOfOpEdges
 						 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
 				} else if (addEdgeRetValue == 0) {
-					cout << "DEBUG: Edge (" << nodeEnq << ", " << nodeDeq << ") already implied in the graph\n";
+					cout << "DEBUG: Edge (" << startingNode << ", " << nodeDeq << ") already implied in the graph\n";
 #endif
 				} else if (addEdgeRetValue == -1) {
-					cout << "ERROR: While adding ENQUEUE-ST/MT Op edge from " << nodeEnq << " to " << nodeDeq << endl;
+					cout << "ERROR: While adding ENQUEUE-ST/MT Op edge from " << startingNode << " to " << nodeDeq << endl;
 					return -1;
 				}
 			}
@@ -977,6 +988,8 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 			}
 		}
 
+#if 0
+		// Disabling NOPRE
 		// R6: NO-PRE edges
 
 		IDType i = it->second.deqOpID;
@@ -1173,6 +1186,7 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 				}
 			}
 		}
+#endif
 	}
 
 
@@ -2782,9 +2796,34 @@ int UAFDetector::addTransSTOrMTEdges() {
 					return -1;
 				}
 #endif
-				IDType nodeI = 0;
-				IDType prevNodeI = 0;
+				IDType nodeI = nodeTempOp1;
+				IDType opK1 = blockIDMap[blockK].firstOpInBlock;
+				IDType nodeK1 = opIDMap[opK1].nodeID;
+				IDType opK2 = blockIDMap[blockJ].lastOpInBlock;
+				IDType nodeK2 = opIDMap[opK2].nodeID;
+				IDType nodeJ = nodeTempOp2;
 
+				if (graph->opEdgeExists(nodeI, nodeK1, blockI, blockK) &&
+						graph->opEdgeExists(nodeK2, nodeJ, blockK, blockJ)) {
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true, blockI, blockJ);
+					if (addEdgeRetValue == 1) {
+						flag = true;
+#ifdef GRAPHDEBUG
+						cout << "TRANS-ST/MT Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
+							 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+#endif
+#ifdef GRAPHDEBUGFULL
+					} else if (addEdgeRetValue == 0) {
+						cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding TRANS-ST/MT edge " << nodeI << " to " << nodeJ << endl;
+						return -1;
+					}
+				}
+
+#if 0
+				IDType prevNodeI = 0;
 //				bool validTransEdge = true;
 				while (opI > 0 && opI >= firstOp) {
 					// Find the earliest op in blockK such that there exists edge (opI, op)
@@ -3018,6 +3057,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 					opI = opIDMap[opI].prevOpInBlock;
 				}
+#endif
 			}
 		}
 	}

@@ -250,79 +250,43 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 		return 0;
 	else if (retValue == 1) {
 		IDType i = blockIDMap[sourceBlock].lastOpInBlock;
-		IDType nodei = 0, prevnodei = 0;
-		IDType prevminNode = -1;
-		while (i > 0 && i >= sourceOp) {
-			nodei = opIDMap[i].nodeID;
-			if (nodei <= 0) {
-				cout << "ERROR: Invalid node ID for op " << i << "\n";
-				return -1;
-			}
-			if (prevnodei != 0) {
-				if (prevnodei == nodei) {
-					i = opIDMap[i].prevOpInBlock;
-					continue;
-				}
-			}
-			prevnodei = nodei;
-
-			HBGraph::adjListNode tempNode(destinationBlock);
-			std::pair<nodeIterator, nodeIterator> ret = opAdjList[nodei].equal_range(destinationBlock);
-			if (ret.first != ret.second) {
-				IDType count = 0;
-				IDType minNode = -1;
-				bool edgeTypeOfMinNode;
-				for (nodeIterator retIt = ret.first; retIt != ret.second; retIt++) {
-					if (minNode == -1 || minNode < retIt->nodeID) {
-						minNode = retIt->nodeID;
-						edgeTypeOfMinNode = isSTEdge(nodei, minNode);
-						count++;
-					}
-				}
-
-				if (count > 1) {
-					removeOpEdgesToBlock(ret.first, ret.second, nodei, destinationBlock);
-					if (minNode > 0) {
-						int addEdgeRetValue = addOpEdge(nodei, minNode, edgeTypeOfMinNode);
-						if (addEdgeRetValue == -1) {
-							cout << "ERROR: While adding restoration edge from "
-								 << nodei << " to " << minNode << "\n";
-							return -1;
-						}
-					}
-				} else if (count == 1) {
-					if (minNode <= destinationNode)
-						return 1;
-				} else if (count < 1) {
-					cout << "ERROR: While finding edges from node " << nodei
-						 << " to nodes in block " << destinationBlock << "\n";
-					cout << "ERROR: equal_range() gives a non-empty range, but count < 1\n";
-					return -1;
-				}
-
-				if (prevnodei != 0 && prevminNode != -1) {
-					if (minNode != -1 && prevminNode > minNode) {
-						int removeEdgeRetValue =
-								removeOpEdge(prevnodei, prevminNode, sourceBlock, destinationBlock);
-						if (removeEdgeRetValue == -1) {
-							cout << "ERROR: While removing edge from node "
-								 << prevnodei << " to " << prevminNode << "\n";
-							return -1;
-						}
-					}
-
-					if (minNode <= destinationNode)
-						return 1;
-
-					prevnodei = nodei;
-					prevminNode = minNode;
-				}
-			}
-
-			i = opIDMap[i].prevOpInBlock;
+		IDType j = blockIDMap[destinationBlock].firstOpInBlock;
+		IDType nodei = 0, nodej = 0;
+		nodei = opIDMap[i].nodeID;
+		if (nodei <= 0) {
+			cout << "ERROR: Invalid node ID for op " << i << "\n";
+			return -1;
+		}
+		nodej = opIDMap[j].nodeID;
+		if (nodej <= 0) {
+			cout << "ERROR: Invalid node ID for op " << j << "\n";
+			return -1;
 		}
 
-		return 0;
+		HBGraph::adjListNode tempNode(destinationBlock);
+		std::pair<nodeIterator, nodeIterator> ret = opAdjList[nodei].equal_range(destinationBlock);
+		if (ret.first != ret.second) {
+			IDType count = std::distance(ret.first, ret.second);
+			if (count > 1) {
+				cout << "ERROR: More than one edge from node " << nodei << " to block "
+					 << destinationBlock << "\n";
+				return -1;
+			} else if (count == 1) {
+				if (ret.first->nodeID != nodej) {
+					cout << "ERROR: Ending node of edge from node " << nodei << " is not " << nodej << "\n";
+					return -1;
+				}
+				if (nodej <= destinationNode)
+					return 1;
+				else
+					return 0;
+			} else if (count < 1) {
+				cout << "ERROR: While finding edges from node " << nodei
+					 << " to nodes in block " << destinationBlock << "\n";
+				cout << "ERROR: equal_range() gives a non-empty range, but count < 1\n";
+				return -1;
+			}
+		}
 	} else
 		return -1;
 
