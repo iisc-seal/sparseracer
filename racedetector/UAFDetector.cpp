@@ -2803,8 +2803,15 @@ int UAFDetector::addTransSTOrMTEdges() {
 				IDType nodeK2 = opIDMap[opK2].nodeID;
 				IDType nodeJ = nodeTempOp2;
 
-				if (graph->opEdgeExists(nodeI, nodeK1, blockI, blockK) &&
-						graph->opEdgeExists(nodeK2, nodeJ, blockK, blockJ)) {
+				bool edge1Exists = false;
+				if (nodeI == nodeK1) edge1Exists = true;
+				else edge1Exists = graph->opEdgeExists(nodeI, nodeK1, blockI, blockK);
+
+				bool edge2Exists = false;
+				if (nodeK2 == nodeJ) edge2Exists = true;
+				else edge2Exists = graph->opEdgeExists(nodeK2, nodeJ, blockK, blockJ);
+
+				if (edge1Exists && edge2Exists) {
 					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, true, blockI, blockJ);
 					if (addEdgeRetValue == 1) {
 						flag = true;
