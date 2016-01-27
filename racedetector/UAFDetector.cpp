@@ -775,17 +775,17 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 						cout << "ERROR: Cannot find block ID of op " << enqOp << "\n";
 						return -1;
 					}
-					IDType firstOp = blockIDMap[blockEnq].firstOpInBlock;
-					if (firstOp < 0) {
-						cout << "ERROR: Cannot find first op of block " << blockEnq << "\n";
+					IDType lastOp = blockIDMap[blockEnq].lastOpInBlock;
+					if (lastOp < 0) {
+						cout << "ERROR: Cannot find last op of block " << blockEnq << "\n";
 						return -1;
 					}
-					IDType firstOpNode = opIDMap[firstOp].nodeID;
-					if (firstOpNode < 0) {
-						cout << "ERROR: Cannot find node ID of op " << firstOp << "\n";
+					IDType lastOpNode = opIDMap[lastOp].nodeID;
+					if (lastOpNode < 0) {
+						cout << "ERROR: Cannot find node ID of op " << lastOp << "\n";
 						return -1;
 					}
-					startingNode = firstOpNode;
+					startingNode = lastOpNode;
 				} else {
 					edgeType = false;
 #ifndef ADVANCEDRULES
