@@ -29,6 +29,7 @@ std::string convertTime(clock_t startTime, clock_t endTime) {
 		time = stream.str();
 	} else {
 		double remaining = (double) (endTime - startTime)/CLOCKS_PER_SEC;
+		stream << "total seconds: " << remaining << " ";
 		int hrs = remaining / 3600;
 		//unsigned long long remaining = elapsed_secs % 3600;
 		remaining = (remaining/3600 - hrs) * 3600;
@@ -95,9 +96,10 @@ int main(int argc, char* argv[]) {
 	}
 	UAFDetector detectorObj;
 
-	clock_t totalStart, totalEnd, tStart, tEnd;
+	clock_t totalStart, totalEnd, tStart, tEnd, transitiveStart, transitiveEnd;
 	totalStart = clock();
 	tStart = totalStart;
+	transitiveStart = totalStart;
 	int retParse = parser.parse(detectorObj);
 	if (retParse == -2) {
 		cout << "Giving up! More than 15k nodes\n";
@@ -127,7 +129,9 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	tEnd = clock();
+	transitiveEnd = tEnd;
 	cout << "Time taken for transitive closure: " << convertTime(tStart, tEnd) << "\n";
+	cout << "Time - parsing + transitive closure: " << convertTime(transitiveStart, transitiveEnd) << "\n";
 
 	detectorObj.initLog(traceFileName);
 	if (runDetectorOnTrace) {
