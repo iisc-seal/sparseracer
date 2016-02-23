@@ -11,7 +11,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/InstIterator.h"
-
+#include "llvm/IR/CallSite.h"
 
 #include <cxxabi.h>
 #include <set>
@@ -46,6 +46,17 @@ namespace MemInstrument {
   std::string demangleFunctionName(std::string functionName); 
 
   std::map<std::string, std::string> getDebugInformation(Module &M);
+
+  bool isCallSite(const llvm::Instruction* inst);
+
+  llvm::CallSite getLLVMCallSite(const llvm::Instruction* inst);
+
+  inline const llvm::Function* getCallee(const llvm::CallSite cs);
+  
+  inline const llvm::Function* getCalleeDirect(const llvm::CallSite cs);
+
+  const llvm::StringRef getCalleeName(const llvm::CallSite cs);
+
 
 }
 #endif

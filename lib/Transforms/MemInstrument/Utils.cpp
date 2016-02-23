@@ -338,4 +338,30 @@ namespace MemInstrument {
     return func;
   }
 
+  bool isCallSite(const llvm::Instruction* inst) {
+    return llvm::isa<llvm::CallInst>(inst)|| llvm::isa<llvm::InvokeInst>(inst);
+  }
+  
+  llvm::CallSite getLLVMCallSite(const llvm::Instruction* inst) {
+    assert(llvm::isa<llvm::CallInst>(inst)|| llvm::isa<llvm::InvokeInst>(inst));
+    llvm::CallSite cs(const_cast<llvm::Instruction*>(inst));
+    return cs;
+  }
+  
+  inline const llvm::Function* getCallee(const llvm::CallSite cs) {
+    llvm::Function *callee = llvm::dyn_cast<llvm::Function>(cs.getCalledValue()->stripPointerCasts());
+    return callee;
+  }
+  
+  inline const llvm::Function* getCalleeDirect(const llvm::CallSite cs) {
+    llvm::Function *callee = llvm::dyn_cast<llvm::Function>(cs.getCalledFunction());
+    return callee;
+  }
+ 
+  const llvm::StringRef getCalleeName(const llvm::CallSite cs) {
+    llvm::Function *callee =llvm::dyn_cast<llvm::Function>(cs.getCalledFunction()->stripPointerCasts());
+    return callee->getName();
+  }
+
+
 }

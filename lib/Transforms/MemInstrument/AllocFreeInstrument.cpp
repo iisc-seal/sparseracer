@@ -49,7 +49,7 @@ namespace MemInstrument {
     // Figure out TargetLibraryInfo.
     Triple TargetTriple(M.getTargetTriple());
     const TargetLibraryInfo *TLI = new TargetLibraryInfo(TargetTriple); 
-    
+    llvm::outs() << "Running Alloc Free Instrument\n";
     std::map<std::string, std::string> funcNameToDirName = getDebugInformation(M);
     for (Module::iterator F = M.begin(), E = M.end(); F != E; ++F) {
       if (F->isDeclaration()) continue;
@@ -77,6 +77,13 @@ namespace MemInstrument {
       // don't instrument syslog
       if(fName.find("syslog")!=std::string::npos)
 	continue;
+      // if(fName.find("_ZN11KDFTopLevelC1EP7QWidget")!=std::string::npos){
+      // 	llvm::outs() << *F << "\n ===================================";
+      // 	for (Function::iterator BB = F->begin(), E = F->end(); BB != E; ++BB) {
+	  
+      // 	  llvm::outs() << *BB << "\n";
+      // 	}
+      // }
       if(// fName.find("PR_GetThreadID")!=std::string::npos || 
 	 // fName.find("PR_GetCurrentThread")!=std::string::npos || 
 	 // fName.find("_PR_") != std::string::npos ||
@@ -169,21 +176,22 @@ namespace MemInstrument {
   }
 
   // TODO : refactor to remove redundant code
-  Value* AllocFreeInstrument::getMemSize(CallInst* Original, 
+  Value* AllocFreeInstrument::getMemSize(Instruction* Original, 
 					 const TargetLibraryInfo *TLI, IRBuilder<> IRB){
     Value* MemSize;
-    // if(llvm::isOperatorNewLikeFn(Original, TLI) 
-    //    || llvm::isMallocLikeFn(Original, TLI))
-    if(allocFunctions.find(Original->getCalledFunction()->getName()) != allocFunctions.end()
-       && Original->getCalledFunction()->getName().compare("realloc") != 0
-       && Original->getCalledFunction()->getName().compare("calloc") != 0)
-      {
+    
+    StringRef fName = getCalleeName(getLLVMCallSite(Original));
+
+    if(allocFunctions.find(fName) != allocFunctions.end()
+       && fName.compare("realloc") != 0
+       && fName.compare("calloc") != 0)
+    {
 	//llvm::outs() << "Got here! \n";
       MemSize = getIntegerValue(Original->getOperand(0));
     }
-    else if(Original->getCalledFunction()->getName().compare("realloc") == 0)
+    else if(fName.compare("realloc") == 0)
       MemSize = getIntegerValue(Original->getOperand(1));
-    else if(Original->getCalledFunction()->getName().compare("calloc") == 0){
+    else if(fName.compare("calloc") == 0){
       Value *size1 = getIntegerValue(Original->getOperand(0));
       Value *size2 = getIntegerValue(Original->getOperand(1));
       MemSize = IRB.CreateMul(size1, size2);
@@ -193,7 +201,8 @@ namespace MemInstrument {
     return MemSize;
   }
 
-  void AllocFreeInstrument::InstrumentAlloc(Instruction* Succ, CallInst *Original, 
+
+  void AllocFreeInstrument::InstrumentAlloc(Instruction* Succ, Instruction *Original, 
 					    std::string fName, const TargetLibraryInfo *TLI,
 					    IRBuilder<> IRB) {
 
@@ -207,6 +216,12 @@ namespace MemInstrument {
       AllocatedType = BCI -> getType();
     else 
       AllocatedType = Original->getType();   
+    
+    //llvm::outs() << "Got here! AllocatedType computed \n";
+
+    StringRef allocName = getCalleeName(getLLVMCallSite(Original));
+    
+    //llvm::outs() << "Got here! allocName "<< allocName << " \n";
 
     // if(isMallocLikeFn(Original, TLI)){
     //   PointerType *PType =  llvm::getMallocType(Original, TLI); 
@@ -220,6 +235,7 @@ namespace MemInstrument {
 
     // Get the number of bytes allocated
     Value *MemSize = getMemSize(Original, TLI, IRB);
+    //llvm::outs() << "Got here! MemSize\n";
     // if(isa<llvm::ConstantInt>(Original->getOperand(0)))
     //   MemSize = dyn_cast<llvm::ConstantInt>(Original->getOperand(0));
     // else
@@ -234,6 +250,7 @@ namespace MemInstrument {
     // errs() << "TYS PTr" << *TypeStringPtr<< "\n";
     //Get a string representing source line number information
     Value *DebugLocationString = IRB.CreateGlobalString(getSourceInfoAsString(Original, fName));
+    //llvm::outs() << "Got here! DebugLocation \n";
     // errs() << "DebugLocPtr" << *DebugLocationString<< "\n";
     //Get a pointer to the string
     Value *DebugStringPtr = IRB.CreateBitCast(DebugLocationString, IRB.getInt8PtrTy());
@@ -241,13 +258,12 @@ namespace MemInstrument {
     //errs() <<"Alloc! \n";
     //Get a string representing the function this write is in
     std::string extra = "";
-    if(Original->getCalledFunction()->getName().compare("realloc")==0)
+    if(allocName.compare("realloc")==0)
       extra = "realloc";
     Value *FunctionNameString = IRB.CreateGlobalString(extra + " in " + fName);
     
     //Get a pointer to the string representing the function name
     Value *FunctionStringPtr = IRB.CreateBitCast(FunctionNameString, IRB.getInt8PtrTy());
-
 
     IRB.CreateCall5(MAllocFn, AddrLong, MemSize, TypeStringPtr, DebugStringPtr, FunctionStringPtr);
     //errs() << "Got Here after call! \n";
@@ -269,17 +285,17 @@ namespace MemInstrument {
 	count++;
 	flag = false;
       }
+      
+      // if(callerName.find("_ZN11KDFTopLevelC1EP7QWidget")!=std::string::npos){
+      // 	llvm::outs() << "instr: ";
+      // 	BI->print(llvm::outs());
+      // 	llvm::outs() << "\n";
+      // }
 
-      if (CallInst * CI = dyn_cast<CallInst>(BI)) {
-
-        // if(dName.compare("")==0){
-	//   std::string dirName = getDirName(CI);
-	//   if(!shouldInstrumentDirectory(dirName))
-	//     continue;
-	// }
-
-	if (Function * CalledFunc = CI->getCalledFunction()) {
-	  std::string name = CalledFunc->getName();
+      if(isCallSite(BI)) 
+	if(llvm::dyn_cast<llvm::Function>(getLLVMCallSite(BI).getCalledFunction())){
+	  StringRef name = getCalleeName(getLLVMCallSite(BI));
+	  //llvm::outs() << "instr: " << *BI << "\n";
 	  bool found = (freeFunctions.find(name) != freeFunctions.end());
 	  if(found){
 	    AllocFreeInstrument::InstrumentDealloc(BI, callerName, TLI);
@@ -289,26 +305,44 @@ namespace MemInstrument {
 	  if(found){
 	    flag = true;
 	    std::pair <Instruction*, Instruction*> allocAndNext = std::make_pair (BI, nullptr);
-	    Interesting.push_back(allocAndNext);
+	    Interesting.push_back(allocAndNext);	  
+	  }
+	}
+    }
+    //llvm::outs() << "Got Here after processing basic block! \n";
+    for(std::vector< std::pair<Instruction*, Instruction*> >::size_type i = 0; 
+	  i != Interesting.size(); i++) {
+      //llvm::outs() << "Got Here in interesting loop! \n";
+      Instruction * I = Interesting[i].first;
+      //llvm::outs() << "Got Here in interesting first! \n";
+      //CallInst * CI = dyn_cast<CallInst>(Interesting[i].first);
+      Instruction* Succ = Interesting[i].second;
+      //llvm::outs() << "Got Here in interesting second! \n";
+      if(Succ == nullptr){
+	//llvm::outs() << "Empty succ for " << *I << "\n"; 
+	for (User *U : I->users()) {
+	  //llvm::outs() << *U << "\n";
+	  if (BitCastInst *Inst = dyn_cast<BitCastInst>(U)) {
+	    Succ = Inst;
+	    break;
 	  }
 	}
       }
-      
-    }
-    for(std::vector< std::pair<Instruction*, Instruction*> >::size_type i = 0; 
-	  i != Interesting.size(); i++) {
-      CallInst * CI = dyn_cast<CallInst>(Interesting[i].first);
-      Instruction* Succ = Interesting[i].second;
-      assert(Succ);
+      //llvm::outs() << "Got Here before setting succ! \n";
+      if(Succ == nullptr){
+	llvm::outs() << "Warning: Could not instrument " << *I <<" in " << callerName << " \n";
+	continue;
+      }
+      //llvm::outs() << "Got Here after verifiying succ is not null! \n";
       // if(Succ == CI->getParent()->getTerminator()){
       // 	IRBuilder<> IRB(CI->getParent());
       // 	llvm::outs() << callerName << "\n";
       // 	AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
       // }
-      
-      IRBuilder<> IRB(Succ);
       //llvm::outs() << "Caller Name: " << callerName << "\n";
-      AllocFreeInstrument::InstrumentAlloc(Succ, CI, callerName, TLI, IRB);
+      //llvm::outs() << Succ << "\n";
+      IRBuilder<> IRB(Succ);      
+      AllocFreeInstrument::InstrumentAlloc(Succ, I, callerName, TLI, IRB);
 
       // Interesting[i].first->print(llvm::outs());
       // llvm::outs() << "\n";

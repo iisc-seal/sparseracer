@@ -84,11 +84,11 @@ namespace MemInstrument {
     virtual bool runOnModule(Module &M);
     void InstrumentDealloc(BasicBlock::iterator &BI, std::string fName, 
 			   const TargetLibraryInfo *TLI);
-    void InstrumentAlloc(Instruction* Succ, CallInst *Original, std::string fName, 
+    void InstrumentAlloc(Instruction* Succ, Instruction *Original, std::string fName, 
 			 const TargetLibraryInfo *TLI, IRBuilder<> IRB);
     virtual bool runOnBasicBlock(Function::iterator &BB, std::string callerName, 
 				 std::string dirName, const TargetLibraryInfo *TLI);
-    Value* getMemSize(CallInst* Original, const TargetLibraryInfo *TLI, 
+    Value* getMemSize(Instruction* Original, const TargetLibraryInfo *TLI, 
 		      IRBuilder<> IRB);
     std::set<std::string> getAllocFunctions(){
       return allocFunctions;
