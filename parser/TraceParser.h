@@ -21,7 +21,7 @@
 class TraceParser {
 public:
 //	TraceParser(string traceFileName, Logger *logger);
-	TraceParser(string traceFileName);
+	TraceParser(string traceFileName, bool withPriority);
 	virtual ~TraceParser();
 
 	std::string traceName;

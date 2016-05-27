@@ -2827,9 +2827,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 						cout << "ERROR: While adding TRANS-ST/MT edge " << nodeI << " to " << nodeJ << endl;
 						return -1;
 					}
+					if (threadI == threadK && threadK == threadJ)
+						continue;
 				}
 
-#if 0
+#ifdef ADVANCEDRULES
 				IDType prevNodeI = 0;
 //				bool validTransEdge = true;
 				while (opI > 0 && opI >= firstOp) {

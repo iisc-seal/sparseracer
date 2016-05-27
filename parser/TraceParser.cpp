@@ -22,7 +22,7 @@ using namespace std;
  * Creates regex for a valid operation.
  */
 //TraceParser::TraceParser(string traceFileName, Logger *logger) {
-TraceParser::TraceParser(string traceFileName) {
+TraceParser::TraceParser(string traceFileName, bool withPriority) {
 	traceFile.open(traceFileName.c_str(), ios_base::in);
 	cout << traceFileName << endl;
 	if (!traceFile.is_open()) {
@@ -42,6 +42,15 @@ TraceParser::TraceParser(string traceFileName) {
 	intRegEx = "[-]?[0-9]+";
 	hexRegEx = "0[xX][0-9a-fA-F]+";
 
+	std::string enqRegEx = "";
+	if (withPriority) {
+		enqRegEx = " *(enq) *\\( *(" + posIntRegEx + ") *, *(" + posIntRegEx + ") *, *("
+	  	  	  	   + posIntRegEx + ") *, *("       + intRegEx + ") *\\) *";
+	} else {
+		enqRegEx = " *(enq) *\\( *(" + posIntRegEx + ") *, *(" + posIntRegEx + ") *, *("
+	  	  	  	   + posIntRegEx + ") *\\) *";
+	}
+
 	// The operation regular expression.
 	opRegEx = " *(threadinit) *\\( *(" + posIntRegEx + ") *\\) *" + "|" +
 			  " *(threadexit) *\\( *(" + posIntRegEx + ") *\\) *" + "|" +
@@ -49,8 +58,9 @@ TraceParser::TraceParser(string traceFileName) {
 			  " *(join) *\\( *("       + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
 			  " *(enterloop) *\\( *("  + posIntRegEx + ") *\\) *" + "|" +
 			  " *(exitloop) *\\( *("   + posIntRegEx + ") *\\) *" + "|" +
-			  " *(enq) *\\( *("        + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
-			  	  	  	  	  	  	   + posIntRegEx + ") *, *("       + intRegEx + ") *\\) *" + "|" +
+//			  " *(enq) *\\( *("        + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
+//			  	  	  	  	  	  	   + posIntRegEx + ") *, *("       + intRegEx + ") *\\) *" + "|" +
+			  enqRegEx + "|" +
 			  " *(deq) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
 			  " *(end) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
 #ifdef PERMIT

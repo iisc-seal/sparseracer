@@ -56,19 +56,21 @@ int main(int argc, char* argv[]) {
 
 	string traceFileName = argv[1];
 
-	TraceParser parser(traceFileName);
 
 	bool outputAllConflictingOps = false;
 	bool filterUAFInput = false, filterRaceInput = false;
 	bool runDetectorOnTrace = false;
 	bool multithreadedHB = false;
 	bool richHB = false;
+	bool withPriority = true;
 	string outputUAFAllOpsFileName, outputUAFAllOpsUniqueFileName,
 		   outputRacesAllOpsFileName, outputRacesAllOpsUniqueFileName;
 	string filterUAFInputFileName, filterUAFOutputFileName,
 		   filterRaceInputFileName, filterRaceOutputFileName;
 	for (int i = 2; i < argc; i++) {
-		if (strcmp(argv[i], "-a") == 0) {
+		if (strcmp(argv[i], "-no-priority") == 0) {
+			withPriority = false;
+		} else if (strcmp(argv[i], "-a") == 0) {
 			outputAllConflictingOps = true;
 			outputUAFAllOpsFileName = traceFileName + ".uaf.allconflictingops";
 			outputUAFAllOpsUniqueFileName = traceFileName + ".uaf.allconflictingops.unique";
@@ -94,6 +96,8 @@ int main(int argc, char* argv[]) {
 			exit(0);
 		}
 	}
+
+	TraceParser parser(traceFileName, withPriority);
 	UAFDetector detectorObj;
 
 	clock_t totalStart, totalEnd, tStart, tEnd, transitiveStart, transitiveEnd;

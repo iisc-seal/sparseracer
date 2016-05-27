@@ -118,6 +118,13 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, bool edgeType,
 
 		assert(sourceBlock != destinationBlock);
 
+		// If we are adding edge in the same thread, do it at the boundary of blocks.
+		if (blockIDMap[sourceBlock].threadID == blockIDMap[destinationBlock].threadID) {
+			IDType sourceOp = blockIDMap[sourceBlock].lastOpInBlock;
+			sourceNode = opIDMap[sourceOp].nodeID;
+			IDType destOp = blockIDMap[destinationBlock].firstOpInBlock;
+			destinationNode = opIDMap[destOp].nodeID;
+		}
 		opAdjMatrix[sourceNode][destinationNode] = true;
 		opEdgeTypeMatrix[sourceNode][destinationNode] = edgeType;
 
