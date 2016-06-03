@@ -6705,6 +6705,28 @@ it++) {
 			}
 		}
 	}
+
+	// Compute the max and min size of blocks
+	int minBlockSize = -1, maxBlockSize = -1;
+	int minSizedBlockID = -1, maxSizedBlockID = -1;
+	for (std::map<IDType, UAFDetector::blockDetails>::iterator bIt = detector.blockIDMap.begin();
+			bIt != detector.blockIDMap.end(); bIt++) {
+		// compute the size of the current block
+		int count = 0;
+		for (IDType op = bIt->second.firstOpInBlock; op != bIt->second.lastOpInBlock && op > 0;
+				op = detector.opIDMap[op].nextOpInBlock) {
+			count++;
+		}
+
+		if (minBlockSize == -1 || minBlockSize > count) {
+			minBlockSize = count;
+			minSizedBlockID = bIt->first;
+		}
+		if (maxBlockSize == -1 || maxBlockSize < count) {
+			maxBlockSize = count;
+			maxSizedBlockID = bIt->first;
+		}
+	}
 	cout << "No of atomic tasks: " << numOfAtomicTasks << "\n";
 	cout << "No of non-atomic tasks: " << detector.taskIDMap.size() - numOfAtomicTasks << "\n";
 	cout << "No of tasks with non-null parent: " << numOfTasksWithNonNullParent << "\n";
@@ -6720,6 +6742,8 @@ it++) {
 	cout << "No of threads: " << detector.threadIDMap.size() << "\n";
 	cout << "No of threads with queues: " << setOfThreadsWithQueues.size() << "\n";
 	cout << "No of threads with nesting loops: " << setOfThreadsWithNestingLoops.size() << "\n";
+	cout << "Max block size: " << maxBlockSize << " (in block " << maxSizedBlockID << ")\n";
+	cout << "Min block size: " << minBlockSize << " (in block " << minSizedBlockID << ")\n";
 	cout << "No of alloc ops: " << detector.allocSet.size() << "\n";
 	cout << "No of free ops: " << detector.freeSet.size() << "\n";
 	cout << "No of read ops: " << detector.readSet.size() << "\n";
