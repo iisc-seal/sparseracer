@@ -21,7 +21,7 @@
 class TraceParser {
 public:
 //	TraceParser(string traceFileName, Logger *logger);
-	TraceParser(string traceFileName, bool withPriority);
+	TraceParser(string traceFileName, bool withPriority, bool isHexTaskID);
 	virtual ~TraceParser();
 
 	std::string traceName;

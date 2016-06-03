@@ -22,7 +22,7 @@ using namespace std;
  * Creates regex for a valid operation.
  */
 //TraceParser::TraceParser(string traceFileName, Logger *logger) {
-TraceParser::TraceParser(string traceFileName, bool withPriority) {
+TraceParser::TraceParser(string traceFileName, bool withPriority, bool isHexTaskID) {
 	traceFile.open(traceFileName.c_str(), ios_base::in);
 	cout << traceFileName << endl;
 	if (!traceFile.is_open()) {
@@ -42,14 +42,24 @@ TraceParser::TraceParser(string traceFileName, bool withPriority) {
 	intRegEx = "[-]?[0-9]+";
 	hexRegEx = "0[xX][0-9a-fA-F]+";
 
+	std::string taskIDRegEx = "";
+	if (isHexTaskID)
+		taskIDRegEx = hexRegEx;
+	else
+		taskIDRegEx = intRegEx;
+
 	std::string enqRegEx = "";
 	if (withPriority) {
-		enqRegEx = " *(enq) *\\( *(" + posIntRegEx + ") *, *(" + posIntRegEx + ") *, *("
+		enqRegEx = " *(enq) *\\( *(" + posIntRegEx + ") *, *(" + taskIDRegEx + ") *, *("
 	  	  	  	   + posIntRegEx + ") *, *("       + intRegEx + ") *\\) *";
 	} else {
-		enqRegEx = " *(enq) *\\( *(" + posIntRegEx + ") *, *(" + posIntRegEx + ") *, *("
+		enqRegEx = " *(enq) *\\( *(" + posIntRegEx + ") *, *(" + taskIDRegEx + ") *, *("
 	  	  	  	   + posIntRegEx + ") *\\) *";
 	}
+
+#ifdef TRACEDEBUG
+	cout << "DEBUG: enqRegEx is now: " << enqRegEx << "\n";
+#endif
 
 	// The operation regular expression.
 	opRegEx = " *(threadinit) *\\( *(" + posIntRegEx + ") *\\) *" + "|" +
@@ -61,17 +71,17 @@ TraceParser::TraceParser(string traceFileName, bool withPriority) {
 //			  " *(enq) *\\( *("        + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
 //			  	  	  	  	  	  	   + posIntRegEx + ") *, *("       + intRegEx + ") *\\) *" + "|" +
 			  enqRegEx + "|" +
-			  " *(deq) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
-			  " *(end) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *\\) *" + "|" +
+			  " *(deq) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + taskIDRegEx + ") *\\) *" + "|" +
+			  " *(end) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + taskIDRegEx + ") *\\) *" + "|" +
 #ifdef PERMIT
-			  " *(permit) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
+			  " *(permit) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + taskIDRegEx + ") *, *("
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
-			  " *(revoke) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
+			  " *(revoke) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + taskIDRegEx + ") *, *("
 			  	  	  	  	  	  	                               + hexRegEx + ") *\\) *" + "|" +
 #else
-			  " *(pause) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
+			  " *(pause) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + taskIDRegEx + ") *, *("
 			  	  	  	  	  	  	     			  	  	  	   + hexRegEx + ") *\\) *" + "|" +
-			  " *(resume) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + posIntRegEx + ") *, *("
+			  " *(resume) *\\( *(" 	   + posIntRegEx + ") *, *(" 	   + taskIDRegEx + ") *, *("
 			  	  	  	  	  	  	     			  	  	  	   + hexRegEx + ") *\\) *" + "|" +
 #endif
 			  " *(reset) *\\( *("	   + posIntRegEx + ") *, *("      + hexRegEx + ") *\\) *" + "|" +

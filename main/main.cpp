@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 	bool runDetectorOnTrace = false;
 	bool multithreadedHB = false;
 	bool richHB = false;
-	bool withPriority = true;
+	bool withPriority = true, hexTaskID = false;;
 	string outputUAFAllOpsFileName, outputUAFAllOpsUniqueFileName,
 		   outputRacesAllOpsFileName, outputRacesAllOpsUniqueFileName;
 	string filterUAFInputFileName, filterUAFOutputFileName,
@@ -70,6 +70,8 @@ int main(int argc, char* argv[]) {
 	for (int i = 2; i < argc; i++) {
 		if (strcmp(argv[i], "-no-priority") == 0) {
 			withPriority = false;
+		} else if (strcmp(argv[i], "-hex") == 0) {
+			hexTaskID = true;
 		} else if (strcmp(argv[i], "-a") == 0) {
 			outputAllConflictingOps = true;
 			outputUAFAllOpsFileName = traceFileName + ".uaf.allconflictingops";
@@ -97,7 +99,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	TraceParser parser(traceFileName, withPriority);
+	TraceParser parser(traceFileName, withPriority, hexTaskID);
 	UAFDetector detectorObj;
 
 	clock_t totalStart, totalEnd, tStart, tEnd, transitiveStart, transitiveEnd;
