@@ -615,11 +615,11 @@ public:
 
 	IDType totalBlocks;
 	IDType totalOps;
-	bool** opAdjMatrix;
-	bool** opEdgeTypeMatrix; // true if edge is st-edge, false if edge is dt-edge
-	bool** blockAdjMatrix;
-	std::multiset<adjListNode>* opAdjList;
-	std::multiset<adjListNode>* blockAdjList;
+	bool** opAdjMatrix; // I am going to store only MT edges in here, ST edges are in blockAdjMatrix
+	bool** blockEdgeTypeMatrix; // true if edge is from st-edge, false if edge is from dt-edge
+	bool** blockAdjMatrix; // only ST edges
+	std::multiset<adjListNode>* opAdjList; // only MT edges
+	std::multiset<adjListNode>* blockAdjList; // only ST edges
 
 
 	unsigned long long numOfOpEdges;
@@ -629,11 +629,11 @@ public:
 	// Return -1 if error, 1 if the edge was newly added, 0 if edge already present.
 	int addOpEdge(IDType sourceOp, IDType destinationOp, bool edgeType, IDType sourceBlock=0, IDType destinationBlock=0);
 	//int addBlockEdge(IDType sourceBlock, IDType destinationBlock);
-	bool isSTEdge(IDType sourceNode, IDType destinationNode);
-	int removeOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
-	int removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator first,
-			std::multiset<HBGraph::adjListNode>::iterator last,
-			IDType sourceNode, IDType destinationBlock);
+	bool isSTEdge(IDType sourceBlock, IDType destinationBlock);
+//	int removeOpEdge(IDType sourceOp, IDType destinationOp, IDType sourceBlock=0, IDType destinationBlock=0);
+//	int removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator first,
+//			std::multiset<HBGraph::adjListNode>::iterator last,
+//			IDType sourceNode, IDType destinationBlock);
 
 	// Return 1 if edge exists, 0 if not, -1 if adjMatrix and adjList are out of sync.
 	int blockEdgeExists(IDType sourceBlock, IDType destinationBlock);

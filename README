@@ -7,3 +7,6 @@ Compile:
 
 Run:
 	./Debug/foxracer <trace-file>
+
+
+Note: This branch uses blocks for ST rules and but disables it for MT rules.

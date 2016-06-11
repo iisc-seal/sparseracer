@@ -25,7 +25,7 @@ HBGraph::HBGraph(){
 
 	opAdjList = NULL;
 	opAdjMatrix = NULL;
-	opEdgeTypeMatrix = NULL;
+	blockEdgeTypeMatrix = NULL;
 	blockAdjList = NULL;
 	blockAdjMatrix = NULL;
 }
@@ -46,14 +46,14 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks,
 	nodeIDMap = nodeMap;
 
 	opAdjMatrix = (bool**) malloc(sizeof(bool*) * (totalOps+1));
-	opEdgeTypeMatrix = (bool**) malloc(sizeof(bool*) * (totalOps+1));
+	blockEdgeTypeMatrix = (bool**) malloc(sizeof(bool*) * (totalBlocks+1));
 	blockAdjMatrix = (bool**) malloc(sizeof(bool*) * (totalBlocks+1));
 
 	if (opAdjMatrix == NULL) {
 		cout << "ERROR: Cannot allocate memory for opAdjMatrix\n";
 	}
-	if (opEdgeTypeMatrix == NULL) {
-		cout << "ERROR: Cannot allocate memory for opEdgeTypeMatrix\n";
+	if (blockEdgeTypeMatrix == NULL) {
+		cout << "ERROR: Cannot allocate memory for blockEdgeTypeMatrix\n";
 	}
 	if (blockAdjMatrix == NULL) {
 		cout << "ERROR: Cannot allocate memory for blockAdjMatrix\n";
@@ -64,10 +64,11 @@ HBGraph::HBGraph(IDType countOfOps, IDType countOfBlocks,
 
 	for (IDType i=1; i <= totalOps; i++) {
 		opAdjMatrix[i] = (bool*) calloc((totalOps+1) , sizeof(bool));
-		opEdgeTypeMatrix[i] = (bool*) calloc((totalOps+1), sizeof(bool));
+//		opEdgeTypeMatrix[i] = (bool*) calloc((totalOps+1), sizeof(bool));
 	}
 	for (IDType i=1; i <= totalBlocks; i++) {
 		blockAdjMatrix[i] = (bool*) calloc((totalBlocks+1) , sizeof(bool));
+		blockEdgeTypeMatrix[i] = (bool*) calloc((totalBlocks+1), sizeof(bool));
 
 		// There is always a self edge for each block since there are HB edges
 		// (program-order) within the block
@@ -124,25 +125,25 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, bool edgeType,
 			sourceNode = opIDMap[sourceOp].nodeID;
 			IDType destOp = blockIDMap[destinationBlock].firstOpInBlock;
 			destinationNode = opIDMap[destOp].nodeID;
+			int retBlockValue = blockEdgeExists(sourceBlock, destinationBlock);
+			if (retBlockValue == 0) {
+				blockAdjMatrix[sourceBlock][destinationBlock] = true;
+				blockEdgeTypeMatrix[sourceBlock][destinationBlock] = edgeType;
+
+				adjListNode destBlockNode(destinationBlock);
+				blockAdjList[sourceBlock].insert(destBlockNode);
+
+				numOfBlockEdges++;
+			} else if (retBlockValue == -1)
+				return -1;
+		} else {
+			opAdjMatrix[sourceNode][destinationNode] = true;
+
+			adjListNode destOpNode(destinationNode, destinationBlock);
+			opAdjList[sourceNode].insert(destOpNode);
+
+			numOfOpEdges++;
 		}
-		opAdjMatrix[sourceNode][destinationNode] = true;
-		opEdgeTypeMatrix[sourceNode][destinationNode] = edgeType;
-
-		adjListNode destOpNode(destinationNode, destinationBlock);
-		opAdjList[sourceNode].insert(destOpNode);
-
-		numOfOpEdges++;
-
-		int retBlockValue = blockEdgeExists(sourceBlock, destinationBlock);
-		if (retBlockValue == 0) {
-			blockAdjMatrix[sourceBlock][destinationBlock] = true;
-
-			adjListNode destBlockNode(destinationBlock);
-			blockAdjList[sourceBlock].insert(destBlockNode);
-
-			numOfBlockEdges++;
-		} else if (retBlockValue == -1)
-			return -1;
 		return 1;
 	} else if (retOpValue == 1)
 		return 0;
@@ -152,6 +153,7 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, bool edgeType,
 	return -1;
 }
 
+#if 0
 // currNode is the adjListNode containing destinationOp in the adjacency list of sourceOp
 int HBGraph::removeOpEdge(IDType sourceNode, IDType destinationNode, IDType sourceBlock, IDType destinationBlock) {
 	assert(1 <= sourceNode && sourceNode <= totalOps);
@@ -212,6 +214,7 @@ int HBGraph::removeOpEdgesToBlock(std::multiset<HBGraph::adjListNode>::iterator 
 	opAdjList[sourceNode].erase(first, last);
 	return 0;
 }
+#endif
 
 int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sourceBlock, IDType destinationBlock) {
 
@@ -253,83 +256,90 @@ int HBGraph::opEdgeExists(IDType sourceNode, IDType destinationNode, IDType sour
 
 	// Check if the edge is implied transitively
 	int retValue = blockEdgeExists(sourceBlock, destinationBlock);
-	if (retValue == 0)
-		return 0;
-	else if (retValue == 1) {
-		IDType i = blockIDMap[sourceBlock].lastOpInBlock;
-			IDType nodei = 0, prevnodei = 0;
-			IDType prevminNode = -1;
-			while (i > 0 && i >= sourceOp) {
-				nodei = opIDMap[i].nodeID;
-				if (nodei <= 0) {
-					cout << "ERROR: Invalid node ID for op " << i << "\n";
-					return -1;
-				}
-				if (prevnodei != 0) {
-					if (prevnodei == nodei) {
-						i = opIDMap[i].prevOpInBlock;
-						continue;
-					}
-				}
-				prevnodei = nodei;
-
-				HBGraph::adjListNode tempNode(destinationBlock);
-				std::pair<nodeIterator, nodeIterator> ret = opAdjList[nodei].equal_range(destinationBlock);
-				if (ret.first != ret.second) {
-					IDType count = 0;
-					IDType minNode = -1;
-					bool edgeTypeOfMinNode;
-					for (nodeIterator retIt = ret.first; retIt != ret.second; retIt++) {
-						if (minNode == -1 || minNode < retIt->nodeID) {
-							minNode = retIt->nodeID;
-							edgeTypeOfMinNode = isSTEdge(nodei, minNode);
-							count++;
-						}
-					}
-
-					if (count > 1) {
-						removeOpEdgesToBlock(ret.first, ret.second, nodei, destinationBlock);
-						if (minNode > 0) {
-							int addEdgeRetValue = addOpEdge(nodei, minNode, edgeTypeOfMinNode);
-							if (addEdgeRetValue == -1) {
-								cout << "ERROR: While adding restoration edge from "
-									 << nodei << " to " << minNode << "\n";
-								return -1;
-							}
-						}
-					} else if (count == 1) {
-						if (minNode <= destinationNode)
-							return 1;
-					} else if (count < 1) {
-						cout << "ERROR: While finding edges from node " << nodei
-							 << " to nodes in block " << destinationBlock << "\n";
-						cout << "ERROR: equal_range() gives a non-empty range, but count < 1\n";
-						return -1;
-					}
-
-					if (prevnodei != 0 && prevminNode != -1) {
-						if (minNode != -1 && prevminNode > minNode) {
-							int removeEdgeRetValue =
-									removeOpEdge(prevnodei, prevminNode, sourceBlock, destinationBlock);
-							if (removeEdgeRetValue == -1) {
-								cout << "ERROR: While removing edge from node "
-									 << prevnodei << " to " << prevminNode << "\n";
-								return -1;
-							}
-						}
-
-						if (minNode <= destinationNode)
-							return 1;
-
-						prevnodei = nodei;
-						prevminNode = minNode;
-					}
-				}
-
-				i = opIDMap[i].prevOpInBlock;
-			}
-
+	if (retValue == 0) {
+		// If both blocks are in the same thread, then there is no edge between the nodes
+		if (blockIDMap[sourceBlock].threadID == blockIDMap[destinationBlock].threadID) {
 			return 0;
+		}
+
+		// If blocks are in different threads, then check the opAdjMatrix
+		return opAdjMatrix[sourceNode][destinationNode];
+	} else if (retValue == 1) {
+		return 1;
+//		IDType i = blockIDMap[sourceBlock].lastOpInBlock;
+//			IDType nodei = 0, prevnodei = 0;
+//			IDType prevminNode = -1;
+//			while (i > 0 && i >= sourceOp) {
+//				nodei = opIDMap[i].nodeID;
+//				if (nodei <= 0) {
+//					cout << "ERROR: Invalid node ID for op " << i << "\n";
+//					return -1;
+//				}
+//				if (prevnodei != 0) {
+//					if (prevnodei == nodei) {
+//						i = opIDMap[i].prevOpInBlock;
+//						continue;
+//					}
+//				}
+//				prevnodei = nodei;
+//
+//				HBGraph::adjListNode tempNode(destinationBlock);
+//				std::pair<nodeIterator, nodeIterator> ret = opAdjList[nodei].equal_range(destinationBlock);
+//				if (ret.first != ret.second) {
+//					IDType count = 0;
+//					IDType minNode = -1;
+//					bool edgeTypeOfMinNode;
+//					for (nodeIterator retIt = ret.first; retIt != ret.second; retIt++) {
+//						if (minNode == -1 || minNode < retIt->nodeID) {
+//							minNode = retIt->nodeID;
+//							edgeTypeOfMinNode = isSTEdge(nodei, minNode);
+//							count++;
+//						}
+//					}
+//
+//					if (count > 1) {
+//						removeOpEdgesToBlock(ret.first, ret.second, nodei, destinationBlock);
+//						if (minNode > 0) {
+//							int addEdgeRetValue = addOpEdge(nodei, minNode, edgeTypeOfMinNode);
+//							if (addEdgeRetValue == -1) {
+//								cout << "ERROR: While adding restoration edge from "
+//									 << nodei << " to " << minNode << "\n";
+//								return -1;
+//							}
+//						}
+//					} else if (count == 1) {
+//						if (minNode <= destinationNode)
+//							return 1;
+//					} else if (count < 1) {
+//						cout << "ERROR: While finding edges from node " << nodei
+//							 << " to nodes in block " << destinationBlock << "\n";
+//						cout << "ERROR: equal_range() gives a non-empty range, but count < 1\n";
+//						return -1;
+//					}
+//
+//					if (prevnodei != 0 && prevminNode != -1) {
+//						if (minNode != -1 && prevminNode > minNode) {
+//							int removeEdgeRetValue =
+//									removeOpEdge(prevnodei, prevminNode, sourceBlock, destinationBlock);
+//							if (removeEdgeRetValue == -1) {
+//								cout << "ERROR: While removing edge from node "
+//									 << prevnodei << " to " << prevminNode << "\n";
+//								return -1;
+//							}
+//						}
+//
+//						if (minNode <= destinationNode)
+//							return 1;
+//
+//						prevnodei = nodei;
+//						prevminNode = minNode;
+//					}
+//				}
+//
+//				i = opIDMap[i].prevOpInBlock;
+//			}
+//
+//			return 0;
 
 	} else
 		return -1;
@@ -370,6 +380,6 @@ void HBGraph::printGraph() {
 	cout << "\n";
 }
 
-bool HBGraph::isSTEdge(IDType sourceNode, IDType destinationNode) {
-	return opEdgeTypeMatrix[sourceNode][destinationNode];
+bool HBGraph::isSTEdge(IDType sourceBlock, IDType destinationBlock) {
+	return blockEdgeTypeMatrix[sourceBlock][destinationBlock];
 }

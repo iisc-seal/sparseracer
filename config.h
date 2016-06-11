@@ -42,7 +42,7 @@
 // #define EXTRARULES
 
 // To enable advanced rules - MT and cascaded loop
-// #define ADVANCEDRULES
+ #define ADVANCEDRULES
 
 #ifdef SMALL
 typedef int IDType;
