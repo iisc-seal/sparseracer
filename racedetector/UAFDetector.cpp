@@ -2734,14 +2734,15 @@ int UAFDetector::addTransSTOrMTEdges() {
 				}
 #endif
 #ifdef ADVANCEDRULES
-				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
-#ifdef GRAPHDEBUGFULL
-					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
-						 << " threadJ: " << threadJ << "\n";
-					cout << "DEBUG: TRANS-edge: Violates thread criterion\n";
-#endif
-					continue;
-				}
+				// No check required
+//				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
+//#ifdef GRAPHDEBUGFULL
+//					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
+//						 << " threadJ: " << threadJ << "\n";
+//					cout << "DEBUG: TRANS-edge: Violates thread criterion\n";
+//#endif
+//					continue;
+//				}
 #else
 				if (!(threadI == threadK && threadK == threadJ)) {
 					// Transitive closure over nodes from different threads
@@ -2861,10 +2862,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 						nodeKIt != graph->opAdjList[nodeK].end(); nodeKIt++) {
 					IDType nodeJ = nodeKIt->nodeID;
 
+					// No such check required
 					// Check if nodeI and nodeJ are in the same thread
-					IDType threadI = opIDMap[*(nodeIDMap[nodeI].opSet.begin())].threadID;
-					IDType threadJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].threadID;
-					if (threadI == threadJ) continue;
+//					IDType threadI = opIDMap[*(nodeIDMap[nodeI].opSet.begin())].threadID;
+//					IDType threadJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].threadID;
+//					if (threadI == threadJ) continue;
 
 					// Check if there already exists an edge between them
 					if (graph->opEdgeExists(nodeI, nodeK, blockI)) continue;
