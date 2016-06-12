@@ -3031,10 +3031,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 						else {
 							// threadI == threadJ and the contributing edges are not ST
 //							validTransEdge = false;
-							// Not a valid transitive edge
-							cout << "Not a valid transitive edge " << nodeI << ", " << nodeJ << "\n";
-							opI = opIDMap[opI].prevOpInBlock;
-							continue;
+							// Not a valid transitive edge. For some reason, this restriction does not apply anymore.
+//							cout << "Not a valid transitive edge " << nodeI << ", " << nodeJ << "\n";
+//							opI = opIDMap[opI].prevOpInBlock;
+//							continue;
+							transEdgeType = false;
 						}
 #else
 						bool transEdgeType;
