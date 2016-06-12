@@ -2727,14 +2727,15 @@ int UAFDetector::addTransSTOrMTEdges() {
 				}
 #endif
 #ifdef ADVANCEDRULES
-				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
-#ifdef GRAPHDEBUGFULL
-					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
-						 << " threadJ: " << threadJ << "\n";
-					cout << "DEBUG: TRANS-edge: Violates thread criterion\n";
-#endif
-					continue;
-				}
+				// This check is not required
+//				if (!(((threadI == threadK) && (threadK == threadJ)) || (threadI != threadJ))) {
+//#ifdef GRAPHDEBUGFULL
+//					cout << "DEBUG: TRANS-edge: threadI: " << threadI << " threadK: " << threadK
+//						 << " threadJ: " << threadJ << "\n";
+//					cout << "DEBUG: TRANS-edge: Violates thread criterion\n";
+//#endif
+//					continue;
+//				}
 #else
 				if (!(threadI == threadK && threadK == threadJ)) {
 					// Transitive closure over nodes from different threads
