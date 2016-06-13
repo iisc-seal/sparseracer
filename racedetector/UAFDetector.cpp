@@ -558,7 +558,7 @@ int UAFDetector::add_LoopPO_Fork_Join_Edges() {
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
-						cout << "R1: LOOP-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+						cout << "R1: LOOP-PO edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << b1 << ", " << b2 << ") -- #op-edges "   << graph->numOfOpEdges
 							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -725,7 +725,8 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
-						cout << "R3: TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+						cout << "R3: TASK-PO edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << b1 << ", " << b2
+							 << ") -- #op-edges "   << graph->numOfOpEdges
 							 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -786,6 +787,9 @@ int UAFDetector::add_TaskPO_EnqueueSTOrMT_Edges() {
 						return -1;
 					}
 					startingNode = lastOpNode;
+#ifdef GRAPHDEBUG
+					cout << "DEBUG: ENQ-ST: About to add block edge (" << blockEnq << ", " << opIDMap[deqOp].blockID << ")\n";
+#endif
 				} else {
 					edgeType = false;
 #ifndef ADVANCEDRULES
@@ -965,7 +969,8 @@ int UAFDetector::add_FifoAtomic_NoPre_Edges() {
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
-											cout << "R5: FIFO-ATOMIC edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											cout << "R5: FIFO-ATOMIC edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+												 << ") -- #op-edges "   << graph->numOfOpEdges
 												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1278,7 +1283,8 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
-									cout << "R8: PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									cout << "R8: PAUSE-ST edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+										 << ") -- #op-edges "   << graph->numOfOpEdges
 										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1419,7 +1425,8 @@ int UAFDetector::add_PauseSTMT_ResumeSTMT_Edges() {
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
-									cout << "R9: RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									cout << "R9: RESUME-ST edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+										 << ") -- #op-edges "   << graph->numOfOpEdges
 										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1747,7 +1754,8 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 								if (addEdgeRetValue == 1) {
 									flag = true;
 #ifdef GRAPHDEBUG
-									cout << "R12: FIFO-NESTED-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+									cout << "R12: FIFO-NESTED-1 edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+										 << ") -- #op-edges "   << graph->numOfOpEdges
 										 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -1890,7 +1898,8 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 											if (addEdgeRetValue == 1) {
 												flag = true;
 #ifdef GRAPHDEBUG
-												cout << "R13: FIFO-NESTED-2 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												cout << "R13: FIFO-NESTED-2 edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+													 << ") -- #op-edges "   << graph->numOfOpEdges
 													 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -2053,7 +2062,8 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
-											cout << "FIFO-NESTED-GEN edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											cout << "FIFO-NESTED-GEN edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+												 << ") -- #op-edges "   << graph->numOfOpEdges
 												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -2256,7 +2266,8 @@ int UAFDetector::add_FifoNested_1_2_Gen_EnqResetST_1_Edges() {
 											if (addEdgeRetValue == 1) {
 												flag = true;
 #ifdef GRAPHDEBUG
-												cout << "R10: ENQRESET-ST-1 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+												cout << "R10: ENQRESET-ST-1 edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+													 << ") -- #op-edges "   << graph->numOfOpEdges
 													 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -2619,7 +2630,8 @@ int UAFDetector::add_EnqReset_ST_2_3_Edges() {
 										if (addEdgeRetValue == 1) {
 											flag = true;
 #ifdef GRAPHDEBUG
-											cout << "ENQRESET-ST-3 edge (" << nodeI << ", " << nodeJ << ") -- #op-edges "   << graph->numOfOpEdges
+											cout << "ENQRESET-ST-3 edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << opIDMap[opI].blockID << ", " << opIDMap[opJ].blockID
+												 << ") -- #op-edges "   << graph->numOfOpEdges
 												 << " -- #block-edges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
@@ -2835,7 +2847,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
-						cout << "TRANS-ST Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
+						cout << "TRANS-ST Edge (" << nodeI << ", " << nodeJ << ") -- block edge (" << blockI << ", " << blockJ
+							 << ") -- #opEdges " << graph->numOfOpEdges
 							 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
 #endif
 #ifdef GRAPHDEBUGFULL
