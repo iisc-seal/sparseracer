@@ -57,10 +57,6 @@ TraceParser::TraceParser(string traceFileName, bool withPriority, bool isHexTask
 	  	  	  	   + posIntRegEx + ") *\\) *";
 	}
 
-#ifdef TRACEDEBUG
-	cout << "DEBUG: enqRegEx is now: " << enqRegEx << "\n";
-#endif
-
 	// The operation regular expression.
 	opRegEx = " *(threadinit) *\\( *(" + posIntRegEx + ") *\\) *" + "|" +
 			  " *(threadexit) *\\( *(" + posIntRegEx + ") *\\) *" + "|" +

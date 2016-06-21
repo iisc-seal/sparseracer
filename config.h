@@ -10,7 +10,7 @@
  #define ADDITIONS
 
 // To process locks in the trace
- #define LOCKS
+// #define LOCKS
 
 // To enable sanity checks
  #define SANITYCHECK

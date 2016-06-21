@@ -2671,6 +2671,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 	// Adding TRANS-ST/MT Edges
 
+	// Book-keeping data structures
+	typedef std::pair<std::pair<IDType, IDType>, IDType> triple;
+	std::set<triple> threeOps, twoBlocksAndOp, opAndTwoBlocks;
+	std::set<std::pair<IDType, IDType> > twoOps;
+
 	for (map<IDType, UAFDetector::blockDetails>::iterator it = blockIDMap.begin(); it != blockIDMap.end(); it++) {
 		IDType blockI = it->first;
 
@@ -2678,6 +2683,9 @@ int UAFDetector::addTransSTOrMTEdges() {
 		assert(blockI > 0);
 #endif
 		IDType firstOp = blockIDMap[blockI].firstOpInBlock;
+		IDType firstNodeInBlockI = opIDMap[firstOp].nodeID;
+		IDType lastNodeInBlockI = opIDMap[blockIDMap[blockI].lastOpInBlock].nodeID;
+		IDType threadI = blockIDMap[blockI].threadID;
 
 #ifdef SANITYCHECK
 		if (firstOp <= 0) {
@@ -2856,36 +2864,39 @@ int UAFDetector::addTransSTOrMTEdges() {
 						cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
 #endif
 					} else if (addEdgeRetValue == -1) {
-						cout << "ERROR: While adding TRANS-ST/MT edge " << nodeI << " to " << nodeJ << endl;
+						cout << "ERROR: While adding TRANS-ST edge " << nodeI << " to " << nodeJ << endl;
 						return -1;
 					}
 				}
 			}
-		}
 
 #ifdef ADVANCEDRULES
-		IDType nodeI = opIDMap[firstOp].nodeID;
-		IDType nodeOfLastOp = opIDMap[blockIDMap[blockI].lastOpInBlock].nodeID;
-		while (nodeI <= nodeOfLastOp) {
-			for (std::multiset<HBGraph::adjListNode>::iterator nodeIIt = graph->opAdjList[nodeI].begin();
-					nodeIIt != graph->opAdjList[nodeI].end(); nodeIIt++) {
-				IDType nodeK = nodeIIt->nodeID;
+			// BI -> BK and first-op-of-BK -> op-in-another-thread, then add edges from all ops in BI to that op-in-another-thread
+			IDType firstOpOfBlockK = blockIDMap[blockK].firstOpInBlock;
+			IDType firstNodeOfBlockK = opIDMap[firstOpOfBlockK].nodeID;
+			IDType threadK = blockIDMap[blockK].threadID;
+			if (threadI != threadK) continue;
 
-				for (std::multiset<HBGraph::adjListNode>::iterator nodeKIt = graph->opAdjList[nodeK].begin();
-						nodeKIt != graph->opAdjList[nodeK].end(); nodeKIt++) {
-					IDType nodeJ = nodeKIt->nodeID;
+			for (std::multiset<HBGraph::adjListNode>::iterator nodeKIt = graph->opAdjList[firstNodeOfBlockK].begin();
+					nodeKIt != graph->opAdjList[firstNodeOfBlockK].end(); nodeKIt++) {
+				IDType nodeJ = nodeKIt->nodeID;
 
-					// No such check required
-					// Check if nodeI and nodeJ are in the same thread
-//					IDType threadI = opIDMap[*(nodeIDMap[nodeI].opSet.begin())].threadID;
-//					IDType threadJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].threadID;
-//					if (threadI == threadJ) continue;
+				// Check if we already went through this particular edge
+				triple currEdge;
+				currEdge.first.first = blockI;
+				currEdge.first.second = blockK;
+				currEdge.second = nodeJ;
+				if (twoBlocksAndOp.find(currEdge) != twoBlocksAndOp.end()) continue;
 
-					// Check if there already exists an edge between them
-					if (graph->opEdgeExists(nodeI, nodeK, blockI)) continue;
+				IDType threadJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].threadID;
+				IDType blockJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].blockID;
 
-					// If not, add this edge
-					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false, blockI);
+				// If blockI is in the same thread as nodeJ, then we do not have to consider it here.
+				if (threadI == threadJ) continue;
+
+				IDType nodeI = firstNodeInBlockI;
+				while (nodeI <= lastNodeInBlockI) {
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false, blockI, blockJ);
 					if (addEdgeRetValue == 1) {
 						flag = true;
 #ifdef GRAPHDEBUG
@@ -2899,6 +2910,279 @@ int UAFDetector::addTransSTOrMTEdges() {
 					} else if (addEdgeRetValue == -1) {
 						cout << "ERROR: While adding TRANS-ST/MT edge " << nodeI << " to " << nodeJ << endl;
 						return -1;
+					}
+
+					if (nodeI == lastNodeInBlockI) break;
+
+					IDType lastOpInNode = (*(nodeIDMap[nodeI].opSet.rbegin()));
+					IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+					if (nextOp < 0) {
+						cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockI << "\n";
+						return -1;
+					}
+					nodeI = opIDMap[nextOp].nodeID;
+				}
+
+				twoBlocksAndOp.insert(currEdge);
+			}
+#endif
+		}
+
+#ifdef ADVANCEDRULES
+		IDType nodeI = firstNodeInBlockI;
+		while (nodeI <= lastNodeInBlockI) {
+			for (std::multiset<HBGraph::adjListNode>::iterator nodeIIt = graph->opAdjList[nodeI].begin();
+					nodeIIt != graph->opAdjList[nodeI].end(); nodeIIt++) {
+				IDType nodeK = nodeIIt->nodeID;
+				IDType threadK = opIDMap[*(nodeIDMap[nodeK].opSet.begin())].threadID;
+				IDType blockK = opIDMap[*(nodeIDMap[nodeK].opSet.begin())].blockID;
+				IDType firstNodeInBlockK = opIDMap[blockIDMap[blockK].firstOpInBlock].nodeID;
+				IDType lastNodeInBlockK = opIDMap[blockIDMap[blockK].lastOpInBlock].nodeID;
+
+				// Add all the transitive edges between blockI and blockK, only they are not in the same thread
+				if (threadI != threadK) {
+					std::pair<IDType, IDType> currEdge;
+					currEdge.first = nodeI;
+					currEdge.second = nodeK;
+					if (twoOps.find(currEdge) == twoOps.end()) {
+
+						IDType tempNode1 = firstNodeInBlockI;
+						while (tempNode1 <= nodeI) {
+
+							IDType tempNode2 = nodeK;
+							while (tempNode2 <= lastNodeInBlockK) {
+								// If not, add this edge
+								int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockI, blockK);
+								if (addEdgeRetValue == 1) {
+									flag = true;
+#ifdef GRAPHDEBUG
+									cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
+										 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+#endif
+#ifdef GRAPHDEBUGFULL
+								} else if (addEdgeRetValue == 0) {
+									cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
+#endif
+								} else if (addEdgeRetValue == -1) {
+									cout << "ERROR: While adding TRANS-ST/MT edge " << tempNode1 << " to " << tempNode2 << endl;
+									return -1;
+								}
+
+								if (tempNode2 == lastNodeInBlockK) break;
+								IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
+								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+								if (nextOp < 0) {
+									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockK << "\n";
+									return -1;
+								}
+								tempNode2 = opIDMap[nextOp].nodeID;
+							}
+
+							if (tempNode1 == nodeI) break;
+
+							IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
+							IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+							if (nextOp < 0) {
+								cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockI << "\n";
+								return -1;
+							}
+							tempNode1 = opIDMap[nextOp].nodeID;
+						}
+						twoOps.insert(currEdge);
+					}
+
+					// nodeI -> blockK -> blockJ, add edges from nodeI to all ops in blockJ
+					for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
+							blockKIt != graph->blockAdjList[blockK].end(); blockKIt++) {
+						IDType blockJ = blockKIt->blockID;
+
+						if (blockK == blockJ) continue;
+
+						IDType threadJ = blockIDMap[blockJ].threadID;
+						// blockK and blockJ need to be in the same thread
+						if (threadK != threadJ) continue;
+
+						IDType firstNodeInBlockJ = opIDMap[blockIDMap[blockJ].firstOpInBlock].nodeID;
+						IDType lastNodeInBlockJ = opIDMap[blockIDMap[blockJ].lastOpInBlock].nodeID;
+
+						IDType nodeJ = firstNodeInBlockJ;
+
+						triple currEdge;
+						currEdge.first.first = nodeI;
+						currEdge.first.second = blockK;
+						currEdge.second = blockJ;
+						if (opAndTwoBlocks.find(currEdge) == opAndTwoBlocks.end()) {
+
+							while (nodeJ <= lastNodeInBlockJ) {
+								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false, blockI, blockJ);
+								if (addEdgeRetValue == 1) {
+									flag = true;
+#ifdef GRAPHDEBUG
+									cout << "TRANS-MT Edge (" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
+										 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+#endif
+#ifdef GRAPHDEBUGFULL
+								} else if (addEdgeRetValue == 0) {
+									cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
+								} else if (addEdgeRetValue == -1) {
+									cout << "ERROR: While adding TRANS-MT edge " << nodeI << " to " << nodeJ << endl;
+									return -1;
+								}
+
+								if (nodeJ == lastNodeInBlockJ) break;
+								IDType lastOpInNode = (*(nodeIDMap[nodeJ].opSet.rbegin()));
+								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+								if (nextOp < 0) {
+									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockJ << "\n";
+									return -1;
+								}
+								nodeJ = opIDMap[nextOp].nodeID;
+							}
+							opAndTwoBlocks.insert(currEdge);
+						}
+					}
+				}
+
+				for (std::multiset<HBGraph::adjListNode>::iterator nodeKIt = graph->opAdjList[nodeK].begin();
+						nodeKIt != graph->opAdjList[nodeK].end(); nodeKIt++) {
+					IDType nodeJ = nodeKIt->nodeID;
+
+					// Get lastNode in block containing nodeJ
+					IDType blockJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].blockID;
+					IDType lastNodeInBlockJ = opIDMap[blockIDMap[blockJ].lastOpInBlock].nodeID;
+
+					IDType threadJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].threadID;
+
+					if (threadK != threadJ) {
+						std::pair<IDType, IDType> currEdge;
+						currEdge.first = nodeK;
+						currEdge.second = nodeJ;
+						if (twoOps.find(currEdge) == twoOps.end()) {
+
+							IDType tempNode1 = firstNodeInBlockK;
+							while (tempNode1 <= nodeK) {
+
+								IDType tempNode2 = nodeJ;
+								while (tempNode2 <= lastNodeInBlockJ) {
+									// If not, add this edge
+									int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockK, blockJ);
+									if (addEdgeRetValue == 1) {
+										flag = true;
+	#ifdef GRAPHDEBUG
+										cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
+											 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+	#endif
+	#ifdef GRAPHDEBUGFULL
+									} else if (addEdgeRetValue == 0) {
+										cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
+	#endif
+									} else if (addEdgeRetValue == -1) {
+										cout << "ERROR: While adding TRANS-MT edge " << tempNode1 << " to " << tempNode2 << endl;
+										return -1;
+									}
+
+									if (tempNode2 == lastNodeInBlockJ) break;
+									IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
+									IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+									if (nextOp < 0) {
+										cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockJ << "\n";
+										return -1;
+									}
+									tempNode2 = opIDMap[nextOp].nodeID;
+								}
+
+								if (tempNode1 == nodeK) break;
+
+								IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
+								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+								if (nextOp < 0) {
+									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockK << "\n";
+									return -1;
+								}
+								tempNode1 = opIDMap[nextOp].nodeID;
+							}
+							twoOps.insert(currEdge);
+						}
+					}
+
+					// Check if nodeI and nodeJ are in the same thread
+					if (threadI == threadJ) {
+						// If so just add the block-level edge.
+						// But if blockI and blockJ are the same block, then do nothing.
+						if (blockI == blockJ) continue;
+
+						IDType lastNodeInBlockI = opIDMap[blockIDMap[blockI].lastOpInBlock].nodeID;
+						IDType firstNodeInBlockJ = opIDMap[blockIDMap[blockJ].firstOpInBlock].nodeID;
+						int addEdgeRetValue = graph->addOpEdge(lastNodeInBlockI, firstNodeInBlockJ, true, blockI, blockJ);
+						if (addEdgeRetValue == 1) {
+							flag = true;
+#ifdef GRAPHDEBUG
+							cout << "TRANS-MT Edge (" << lastNodeInBlockI << ", " << firstNodeInBlockJ << ") -- block edge (" << blockI << ", " << blockJ
+								 << ") -- #opEdges " << graph->numOfOpEdges
+								 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+#endif
+#ifdef GRAPHDEBUGFULL
+						} else if (addEdgeRetValue == 0) {
+							cout << "DEBUG: Edge (" << lastNodeInBlockI << ", " << firstNodeInBlockJ << ") already implied in the graph\n";
+#endif
+						} else if (addEdgeRetValue == -1) {
+							cout << "ERROR: While adding TRANS-MT edge " << lastNodeInBlockI << " to " << firstNodeInBlockJ << "\n";
+							return -1;
+						}
+						continue;
+					}
+
+					// You have to add edges from all nodes before nodeI in this block to
+					// nodeJ and to all ops after nodeJ in its block
+					triple currEdge;
+					currEdge.first.first = nodeI;
+					currEdge.first.second = nodeK;
+					currEdge.second = nodeJ;
+
+					if (threeOps.find(currEdge) == threeOps.end()) {
+						IDType tempNode1 = firstNodeInBlockI;
+						while (tempNode1 <= nodeI) {
+
+							IDType tempNode2 = nodeJ;
+							while (tempNode2 <= lastNodeInBlockJ) {
+								// If not, add this edge
+								int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockI, blockJ);
+								if (addEdgeRetValue == 1) {
+									flag = true;
+#ifdef GRAPHDEBUG
+									cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
+										 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+#endif
+#ifdef GRAPHDEBUGFULL
+								} else if (addEdgeRetValue == 0) {
+									cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
+#endif
+								} else if (addEdgeRetValue == -1) {
+									cout << "ERROR: While adding TRANS-MT edge " << tempNode1 << " to " << tempNode2 << endl;
+									return -1;
+								}
+								if (tempNode2 == lastNodeInBlockJ) break;
+								IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
+								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+								if (nextOp < 0) {
+									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockJ << "\n";
+									return -1;
+								}
+								tempNode2 = opIDMap[nextOp].nodeID;
+							}
+
+							if (tempNode1 == nodeI) break;
+
+							IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
+							IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+							if (nextOp < 0) {
+								cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockI << "\n";
+								return -1;
+							}
+							tempNode1 = opIDMap[nextOp].nodeID;
+						}
+						threeOps.insert(currEdge);
 					}
 				}
 			}
