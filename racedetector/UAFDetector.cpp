@@ -2672,9 +2672,9 @@ int UAFDetector::addTransSTOrMTEdges() {
 	// Adding TRANS-ST/MT Edges
 
 	// Book-keeping data structures
-	typedef std::pair<std::pair<IDType, IDType>, IDType> triple;
-	std::set<triple> threeOps, twoBlocksAndOp, opAndTwoBlocks;
-	std::set<std::pair<IDType, IDType> > twoOps;
+//	typedef std::pair<std::pair<IDType, IDType>, IDType> triple;
+//	std::set<triple> threeOps, twoBlocksAndOp, opAndTwoBlocks;
+//	std::set<std::pair<IDType, IDType> > twoOps;
 
 	for (map<IDType, UAFDetector::blockDetails>::iterator it = blockIDMap.begin(); it != blockIDMap.end(); it++) {
 		IDType blockI = it->first;
@@ -2882,11 +2882,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 				IDType nodeJ = nodeKIt->nodeID;
 
 				// Check if we already went through this particular edge
-				triple currEdge;
-				currEdge.first.first = blockI;
-				currEdge.first.second = blockK;
-				currEdge.second = nodeJ;
-				if (twoBlocksAndOp.find(currEdge) != twoBlocksAndOp.end()) continue;
+//				triple currEdge;
+//				currEdge.first.first = blockI;
+//				currEdge.first.second = blockK;
+//				currEdge.second = nodeJ;
+//				if (twoBlocksAndOp.find(currEdge) != twoBlocksAndOp.end()) continue;
 
 				IDType threadJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].threadID;
 				IDType blockJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].blockID;
@@ -2923,7 +2923,7 @@ int UAFDetector::addTransSTOrMTEdges() {
 					nodeI = opIDMap[nextOp].nodeID;
 				}
 
-				twoBlocksAndOp.insert(currEdge);
+//				twoBlocksAndOp.insert(currEdge);
 			}
 #endif
 		}
@@ -2941,10 +2941,10 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 				// Add all the transitive edges between blockI and blockK, only they are not in the same thread
 				if (threadI != threadK) {
-					std::pair<IDType, IDType> currEdge;
-					currEdge.first = nodeI;
-					currEdge.second = nodeK;
-					if (twoOps.find(currEdge) == twoOps.end()) {
+//					std::pair<IDType, IDType> currEdge;
+//					currEdge.first = nodeI;
+//					currEdge.second = nodeK;
+//					if (twoOps.find(currEdge) == twoOps.end()) {
 
 						IDType tempNode1 = firstNodeInBlockI;
 						while (tempNode1 <= nodeI) {
@@ -2988,8 +2988,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 							}
 							tempNode1 = opIDMap[nextOp].nodeID;
 						}
-						twoOps.insert(currEdge);
-					}
+//						twoOps.insert(currEdge);
+//					}
 
 					// nodeI -> blockK -> blockJ, add edges from nodeI to all ops in blockJ
 					for (std::multiset<HBGraph::adjListNode>::iterator blockKIt = graph->blockAdjList[blockK].begin();
@@ -3007,11 +3007,11 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 						IDType nodeJ = firstNodeInBlockJ;
 
-						triple currEdge;
-						currEdge.first.first = nodeI;
-						currEdge.first.second = blockK;
-						currEdge.second = blockJ;
-						if (opAndTwoBlocks.find(currEdge) == opAndTwoBlocks.end()) {
+//						triple currEdge;
+//						currEdge.first.first = nodeI;
+//						currEdge.first.second = blockK;
+//						currEdge.second = blockJ;
+//						if (opAndTwoBlocks.find(currEdge) == opAndTwoBlocks.end()) {
 
 							while (nodeJ <= lastNodeInBlockJ) {
 								int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false, blockI, blockJ);
@@ -3039,8 +3039,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 								}
 								nodeJ = opIDMap[nextOp].nodeID;
 							}
-							opAndTwoBlocks.insert(currEdge);
-						}
+//							opAndTwoBlocks.insert(currEdge);
+//						}
 					}
 				}
 
@@ -3055,10 +3055,10 @@ int UAFDetector::addTransSTOrMTEdges() {
 					IDType threadJ = opIDMap[*(nodeIDMap[nodeJ].opSet.begin())].threadID;
 
 					if (threadK != threadJ) {
-						std::pair<IDType, IDType> currEdge;
-						currEdge.first = nodeK;
-						currEdge.second = nodeJ;
-						if (twoOps.find(currEdge) == twoOps.end()) {
+//						std::pair<IDType, IDType> currEdge;
+//						currEdge.first = nodeK;
+//						currEdge.second = nodeJ;
+//						if (twoOps.find(currEdge) == twoOps.end()) {
 
 							IDType tempNode1 = firstNodeInBlockK;
 							while (tempNode1 <= nodeK) {
@@ -3102,8 +3102,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 								}
 								tempNode1 = opIDMap[nextOp].nodeID;
 							}
-							twoOps.insert(currEdge);
-						}
+//							twoOps.insert(currEdge);
+//						}
 					}
 
 					// Check if nodeI and nodeJ are in the same thread
@@ -3135,12 +3135,12 @@ int UAFDetector::addTransSTOrMTEdges() {
 
 					// You have to add edges from all nodes before nodeI in this block to
 					// nodeJ and to all ops after nodeJ in its block
-					triple currEdge;
-					currEdge.first.first = nodeI;
-					currEdge.first.second = nodeK;
-					currEdge.second = nodeJ;
-
-					if (threeOps.find(currEdge) == threeOps.end()) {
+//					triple currEdge;
+//					currEdge.first.first = nodeI;
+//					currEdge.first.second = nodeK;
+//					currEdge.second = nodeJ;
+//
+//					if (threeOps.find(currEdge) == threeOps.end()) {
 						IDType tempNode1 = firstNodeInBlockI;
 						while (tempNode1 <= nodeI) {
 
@@ -3182,8 +3182,8 @@ int UAFDetector::addTransSTOrMTEdges() {
 							}
 							tempNode1 = opIDMap[nextOp].nodeID;
 						}
-						threeOps.insert(currEdge);
-					}
+//						threeOps.insert(currEdge);
+//					}
 				}
 			}
 			// loop update. Get the last op in current node and obtain the next op in block of that op
