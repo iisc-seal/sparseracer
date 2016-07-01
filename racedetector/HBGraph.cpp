@@ -137,12 +137,37 @@ int HBGraph::addOpEdge(IDType sourceNode, IDType destinationNode, bool edgeType,
 			} else if (retBlockValue == -1)
 				return -1;
 		} else {
-			opAdjMatrix[sourceNode][destinationNode] = true;
+			// Add all transitive edges represented by this edge as well.
+			IDType nodeI = opIDMap[blockIDMap[sourceBlock].firstOpInBlock].nodeID;
+			IDType lastNodeInDestBlock = opIDMap[blockIDMap[destinationBlock].lastOpInBlock].nodeID;
+			assert (nodeI > 0 && lastNodeInDestBlock > 0);
 
-			adjListNode destOpNode(destinationNode, destinationBlock);
-			opAdjList[sourceNode].insert(destOpNode);
+			while (nodeI <= sourceNode) {
+				IDType nodeJ = destinationNode;
+				while (nodeJ <= lastNodeInDestBlock) {
+					// Edge already present, then skip
+					if (opAdjMatrix[nodeI][nodeJ]) continue;
 
-			numOfOpEdges++;
+					opAdjMatrix[nodeI][nodeJ] = true;
+
+					adjListNode destOpNode(nodeJ, destinationBlock);
+					opAdjList[nodeI].insert(destOpNode);
+
+					numOfOpEdges++;
+
+					if (nodeJ == lastNodeInDestBlock) break;
+					IDType lastOpInNode = *(nodeIDMap[nodeJ].opSet.rbegin());
+					IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+					assert(nextOp > 0);
+					nodeJ = opIDMap[nextOp].nodeID;
+				}
+
+				if (nodeI == sourceNode) break;
+				IDType lastOpInNode = *(nodeIDMap[nodeI].opSet.rbegin());
+				IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+				assert(nextOp > 0);
+				nodeI = opIDMap[nextOp].nodeID;
+			}
 		}
 		return 1;
 	} else if (retOpValue == 1)

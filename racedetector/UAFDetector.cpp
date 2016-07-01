@@ -2946,48 +2946,48 @@ int UAFDetector::addTransSTOrMTEdges() {
 //					currEdge.second = nodeK;
 //					if (twoOps.find(currEdge) == twoOps.end()) {
 
-						IDType tempNode1 = firstNodeInBlockI;
-						while (tempNode1 <= nodeI) {
-
-							IDType tempNode2 = nodeK;
-							while (tempNode2 <= lastNodeInBlockK) {
-								// If not, add this edge
-								int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockI, blockK);
-								if (addEdgeRetValue == 1) {
-									flag = true;
-#ifdef GRAPHDEBUG
-									cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
-										 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
-#endif
-#ifdef GRAPHDEBUGFULL
-								} else if (addEdgeRetValue == 0) {
-									cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
-#endif
-								} else if (addEdgeRetValue == -1) {
-									cout << "ERROR: While adding TRANS-ST/MT edge " << tempNode1 << " to " << tempNode2 << endl;
-									return -1;
-								}
-
-								if (tempNode2 == lastNodeInBlockK) break;
-								IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
-								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
-								if (nextOp < 0) {
-									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockK << "\n";
-									return -1;
-								}
-								tempNode2 = opIDMap[nextOp].nodeID;
-							}
-
-							if (tempNode1 == nodeI) break;
-
-							IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
-							IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
-							if (nextOp < 0) {
-								cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockI << "\n";
-								return -1;
-							}
-							tempNode1 = opIDMap[nextOp].nodeID;
-						}
+//						IDType tempNode1 = firstNodeInBlockI;
+//						while (tempNode1 <= nodeI) {
+//
+//							IDType tempNode2 = nodeK;
+//							while (tempNode2 <= lastNodeInBlockK) {
+//								// If not, add this edge
+//								int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockI, blockK);
+//								if (addEdgeRetValue == 1) {
+//									flag = true;
+//#ifdef GRAPHDEBUG
+//									cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
+//										 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+//#endif
+//#ifdef GRAPHDEBUGFULL
+//								} else if (addEdgeRetValue == 0) {
+//									cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
+//#endif
+//								} else if (addEdgeRetValue == -1) {
+//									cout << "ERROR: While adding TRANS-ST/MT edge " << tempNode1 << " to " << tempNode2 << endl;
+//									return -1;
+//								}
+//
+//								if (tempNode2 == lastNodeInBlockK) break;
+//								IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
+//								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+//								if (nextOp < 0) {
+//									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockK << "\n";
+//									return -1;
+//								}
+//								tempNode2 = opIDMap[nextOp].nodeID;
+//							}
+//
+//							if (tempNode1 == nodeI) break;
+//
+//							IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
+//							IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+//							if (nextOp < 0) {
+//								cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockI << "\n";
+//								return -1;
+//							}
+//							tempNode1 = opIDMap[nextOp].nodeID;
+//						}
 //						twoOps.insert(currEdge);
 //					}
 
@@ -3060,48 +3060,48 @@ int UAFDetector::addTransSTOrMTEdges() {
 //						currEdge.second = nodeJ;
 //						if (twoOps.find(currEdge) == twoOps.end()) {
 
-							IDType tempNode1 = firstNodeInBlockK;
-							while (tempNode1 <= nodeK) {
-
-								IDType tempNode2 = nodeJ;
-								while (tempNode2 <= lastNodeInBlockJ) {
-									// If not, add this edge
-									int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockK, blockJ);
-									if (addEdgeRetValue == 1) {
-										flag = true;
-	#ifdef GRAPHDEBUG
-										cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
-											 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
-	#endif
-	#ifdef GRAPHDEBUGFULL
-									} else if (addEdgeRetValue == 0) {
-										cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
-	#endif
-									} else if (addEdgeRetValue == -1) {
-										cout << "ERROR: While adding TRANS-MT edge " << tempNode1 << " to " << tempNode2 << endl;
-										return -1;
-									}
-
-									if (tempNode2 == lastNodeInBlockJ) break;
-									IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
-									IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
-									if (nextOp < 0) {
-										cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockJ << "\n";
-										return -1;
-									}
-									tempNode2 = opIDMap[nextOp].nodeID;
-								}
-
-								if (tempNode1 == nodeK) break;
-
-								IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
-								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
-								if (nextOp < 0) {
-									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockK << "\n";
-									return -1;
-								}
-								tempNode1 = opIDMap[nextOp].nodeID;
-							}
+//							IDType tempNode1 = firstNodeInBlockK;
+//							while (tempNode1 <= nodeK) {
+//
+//								IDType tempNode2 = nodeJ;
+//								while (tempNode2 <= lastNodeInBlockJ) {
+//									// If not, add this edge
+//									int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockK, blockJ);
+//									if (addEdgeRetValue == 1) {
+//										flag = true;
+//	#ifdef GRAPHDEBUG
+//										cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
+//											 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+//	#endif
+//	#ifdef GRAPHDEBUGFULL
+//									} else if (addEdgeRetValue == 0) {
+//										cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
+//	#endif
+//									} else if (addEdgeRetValue == -1) {
+//										cout << "ERROR: While adding TRANS-MT edge " << tempNode1 << " to " << tempNode2 << endl;
+//										return -1;
+//									}
+//
+//									if (tempNode2 == lastNodeInBlockJ) break;
+//									IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
+//									IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+//									if (nextOp < 0) {
+//										cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockJ << "\n";
+//										return -1;
+//									}
+//									tempNode2 = opIDMap[nextOp].nodeID;
+//								}
+//
+//								if (tempNode1 == nodeK) break;
+//
+//								IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
+//								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+//								if (nextOp < 0) {
+//									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockK << "\n";
+//									return -1;
+//								}
+//								tempNode1 = opIDMap[nextOp].nodeID;
+//							}
 //							twoOps.insert(currEdge);
 //						}
 					}
@@ -3134,54 +3134,72 @@ int UAFDetector::addTransSTOrMTEdges() {
 					}
 
 					// You have to add edges from all nodes before nodeI in this block to
-					// nodeJ and to all ops after nodeJ in its block
+					// nodeJ and to all ops after nodeJ in its block. I may not need to do
+					// this here. The transitivity rule will take care of all those edges,
+					// since I modified the addOpEdge() to add all transitive edges as well.
+					// Instead I just add nodeI -> nodeJ here
+					int addEdgeRetValue = graph->addOpEdge(nodeI, nodeJ, false, blockI, blockJ);
+					if (addEdgeRetValue == 1) {
+						flag = true;
+#ifdef GRAPHDEBUG
+						cout << "TRANS-MT Edge(" << nodeI << ", " << nodeJ << ") -- #opEdges " << graph->numOfOpEdges
+							 << " -- #blockEdges " << graph->numOfBlockEdges << "\n";
+#endif
+#ifdef GRAPHDEBUGFULL
+					} else if (addEdgeRetValue == 0) {
+						cout << "DEBUG: Edge (" << nodeI << ", " << nodeJ << ") already implied in the graph\n";
+#endif
+					} else if (addEdgeRetValue == -1) {
+						cout << "ERROR: While adding TRANS-MT edge " << nodeI << " to " << nodeJ << endl;
+						return -1;
+					}
 //					triple currEdge;
 //					currEdge.first.first = nodeI;
 //					currEdge.first.second = nodeK;
 //					currEdge.second = nodeJ;
 //
 //					if (threeOps.find(currEdge) == threeOps.end()) {
-						IDType tempNode1 = firstNodeInBlockI;
-						while (tempNode1 <= nodeI) {
-
-							IDType tempNode2 = nodeJ;
-							while (tempNode2 <= lastNodeInBlockJ) {
-								// If not, add this edge
-								int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockI, blockJ);
-								if (addEdgeRetValue == 1) {
-									flag = true;
-#ifdef GRAPHDEBUG
-									cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
-										 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
-#endif
-#ifdef GRAPHDEBUGFULL
-								} else if (addEdgeRetValue == 0) {
-									cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
-#endif
-								} else if (addEdgeRetValue == -1) {
-									cout << "ERROR: While adding TRANS-MT edge " << tempNode1 << " to " << tempNode2 << endl;
-									return -1;
-								}
-								if (tempNode2 == lastNodeInBlockJ) break;
-								IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
-								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
-								if (nextOp < 0) {
-									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockJ << "\n";
-									return -1;
-								}
-								tempNode2 = opIDMap[nextOp].nodeID;
-							}
-
-							if (tempNode1 == nodeI) break;
-
-							IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
-							IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
-							if (nextOp < 0) {
-								cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockI << "\n";
-								return -1;
-							}
-							tempNode1 = opIDMap[nextOp].nodeID;
-						}
+//						IDType tempNode1 = firstNodeInBlockI;
+//						while (tempNode1 <= nodeI) {
+//
+//							IDType tempNode2 = nodeJ;
+//							while (tempNode2 <= lastNodeInBlockJ) {
+//								// If not, add this edge
+//								int addEdgeRetValue = graph->addOpEdge(tempNode1, tempNode2, false, blockI, blockJ);
+//								if (addEdgeRetValue == 1) {
+//									flag = true;
+//#ifdef GRAPHDEBUG
+//									cout << "TRANS-MT Edge (" << tempNode1 << ", " << tempNode2 << ") -- #opEdges " << graph->numOfOpEdges
+//										 << " -- #blockEdges " << graph->numOfBlockEdges << endl;
+//#endif
+//#ifdef GRAPHDEBUGFULL
+//								} else if (addEdgeRetValue == 0) {
+//									cout << "DEBUG: Edge (" << tempNode1 << ", " << tempNode2 << ") already implied in the graph\n";
+//#endif
+//								} else if (addEdgeRetValue == -1) {
+//									cout << "ERROR: While adding TRANS-MT edge " << tempNode1 << " to " << tempNode2 << endl;
+//									return -1;
+//								}
+//								if (tempNode2 == lastNodeInBlockJ) break;
+//								IDType lastOpInNode = (*(nodeIDMap[tempNode2].opSet.rbegin()));
+//								IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+//								if (nextOp < 0) {
+//									cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockJ << "\n";
+//									return -1;
+//								}
+//								tempNode2 = opIDMap[nextOp].nodeID;
+//							}
+//
+//							if (tempNode1 == nodeI) break;
+//
+//							IDType lastOpInNode = (*(nodeIDMap[tempNode1].opSet.rbegin()));
+//							IDType nextOp = opIDMap[lastOpInNode].nextOpInBlock;
+//							if (nextOp < 0) {
+//								cout << "ERROR: Cannot find next op of " << lastOpInNode << " in block " << blockI << "\n";
+//								return -1;
+//							}
+//							tempNode1 = opIDMap[nextOp].nodeID;
+//						}
 //						threeOps.insert(currEdge);
 //					}
 				}
