@@ -3,6 +3,7 @@
 
 // Flag to give up when reaching nodelimit
  #define RUNOVERNODELIMIT
+
 // To use access ops rather than read/write ops
 // #define ACCESS
 
@@ -14,6 +15,9 @@
 
 // To enable sanity checks
  #define SANITYCHECK
+
+// To use permit/revoke instead of pause/resume
+ #define PERMIT
 
 // To set the datatype used for thread-id, op-id and block-id
 // To use int datatype
@@ -34,9 +38,6 @@
 
 // To use nodes for finding races
  #define NODERACES
-
-// To enable reporting of only single threaded races
-// #define SINGLETHREADEDRACES
 
 // To use extra rules
 // #define EXTRARULES

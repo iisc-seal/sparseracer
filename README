@@ -1,4 +1,25 @@
-This repository contains the implementation of race-detection algorithm used in FoxRacer.
+FoxRacer
+--------
+
+FoxRacer is a race detection tool for software that employs programmatic event
+loops. It takes an execution trace of the software as input and returns a list
+of all use-free and/or data races in the trace, by computing the happens-before
+relation for the input trace. FoxRacer computes only a sparse representation of
+the required happens-before relation. For technical details, please go through
+our ISSTA 2016 paper "Efficient Race Detection in the Presence of Programmatic
+Event Loops".
+
+
+Installation
+------------
+This implementation was tested on Ubuntu 14 OS.
+
+Software Requirements:-
+1. GNU C++ - We used g++ 4.8
+2. libboost_regex - This is part of the boost library for C++. We use the regex
+library to ensure valid syntax for the input trace. We used libboost_regex
+1.48.0. Make sure you install this library in the default location searched by
+GCC linker.
 
 Compile:
 	cd Debug
@@ -6,4 +27,49 @@ Compile:
 	make
 
 Run:
-	./Debug/foxracer <trace-file>
+	./Debug/foxracer <trace-file> -rr [options]
+
+Runtime Options:-
+-no-priority	Enables support for traces without event priorities. By default
+		FoxRacer assumes that events have priorities.
+-hex		Enables hexadecimal event IDs. By default, FoxRacer expects
+		integers as event IDs.
+
+Compile-time Options:-
+This tool defines some compile time flags that allows for different
+configurations for the tool. These flags are defined in two files: "config.h"
+and "debugconfig.h". 
+
+1. Singlethreaded vs Multithreaded Races: By default, FoxRacer detects only
+singlethreaded races and assumes that there are no cascaded event loops in the
+trace. To enable detection of multithreaded races and handling cascaded event
+loops, uncomment line "#define ADVANCEDRULES" in "config.h".
+
+2. Locks: By default, FoxRacer ignores locks in the input trace. We use a
+separate lockset analysis to filter races reported by the tool. To enable
+handling of lock operations in the happens-before reasoning, uncomment line
+"#define LOCKS" in "config.h". Note that, at present, we only handle notify-wait
+operations.
+
+3. False Positives: We have implemented a check that filters certain false
+positives (explained in the paper). To disable this check, comment out line
+"#define ADDITIONS" in "config.h".
+
+4. Sanity checks: There are a lot of sanity checks spread across the
+code. We recommend that these checks be enabled when you run a trace for the
+first time. However, these checks affect the performance of the tool. To disable
+these checks, comment out the line "#define SANITYCHECK" in "config.h".
+
+5. Node limit: FoxRacer employs an optimization that coalesces consecutive
+memory operations into a single node of the HB-graph. Since the memory used by
+the tool depends on the number of nodes in the graph, we terminate the execution
+if this number exceeds a given threshold. You can set this threshold in line
+"#define NODELIMIT " in "config.h". Default is 15000. If you want to disable
+this check and let the tool run regardless of the number of nodes in the trace,
+comment out the line "#define RUNOVERNODELIMIT" in "config.h".
+
+6. DebugInfo: "debugconfig.h" defines some flags that enables printing of debug
+information. Uncomment line "#define TRACEDEBUG" to enable printing of trace
+statistics such as #threads, #nodes, etc. Uncomment line "#define GRAPHDEBUG" to
+enable printing of each edge that is being added to the graph, as well as the
+rule that caused this edge to be added.
