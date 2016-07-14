@@ -9,6 +9,22 @@ the required happens-before relation. For technical details, please go through
 our ISSTA 2016 paper "Efficient Race Detection in the Presence of Programmatic
 Event Loops".
 
+Information about branches:
+---------------------------
+
+To run SparseRacer, checkout "finaltool" branch. Do "git checkout
+finaltool". The README in that branch contains information about how to
+configure SparseRacer.
+
+To run baseline implementation for SparseRacer (i.e. only
+singlethreaded rules, and no sparse representation), checkout "master"
+branch. Do "git checkout master".
+
+To run baseline implementation for SparseRacer (i.e. with sparse
+representation of the single-threaded rules, but baseline for
+multithreaded rules), checkout "baseline" branch. Do "git checkout
+baseline".
+
 
 Installation
 ------------
