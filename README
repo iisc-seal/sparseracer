@@ -1,7 +1,7 @@
-FoxRacer
+SparseRacer
 --------
 
-FoxRacer is a race detection tool for software that employs programmatic event
+SparseRacer is a race detection tool for software that employs programmatic event
 loops. It takes an execution trace of the software as input and returns a list
 of all use-free and/or data races in the trace, by computing the happens-before
 relation for the input trace. FoxRacer computes only a sparse representation of
@@ -31,7 +31,7 @@ Run:
 
 Runtime Options:-
 -no-priority	Enables support for traces without event priorities. By default
-		FoxRacer assumes that events have priorities.
+		SparseRacer assumes that events have priorities.
 -hex		Enables hexadecimal event IDs. By default, FoxRacer expects
 		integers as event IDs.
 
@@ -40,12 +40,12 @@ This tool defines some compile time flags that allows for different
 configurations for the tool. These flags are defined in two files: "config.h"
 and "debugconfig.h". 
 
-1. Singlethreaded vs Multithreaded Races: By default, FoxRacer detects only
+1. Singlethreaded vs Multithreaded Races: By default, SparseRacer detects only
 singlethreaded races and assumes that there are no cascaded event loops in the
 trace. To enable detection of multithreaded races and handling cascaded event
 loops, uncomment line "#define ADVANCEDRULES" in "config.h".
 
-2. Locks: By default, FoxRacer ignores locks in the input trace. We use a
+2. Locks: By default, SparseRacer ignores locks in the input trace. We use a
 separate lockset analysis to filter races reported by the tool. To enable
 handling of lock operations in the happens-before reasoning, uncomment line
 "#define LOCKS" in "config.h". Note that, at present, we only handle notify-wait
@@ -60,7 +60,7 @@ code. We recommend that these checks be enabled when you run a trace for the
 first time. However, these checks affect the performance of the tool. To disable
 these checks, comment out the line "#define SANITYCHECK" in "config.h".
 
-5. Node limit: FoxRacer employs an optimization that coalesces consecutive
+5. Node limit: SparseRacer employs an optimization that coalesces consecutive
 memory operations into a single node of the HB-graph. Since the memory used by
 the tool depends on the number of nodes in the graph, we terminate the execution
 if this number exceeds a given threshold. You can set this threshold in line
@@ -73,3 +73,176 @@ information. Uncomment line "#define TRACEDEBUG" to enable printing of trace
 statistics such as #threads, #nodes, etc. Uncomment line "#define GRAPHDEBUG" to
 enable printing of each edge that is being added to the graph, as well as the
 rule that caused this edge to be added.
+
+------------------------------------------------------------------------------------
+
+Instrumentation
+---------------
+
+We also provide llvm passes to instrument applications and generate traces in the 
+language described in the ISSTA paper.
+
+Sources and Building
+--------------------
+
+The sources are available at git submodule located within the llvm
+directory in the "finaltool" branch
+
+The instrumentation is released as a library that adds a set of
+instrumentation passes to llvm. The source for the passes is located
+in the directory /lib/Transforms/MemInstrument
+
+The instrumentation includes:
+1. Instrumenting loads and stores
+   files: LoadStoreInstrument.cpp and LoadStoreInstrument.h
+2. Instrumenting memory allocations and frees
+   files: AllocFreeInstrument.cpp and AllocFreeInstrument.h
+3. Instrumenting debug information (function entry and exit)
+   files: FInstrument.cpp and FInstrument.h       
+
+The instrumentation works by adding calls to user-supplied functions
+at appropriate locations in code. More details about these functions
+are given in the next section.
+
+There is additional debug support for instrumenting Mozilla Firefox in
+RunnableInstrument.cpp and RunnableInstrument.h
+
+To build llvm with support for this instrumentation, there are two options:
+
+1. Download the entire llvm sources from the repository, and follow
+the build instructions here:
+http://clang.llvm.org/docs/HowToSetupToolingForLLVM.html (See the
+section under "Using Ninja Build System"). If everything goes well,
+you should see a shared object file LLVMMemInstrument.so under
+build/lib/LLVMMemInstrument.so
+
+2. If you already have a working llvm build (the instrumentation has
+been tested with version 3.5, but versions 3.4 -- 3.6 should work ok),
+then simply copy the MemInstrument directory to /lib/Transforms, and
+append "add_subdirectory(MemInstrument)" to the CMakeLists.txt under
+/lib/Transforms, and rebuild llvm. If everything goes well, you should
+see a shared object file LLVMMemInstrument.so under
+build/lib/LLVMMemInstrument.so
+
+
+Enabling Instrumentation for a client
+-------------------------------------
+
+We will start with the assumption that you want to instrument a C++
+client that can be built from source. Using the clang/clang++ from
+your llvm installation of the previous step, to enable the
+instrumentation, simply pass the appropriate flags to the
+compiler. This is usually done using the CXX_FLAGS if you're using a
+build system such as make/CMake.
+
+An example setting is as follows -DCMAKE_CXX_FLAGS:STRING='-Xclang
+-load -Xclang
+/home/anirudh/software/llvm/build/lib/LLVMMemInstrument.so -L
+/path/to/instrumentationRoutines -linstrument -mllvm -finstrument
+-mllvm -allocfree -mllvm -loadstore'
+
+Explanation: Here, we're telling the CMake build system to build
+client sources using the flags specified under the corresponding
+string.
+
+1. First, we load our pass using "-Xclang -load -Xclang
+path to llvm's build directory/lib/LLVMMemInstrument.so"
+2. Next, we tell the compiler the path containing user defined
+instrumentation routines as a dynamic shared library using "-L
+/path/to/instrumentationRoutines -linstrument"
+3. "-mllvm -finstrument" enables the instrumentation of function entry
+and exit
+4. "-mllvm -allocfree" enables the instrumentation of memory
+allocations and frees
+5. "-mllvm -loadstore" enables the instrumentation of loads and
+stores.
+
+User Defined Instrumentation:
+-----------------------------
+
+As noted earlier, the instrumentation works by placing calls to user
+defined instrumentation routines at appropriate locations in client
+code. The instrumentation expects these routines to have a particular
+signature.
+
+Instrumentation routine to log allocation and frees: The
+instrumentation to log allocations, and respectively deallocations,
+should have the following signatures:
+
+void mopAlloc(long address, int memsize, char* type, char* debugLoc, char *fName){
+  ...
+}
+
+void mopDealloc(long address, int typeSize, char* type, char* debugLoc, char *fName){
+  ...
+}
+
+The function will be invoked by the instrumented client, by passing in the following parameters:
+address  - the address that was just allocated
+memsize  - the number of bytes allocated
+type     - the string describing the type of memory allocated
+debugLoc - a string that says "realloc" if this memory was allocated earlier
+fName    - the function containing the call to the allocation function
+
+You can use the information passed in to record this information as
+part of an offline trace.
+
+The instrumentation routine to log loads and stores expect the
+following signature: 
+void mopInstrument(long address, int typeSize,
+     			char* type, char* debugLoc, char *fName)
+
+The meanings of the parameters are the same, except that debugLoc now
+says "load" if the memory operation was a load, and "store" otherwise.
+
+The instrumentation routine to log function entry and exit expects the
+following signature:
+void fInstrument(char *fName, int entering){
+  ...
+}
+The fName parameter records the function name, and entering is 1 if
+the function is being entered, and 0 otherwise.
+
+Compiling the instrumentation to a shared library
+-------------------------------------------------
+The instrumentation routines may be placed in a file, and compiled to
+a DSO. An example of how to do this may be found at
+http://www.cprogramming.com/tutorial/shared-libraries-linux-gcc.html
+
+An example set of instrumentation routines
+------------------------------------------
+
+For reference, here is a set of routines that will log interesting
+information to syslog from clients that use the QTLibrary
+
+void mopInstrument(long address, int typeSize, char* type, char* debugLoc, char *fName){
+  long tid = QThread::currentThreadUID();
+  if(strstr(debugLoc, "load"))
+    syslog(LOG_DEBUG, "read(%d, %p)$%s", tid, address, fName);
+  else
+    syslog(LOG_DEBUG, "write(%d, %p)$%s", tid, address, fName);
+}
+
+void fInstrument(char *fName, int entering){
+  long tid = QThread::currentThreadUID();
+  if(entering){
+      syslog(LOG_DEBUG, "entering(%d, %s, %s)$%d", tid, fName, temp, getppid());
+  }
+  else
+      syslog(LOG_DEBUG, "exiting(%d, %s)$%d", tid, fName, getppid());
+}
+
+void mopDealloc(long address, int typeSize, char* type, char* debugLoc, char *fName){
+  syslog(LOG_DEBUG, "free(%d, %p, %d)$%s", QThread::currentThreadUID(), address, typeSize, fName);
+}
+
+void mopAlloc(long address, int memsize, char* type, char* debugLoc, char *fName){
+  syslog(LOG_DEBUG, "alloc(%d, %p, %d)$%s %s", QThread::currentThreadUID(), address, memsize, fName, type);
+}
+
+Running the instrumented program
+---------------------------------
+
+Add the path to the directory containing the instrumentation routines
+(as a shared library) to LD_LIBRARY_PATH, and then simply run the
+program as you would normally.
