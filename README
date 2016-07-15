@@ -1,4 +1,5 @@
-This repository contains the implementation of race-detection algorithm used in FoxRacer.
+This repository contains the baseline implementation of race-detection algorithm
+used in SparseRacer.
 
 Compile:
 	cd Debug
@@ -6,4 +7,6 @@ Compile:
 	make
 
 Run:
-	./Debug/foxracer <trace-file>
+	./Debug/sparseracer <trace-file>
+
+Note: This implementation applies only single-threaded rules

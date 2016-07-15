@@ -1,1 +1,8 @@
-./Debug/*
+./Debug/foxracer
+./Debug/sparseracer
+./Debug/logging/Logging.o
+./Debug/main/main.o
+./Debug/parser/MultiStack.o
+./Debug/parser/TraceParser.o
+./Debug/racedetector/HBGraph.o
+./Debug/racedetector/UAFDetector.o
