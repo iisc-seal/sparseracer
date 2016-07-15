@@ -1,4 +1,5 @@
-This repository contains the implementation of race-detection algorithm used in FoxRacer.
+This repository contains the baseline implementation of race-detection algorithm used in
+SparseRacer.
 
 Compile:
 	cd Debug
@@ -6,7 +7,8 @@ Compile:
 	make
 
 Run:
-	./Debug/foxracer <trace-file>
+	./Debug/sparseracer <trace-file> -rr [options]
 
-
+The options are the same as the ones in "finaltool" branch.
 Note: This branch uses blocks for ST rules and but disables it for MT rules.
+
