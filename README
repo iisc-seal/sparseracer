@@ -4,7 +4,7 @@ SparseRacer
 SparseRacer is a race detection tool for software that employs programmatic event
 loops. It takes an execution trace of the software as input and returns a list
 of all use-free and/or data races in the trace, by computing the happens-before
-relation for the input trace. FoxRacer computes only a sparse representation of
+relation for the input trace. SparseRacer computes only a sparse representation of
 the required happens-before relation. For technical details, please go through
 our ISSTA 2016 paper "Efficient Race Detection in the Presence of Programmatic
 Event Loops".
@@ -43,12 +43,12 @@ Compile:
 	make
 
 Run:
-	./Debug/foxracer <trace-file> -rr [options]
+	./Debug/sparseracer <trace-file> -rr [options]
 
 Runtime Options:-
 -no-priority	Enables support for traces without event priorities. By default
 		SparseRacer assumes that events have priorities.
--hex		Enables hexadecimal event IDs. By default, FoxRacer expects
+-hex		Enables hexadecimal event IDs. By default, SparseRacer expects
 		integers as event IDs.
 
 Compile-time Options:-

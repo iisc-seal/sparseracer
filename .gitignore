@@ -6,3 +6,4 @@
 ./Debug/parser/TraceParser.o
 ./Debug/racedetector/HBGraph.o
 ./Debug/racedetector/UAFDetector.o
+./Debug/sparseracer
