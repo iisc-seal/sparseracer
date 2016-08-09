@@ -262,3 +262,9 @@ Running the instrumented program
 Add the path to the directory containing the instrumentation routines
 (as a shared library) to LD_LIBRARY_PATH, and then simply run the
 program as you would normally.
+
+Acknowledgments
+---------------
+
+We thank Google and Microsoft Research India for student travel grants
+to partially support travel to present this work at ISSTA 2016.
